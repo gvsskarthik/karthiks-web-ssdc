@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>New Patient</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Arial,sans-serif;
+  background:#ecf0f3;
+}
+.wrapper{display:flex;gap:30px}
+.wrapper-vertical{display:flex;flex-direction:column;gap:30px}
+.neo-card{
+  flex:1;
+  padding:25px;
+  border-radius:24px;
+  background:#ecf0f3;
+  box-shadow:10px 10px 20px #c5c9cc,
+             -10px -10px 20px #ffffff;
+}
+.form-group{margin-bottom:15px}
+label{font-size:13px;color:#555;margin-bottom:6px;display:block}
+.neo-input,.neo-select{
+  width:100%;
+  padding:10px 14px;
+  border-radius:16px;
+  background:#ecf0f3;
+  box-shadow:inset 6px 6px 10px #c5c9cc,
+             inset -6px -6px 10px #ffffff;
+  border:none;
+}
+.row{display:flex;gap:15px}
+.neo-btn{
+  padding:12px;
+  border-radius:18px;
+  background:#ecf0f3;
+  box-shadow:6px 6px 12px #c5c9cc,
+             -6px -6px 12px #ffffff;
+  border:none;
+  font-weight:600;
+  cursor:pointer;
+}
+.patient-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:14px;
+  background:#ecf0f3;
+}
+.small-btn{padding:6px 14px;border-radius:12px;border:none;cursor:pointer}
+.search{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  margin-bottom:20px;
+}
+.hidden{display:none}
+.no-result{text-align:center;color:#999}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<div class="neo-card">
+<h3>New Patient Registration</h3>
+
+<form id="patientForm">
+<div class="form-group">
+<label for="visitDate">Date</label>
+<input id="visitDate" type="date" class="neo-input">
+</div>
+
+<div class="form-group">
+<label for="name">Name</label>
+<input id="name" class="neo-input" autocomplete="name" required>
+</div>
+
+<div class="row">
+<div class="form-group" style="flex:1">
+<label for="age">Age</label>
+<input id="age" type="number" class="neo-input" required>
+</div>
+
+<div class="form-group" style="flex:1">
+<label for="gender">Sex</label>
+<select id="gender" class="neo-select">
+<option>Male</option>
+<option>Female</option>
+<option>Male child</option>
+<option>Female child</option>
+<option>Other</option>
+</select>
+</div>
+</div>
+
+<div class="form-group">
+<label for="mobile">Mobile</label>
+<input id="mobile" class="neo-input" autocomplete="tel" required>
+</div>
+
+<div class="form-group">
+<label for="address">Address</label>
+<input id="address" class="neo-input" autocomplete="street-address">
+</div>
+
+<div class="form-group">
+<label for="doctor">Doctor Refer</label>
+<select id="doctor" class="neo-select">
+<option value="">SELF</option>
+</select>
+</div>
+
+</form>
+</div>
+
+<div class="neo-card">
+<h3>Existing Patient Data</h3>
+<div id="existingPatients"></div>
+</div>
+
+</div>
+
+<div class="wrapper-vertical">
+
+<div class="neo-card">
+<h3>Select Tests</h3>
+<input id="search" class="search" placeholder="Search test..." onkeyup="searchTest()">
+<div id="tree"></div>
+<div id="noResult" class="no-result hidden">❌ No test available</div>
+</div>
+
+<div class="neo-card">
+<h3>Bill</h3>
+<div class="row" style="font-weight:700;margin-bottom:8px">
+  <div style="flex:1">Test Name</div>
+  <div style="width:110px;text-align:right">Amount</div>
+</div>
+<div id="billItems"></div>
+
+<div class="row" style="margin-top:12px">
+  <div class="form-group" style="flex:1">
+    <label for="discount">Discount</label>
+    <input id="discount" type="number" class="neo-input" min="0" step="0.01">
+  </div>
+  <div class="form-group" style="flex:1">
+    <label for="amount">Total</label>
+    <input id="amount" type="number" class="neo-input" min="0" step="0.01">
+  </div>
+</div>
+</div>
+
+<button class="neo-btn" onclick="patientForm.requestSubmit()">
+SAVE PATIENT & ENTER RESULTS
+</button>
+
+</div>
+
+<script src="../../../api.js"></script>
+<script>
+
+   // already exists
+visitDate.value = new Date().toISOString().split("T")[0];
+let selected = new Set();
+let testInfoMap = new Map();
+let testOrderMap = new Map();
+let testOrderCounter = 0;
+let hierarchyData = null;
+const existingList = [];
+const nameInput = document.getElementById("name");
+const mobileInput = document.getElementById("mobile");
+const amountInput = document.getElementById("amount");
+const discountInput = document.getElementById("discount");
+const billItems = document.getElementById("billItems");
+let lastBillEdited = null;
+let isAutoBillUpdate = false;
+let searchTimer = null;
+
+nameInput.addEventListener("input", () => {
+  localStorage.removeItem("currentPatient");
+  applyPatientFilter();
+});
+
+mobileInput.addEventListener("input", () => {
+  localStorage.removeItem("currentPatient");
+  applyPatientFilter();
+});
+
+discountInput.addEventListener("input", () => {
+  if (isAutoBillUpdate) {
+    return;
+  }
+  lastBillEdited = "discount";
+  updateBillFromSelection();
+});
+
+amountInput.addEventListener("input", () => {
+  if (isAutoBillUpdate) {
+    return;
+  }
+  lastBillEdited = "total";
+  updateBillFromSelection();
+});
+
+
+/* LOAD DOCTORS */
+fetch(API_BASE_URL + "/doctors")
+.then(r=>r.json())
+.then(d=>d.forEach(x=>doctor.innerHTML+=`<option>${x.name}</option>`));
+
+/* LOAD EXISTING PATIENTS (DB SEARCH) */
+applyPatientFilter();
+
+function renderExistingPatients(list){
+  existingPatients.innerHTML = "";
+  if (!list.length) {
+    existingPatients.innerHTML = `<div class="no-result">No matching patients</div>`;
+    return;
+  }
+
+  list.forEach(p=>{
+    existingPatients.innerHTML+=`
+    <div class="patient-row">
+      <div><b>${p.name}</b><br>${p.mobile}</div>
+      <button class="small-btn" onclick='selectPatient(${JSON.stringify(p)})'>SELECT</button>
+    </div>`;
+  });
+}
+
+function applyPatientFilter(){
+  const nameQuery = nameInput.value.trim();
+  const mobileQuery = normalizeDigits(mobileInput.value.trim());
+
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+  }
+
+  searchTimer = setTimeout(() => {
+    const params = new URLSearchParams();
+    params.set("name", nameQuery);
+    params.set("mobile", mobileQuery);
+
+    fetch(`${API_BASE_URL}/patients/search?${params.toString()}`)
+    .then(r=>r.json())
+    .then(list=>{
+      existingList.splice(0, existingList.length, ...list);
+      renderExistingPatients(list);
+    });
+  }, 250);
+}
+
+function normalizeDigits(value){
+  return String(value || "").replace(/\D/g, "");
+}
+
+function parseMoney(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatMoney(value){
+  return String(Math.round(value * 100) / 100);
+}
+
+function setInputValue(input, value){
+  isAutoBillUpdate = true;
+  input.value = value;
+  isAutoBillUpdate = false;
+}
+
+function getGroupChecked(groupId){
+  const checkbox = document.getElementById(`group-${groupId}`);
+  return Boolean(checkbox && checkbox.checked);
+}
+
+function buildBillLines(){
+  const lines = [];
+  let baseTotal = 0;
+
+  if (!hierarchyData) {
+    const rows = [...selected]
+      .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
+      .filter(item => item && item.name)
+      .sort((a, b) => {
+        const orderA = testOrderMap.has(a.id)
+          ? testOrderMap.get(a.id)
+          : Number.MAX_SAFE_INTEGER;
+        const orderB = testOrderMap.has(b.id)
+          ? testOrderMap.get(b.id)
+          : Number.MAX_SAFE_INTEGER;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+    rows.forEach(item => {
+      const cost = Number(item.cost) || 0;
+      lines.push({ label: item.name, cost });
+      baseTotal += cost;
+    });
+
+    return { lines, baseTotal: Math.round(baseTotal * 100) / 100 };
+  }
+
+  Object.entries(hierarchyData).forEach(([category, block]) => {
+    let categoryAdded = false;
+    const addCategoryHeader = () => {
+      if (categoryAdded) {
+        return;
+      }
+      lines.push({ label: category, cost: null, isHeader: true });
+      categoryAdded = true;
+    };
+
+    block.groups.forEach(group => {
+      const groupTests = group.tests || [];
+      const selectedTests = groupTests.filter(t => selected.has(t.id));
+      if (!selectedTests.length) {
+        return;
+      }
+
+      const groupChecked = getGroupChecked(group.id);
+      if (groupChecked) {
+        addCategoryHeader();
+        const groupCost =
+          group.cost === null || group.cost === undefined
+            ? selectedTests.reduce(
+                (sum, t) => sum + (Number(t.cost) || 0),
+                0
+              )
+            : Number(group.cost) || 0;
+        lines.push({ label: group.name, cost: groupCost });
+        baseTotal += groupCost;
+        return;
+      }
+
+      addCategoryHeader();
+      selectedTests.forEach(t => {
+        const cost = Number(t.cost) || 0;
+        lines.push({ label: t.name, cost });
+        baseTotal += cost;
+      });
+    });
+
+    const selectedSingles =
+      (block.singleTests || []).filter(t => selected.has(t.id));
+    if (selectedSingles.length) {
+      addCategoryHeader();
+      selectedSingles.forEach(t => {
+        const cost = Number(t.cost) || 0;
+        lines.push({ label: t.name, cost });
+        baseTotal += cost;
+      });
+    }
+  });
+
+  return { lines, baseTotal: Math.round(baseTotal * 100) / 100 };
+}
+
+function renderBillItems(){
+  billItems.innerHTML = "";
+  if (!selected.size) {
+    billItems.innerHTML = `<div class="no-result">No tests selected</div>`;
+    return 0;
+  }
+
+  const { lines, baseTotal } = buildBillLines();
+  if (!lines.length) {
+    billItems.innerHTML = `<div class="no-result">No tests selected</div>`;
+    return 0;
+  }
+
+  lines.forEach(line => {
+    if (line.isHeader) {
+      billItems.innerHTML += `
+        <div class="row" style="margin-top:10px;font-weight:700">
+          <div style="flex:1">${line.label}</div>
+        </div>
+      `;
+      return;
+    }
+    billItems.innerHTML += `
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div style="flex:1">${line.label}</div>
+        <div style="width:110px;text-align:right">₹${formatMoney(Number(line.cost) || 0)}</div>
+      </div>
+    `;
+  });
+
+  return baseTotal;
+}
+
+function syncBillTotals(baseTotal){
+  let discount = parseMoney(discountInput.value);
+  let total = parseMoney(amountInput.value);
+
+  if (lastBillEdited === "discount") {
+    total = baseTotal - discount;
+  } else if (lastBillEdited === "total") {
+    discount = baseTotal - total;
+  } else {
+    discount = 0;
+    total = baseTotal;
+  }
+
+  setInputValue(discountInput, formatMoney(discount));
+  setInputValue(amountInput, formatMoney(total));
+}
+
+function updateBillFromSelection(){
+  const baseTotal = renderBillItems();
+  syncBillTotals(baseTotal);
+}
+
+/* ✅ FIXED */
+function selectPatient(p){
+  document.getElementById("name").value    = p.name || "";
+  document.getElementById("age").value     = p.age || "";
+  document.getElementById("gender").value  = p.gender || "Male";
+  document.getElementById("mobile").value  = p.mobile || "";
+  document.getElementById("address").value = p.address || "";
+  document.getElementById("doctor").value  = p.doctor || "SELF";
+  lastBillEdited = null;
+  setInputValue(discountInput, "");
+  setInputValue(amountInput, "");
+  updateBillFromSelection();
+
+  // Prefill only; keep visits separate
+  localStorage.setItem("prefillPatient", JSON.stringify(p));
+  localStorage.removeItem("currentPatient");
+  localStorage.removeItem("patientResults");
+  localStorage.removeItem("selectedTests");
+  applyPatientFilter();
+}
+/* TEST TREE */
+
+/* ================= TEST TREE (FINAL FIXED LOGIC) ================= */
+
+fetch(API_BASE_URL + "/tests/hierarchy")
+.then(r => r.json())
+.then(data => buildTree(data));
+
+let HEMOGRAM_GROUPS = [];   // ONLY CBP + ERYTHROCYTE
+
+function buildTree(data){
+  tree.innerHTML = "";
+  selected.clear();
+  HEMOGRAM_GROUPS = [];
+  testInfoMap = new Map();
+  testOrderMap = new Map();
+  testOrderCounter = 0;
+  hierarchyData = data || null;
+
+  Object.entries(data).forEach(([category, block]) => {
+
+    tree.innerHTML += `<h4>${category}</h4>`;
+
+    /* ===== HEMOGRAM (ONLY BIOCHEMISTRY) ===== */
+    if(category === "Biochemistry"){
+      tree.innerHTML += `
+        <div style="margin-left:10px">
+          <label>
+            <input type="checkbox" id="hemogram" onchange="toggleHemogram(this)">
+            <b>Hemogram</b>
+          </label>
+        </div>
+      `;
+    }
+
+    /* ===== GROUPS ===== */
+    block.groups.forEach(group => {
+
+      /* ONLY THESE BELONG TO HEMOGRAM */
+      if(
+        group.name === "COMPLETE BLOOD PICTURE" ||
+        group.name === "ERYTHROCYTE INDICES"
+      ){
+        HEMOGRAM_GROUPS.push(group.id);
+      }
+
+      tree.innerHTML += `
+        <div style="margin-left:25px">
+          <label>
+            <input type="checkbox"
+                   id="group-${group.id}"
+                   onchange="toggleGroup(${group.id}, this)">
+            <b>${group.name}</b>
+          </label>
+        </div>
+      `;
+
+      group.tests.forEach(t => {
+        testInfoMap.set(t.id, { name: t.name, cost: Number(t.cost) || 0 });
+        if (!testOrderMap.has(t.id)) {
+          testOrderMap.set(t.id, testOrderCounter++);
+        }
+        tree.innerHTML += `
+          <div class="row test-row" style="margin-left:45px">
+            <input type="checkbox"
+                   id="group-test-${group.id}-${t.id}"
+                   name="group-test-${group.id}-${t.id}"
+                   class="g-${group.id}"
+                   value="${t.id}"
+                   onchange="toggleTest(this, ${group.id})">
+            ${t.name} (${t.shortcut})
+          </div>
+        `;
+      });
+    });
+
+    /* ===== SINGLE TESTS (NOT IN HEMOGRAM) ===== */
+    block.singleTests.forEach(t => {
+      testInfoMap.set(t.id, { name: t.name, cost: Number(t.cost) || 0 });
+      if (!testOrderMap.has(t.id)) {
+        testOrderMap.set(t.id, testOrderCounter++);
+      }
+      tree.innerHTML += `
+        <div class="row test-row">
+          <input type="checkbox"
+                 id="single-test-${t.id}"
+                 name="single-test-${t.id}"
+                 value="${t.id}"
+                 onchange="toggleSingle(this)">
+          ${t.name} (${t.shortcut})
+        </div>
+      `;
+    });
+  });
+  updateBillFromSelection();
+}
+
+/* ================= LOGIC ================= */
+
+/* 🔹 HEMOGRAM */
+function toggleHemogram(cb){
+  HEMOGRAM_GROUPS.forEach(gid => {
+    const gcb = document.getElementById(`group-${gid}`);
+    gcb.checked = cb.checked;
+
+    document.querySelectorAll(`.g-${gid}`).forEach(x=>{
+      x.checked = cb.checked;
+      toggleSingle(x);
+    });
+  });
+}
+
+/* 🔹 GROUP */
+function toggleGroup(groupId, cb){
+  document.querySelectorAll(`.g-${groupId}`).forEach(x=>{
+    x.checked = cb.checked;
+    toggleSingle(x);
+  });
+
+  if(!cb.checked){
+    document.getElementById("hemogram").checked = false;
+  }
+
+  syncHemogram();
+}
+
+/* 🔹 TEST */
+function toggleTest(cb, groupId){
+  toggleSingle(cb);
+
+  const tests = [...document.querySelectorAll(`.g-${groupId}`)];
+  const allChecked = tests.every(x => x.checked);
+
+  document.getElementById(`group-${groupId}`).checked = allChecked;
+
+  if(!cb.checked){
+    document.getElementById("hemogram").checked = false;
+  }
+
+  syncHemogram();
+}
+
+/* 🔹 SINGLE */
+function toggleSingle(cb){
+  const id = Number(cb.value);
+  cb.checked ? selected.add(id) : selected.delete(id);
+  updateBillFromSelection();
+}
+
+/* 🔹 SYNC HEMOGRAM */
+function syncHemogram(){
+  const ok =
+    HEMOGRAM_GROUPS.length &&
+    HEMOGRAM_GROUPS.every(
+      gid => document.getElementById(`group-${gid}`).checked
+    );
+
+  document.getElementById("hemogram").checked = ok;
+}
+
+
+    
+/* ================= SEARCH ================= */
+
+function searchTest(){
+  const q = search.value.toLowerCase();
+  let found = false;
+
+  document.querySelectorAll(".test-row").forEach(r=>{
+    const hit = r.innerText.toLowerCase().includes(q);
+    r.classList.toggle("hidden", q && !hit);
+    if(hit) found = true;
+  });
+
+  noResult.classList.toggle("hidden", found);
+}
+
+/* SUBMIT */
+patientForm.addEventListener("submit", e => {
+  e.preventDefault();
+
+  if (!selected.size) {
+    alert("Select at least one test");
+    return;
+  }
+
+  const current =
+    JSON.parse(localStorage.getItem("currentPatient") || "null");
+  localStorage.removeItem("prefillPatient");
+
+  const payload = {
+    name: document.getElementById("name").value.trim(),
+    age: Number(document.getElementById("age").value),
+    gender: document.getElementById("gender").value,
+    mobile: document.getElementById("mobile").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    doctor: document.getElementById("doctor").value || "SELF",
+    visitDate: document.getElementById("visitDate").value,
+    amount: Number(amountInput.value) || 0,
+    status: "NOT COMPLETE"
+  };
+
+  // ✅ EXISTING PATIENT → no save
+  if (current && current.id) {
+    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
+    parent.loadPage("home/sub-tasks/pt/enter-values.html");
+    return;
+  }
+
+  // ✅ NEW PATIENT → save
+  fetch(API_BASE_URL + "/patients", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(p => {
+    localStorage.setItem("currentPatient", JSON.stringify(p));
+    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
+    parent.loadPage("home/sub-tasks/pt/enter-values.html");
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Failed to save patient");
+  });
+});
+</script>
+
+</body>
+</html>

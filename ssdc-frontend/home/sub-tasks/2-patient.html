@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patients</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Arial,sans-serif;
+  background:#ecf0f3;
+}
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+.top-bar{
+  display:flex;
+  gap:12px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+.neo-input{
+  padding:8px 12px;
+  border-radius:12px;
+  border:none;
+  background:#ecf0f3;
+  box-shadow:inset 4px 4px 8px #c5c9cc,
+             inset -4px -4px 8px #ffffff;
+}
+.neo-btn{
+  padding:10px 18px;
+  border-radius:14px;
+  background:#ecf0f3;
+  box-shadow:6px 6px 10px #c5c9cc,
+             -6px -6px 10px #ffffff;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+}
+.bulk-bar{
+  display:none;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:14px;
+  background:#fff3cd;
+}
+.table-box{
+  background:#ecf0f3;
+  border-radius:20px;
+  padding:20px;
+  box-shadow:10px 10px 20px #c5c9cc,
+             -10px -10px 20px #ffffff;
+}
+table{ width:100%; border-collapse:collapse; }
+th,td{ padding:12px; font-size:14px; }
+tr{ border-bottom:1px solid #ddd; }
+.status{ font-weight:600; color:#e67e22; }
+.menu{ position:relative; cursor:pointer; font-size:20px; }
+.menu-box{
+  display:none;
+  position:absolute;
+  right:0;
+  top:22px;
+  background:#fff;
+  border-radius:8px;
+  box-shadow:0 4px 10px rgba(0,0,0,.15);
+  z-index:10;
+}
+.menu-box div{
+  padding:8px 14px;
+  font-size:13px;
+  cursor:pointer;
+}
+.menu-box div:hover{ background:#f2f2f2; }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Patients</h2>
+  <button class="neo-btn" onclick="location.href='pt/new.html'">NEW</button>
+</div>
+
+<div class="top-bar">
+  <input type="date" id="datePicker" class="neo-input">
+  <input type="text" id="searchBox" class="neo-input"
+         placeholder="Search patient..."
+         onkeyup="searchPatient()">
+</div>
+
+<div class="bulk-bar" id="bulkBar">
+  <div id="selectedCount">0 items selected</div>
+  <div>
+    <button class="neo-btn" onclick="deleteSelected()">Delete Selected</button>
+    <button class="neo-btn" onclick="exitSelectMode()">Cancel</button>
+  </div>
+</div>
+
+<div class="table-box">
+<table>
+<thead>
+<tr>
+  <th id="checkHead" style="display:none"></th>
+  <th>S.No</th>
+  <th>Name</th>
+  <th>Doctor</th>
+  <th>Amount</th>
+  <th>Status</th>
+  <th>Options</th>
+</tr>
+</thead>
+<tbody id="patientTable"></tbody>
+</table>
+</div>
+
+<script src="../../api.js"></script>
+<script>
+if(parent?.setActiveMenu){ parent.setActiveMenu("patient"); }
+
+const datePicker = document.getElementById("datePicker");
+const searchBox  = document.getElementById("searchBox");
+const tableBody  = document.getElementById("patientTable");
+const bulkBar    = document.getElementById("bulkBar");
+const checkHead  = document.getElementById("checkHead");
+const selectedCount = document.getElementById("selectedCount");
+
+let allPatients = [];
+let selectMode = false;
+
+datePicker.value = new Date().toISOString().split("T")[0];
+loadByDate(datePicker.value);
+
+datePicker.onchange = () => loadByDate(datePicker.value);
+
+function loadByDate(date){
+  fetch(`${API_BASE_URL}/patients/by-date/${date}`)
+    .then(r=>r.json())
+    .then(d=>{ allPatients=d; renderTable(d); })
+    .catch(()=>renderEmpty());
+}
+
+function searchPatient(){
+  const q = searchBox.value.toLowerCase();
+  renderTable(allPatients.filter(p =>
+    (p.name||"").toLowerCase().includes(q)
+  ));
+}
+
+function renderTable(data){
+  tableBody.innerHTML="";
+  if(!data.length){ renderEmpty(); return; }
+
+  data.forEach((p,i)=>{
+    tableBody.innerHTML+=`
+    <tr>
+      <td style="display:${selectMode?'table-cell':'none'}">
+        <input type="checkbox"
+               id="patient-${p.id}"
+               name="patient-${p.id}"
+               class="row-check"
+               data-id="${p.id}"
+               onchange="updateCount()">
+      </td>
+      <td>${i+1}</td>
+      <td>${p.name}</td>
+      <td>${p.doctor||'-'}</td>
+      <td>₹${p.amount}</td>
+      <td class="status">${p.status}</td>
+      <td class="menu">
+        <span onclick="toggleMenu(${p.id})">⋮</span>
+        <div class="menu-box" id="menu-${p.id}">
+          <div onclick="enterSelectMode()">Select</div>
+          <div onclick="editPatient(${p.id})">Edit</div>
+          <div onclick="deleteOne(${p.id})" style="color:red">Delete</div>
+        </div>
+      </td>
+    </tr>`;
+  });
+}
+
+function renderEmpty(){
+  tableBody.innerHTML=`<tr>
+    <td colspan="7" style="text-align:center;color:#888">
+      No patients found
+    </td></tr>`;
+}
+
+function toggleMenu(id){
+  document.querySelectorAll(".menu-box")
+    .forEach(m=>m.style.display="none");
+  const m=document.getElementById(`menu-${id}`);
+  m.style.display=m.style.display==="block"?"none":"block";
+}
+
+function enterSelectMode(){
+  selectMode=true;
+  bulkBar.style.display="flex";
+  checkHead.style.display="table-cell";
+  renderTable(allPatients);
+}
+
+function exitSelectMode(){
+  selectMode=false;
+  bulkBar.style.display="none";
+  checkHead.style.display="none";
+  renderTable(allPatients);
+}
+
+function updateCount(){
+  const c=document.querySelectorAll(".row-check:checked").length;
+  selectedCount.innerText=`${c} items selected`;
+}
+
+function deleteOne(id){
+  if(!confirm("Delete patient and all related data?")) return;
+
+  fetch(`${API_BASE_URL}/patients/${id}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+
+    // 🔥 clear localStorage if this patient was open
+    const current =
+      JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
+    if(current.id === id){
+      localStorage.removeItem("currentPatient");
+      localStorage.removeItem("selectedTests");
+      localStorage.removeItem("patientResults");
+    }
+
+    loadByDate(datePicker.value);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Failed to delete patient");
+  });
+}
+
+function deleteSelected(){
+  const checked = document.querySelectorAll(".row-check:checked");
+  if(!checked.length){
+    alert("No patients selected");
+    return;
+  }
+
+  if(!confirm("Delete selected patients and all related data?")) return;
+
+  const ids = [...checked].map(cb => Number(cb.dataset.id));
+
+  Promise.all(
+    ids.map(id =>
+      fetch(`${API_BASE_URL}/patients/${id}`, {
+        method: "DELETE"
+      })
+    )
+  )
+  .then(() => {
+
+    // 🔥 clear localStorage if deleted patient was active
+    const current =
+      JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
+    if(ids.includes(current.id)){
+      localStorage.removeItem("currentPatient");
+      localStorage.removeItem("selectedTests");
+      localStorage.removeItem("patientResults");
+    }
+
+    exitSelectMode();
+    loadByDate(datePicker.value);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Bulk delete failed");
+  });
+}
+
+function editPatient(id){
+  alert("Edit coming soon");
+}
+</script>
+
+</body>
+</html>

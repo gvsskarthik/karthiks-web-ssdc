@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Arrange Tests</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#ecf0f3;
+  padding:20px;
+}
+.card{
+  background:#ecf0f3;
+  padding:20px;
+  border-radius:18px;
+  box-shadow:8px 8px 16px #c5c9cc,
+             -8px -8px 16px #ffffff;
+  margin-bottom:20px;
+}
+h2,h3{margin:10px 0}
+.row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:6px 0;
+}
+.indent-1{margin-left:20px}
+.indent-2{margin-left:40px}
+.indent-3{margin-left:60px}
+.arrow{
+  border:none;
+  padding:4px 8px;
+  border-radius:10px;
+  cursor:pointer;
+  background:#ecf0f3;
+  box-shadow:4px 4px 8px #c5c9cc,
+             -4px -4px 8px #ffffff;
+}
+.arrow:active{
+  box-shadow:inset 3px 3px 6px #c5c9cc,
+             inset -3px -3px 6px #ffffff;
+}
+.title{font-weight:600}
+.section{margin-top:10px}
+</style>
+</head>
+
+<body>
+
+<h2>Arrange Test Order</h2>
+<p>Use ⬆️ ⬇️ buttons only. Structure is fixed.</p>
+
+<div id="container"></div>
+
+<script src="../../../api.js"></script>
+<script>
+fetch(API_BASE_URL + "/tests/hierarchy")
+.then(r=>r.json())
+.then(render);
+
+function arrow(type,id,dir){
+  fetch(`${API_BASE_URL}/order/${type}/${id}/${dir}`,{
+    method:"PUT"
+  }).then(()=>location.reload());
+}
+
+function render(data){
+  const c=document.getElementById("container");
+  c.innerHTML="";
+
+  Object.entries(data).forEach(([category,block])=>{
+    const card=document.createElement("div");
+    card.className="card";
+
+    card.innerHTML=`<h3>${category}</h3>
+                    <div class="indent-1 title">Hemogram</div>`;
+
+    /* GROUPS */
+    block.groups.forEach(g=>{
+      const gRow=document.createElement("div");
+      gRow.className="row indent-2";
+      gRow.innerHTML=`
+        <button class="arrow" onclick="arrow('group',${g.id},'up')">⬆️</button>
+        <button class="arrow" onclick="arrow('group',${g.id},'down')">⬇️</button>
+        <span class="title">${g.name}</span>
+      `;
+      card.appendChild(gRow);
+
+      g.tests.forEach(t=>{
+        const tRow=document.createElement("div");
+        tRow.className="row indent-3";
+        tRow.innerHTML=`
+          <button class="arrow" onclick="arrow('test',${t.id},'up')">⬆️</button>
+          <button class="arrow" onclick="arrow('test',${t.id},'down')">⬇️</button>
+          ${t.name}
+        `;
+        card.appendChild(tRow);
+      });
+    });
+
+    /* SINGLE TESTS */
+    if(block.singleTests.length){
+      card.innerHTML+=`
+        <div class="row indent-2">
+          <button class="arrow" disabled>⬆️</button>
+          <button class="arrow" disabled>⬇️</button>
+          <b>Single Tests</b>
+        </div>`;
+    }
+
+    block.singleTests.forEach(t=>{
+      const s=document.createElement("div");
+      s.className="row indent-3";
+      s.innerHTML=`
+        <button class="arrow" onclick="arrow('single',${t.id},'up')">⬆️</button>
+        <button class="arrow" onclick="arrow('single',${t.id},'down')">⬇️</button>
+        ${t.name}
+      `;
+      card.appendChild(s);
+    });
+
+    c.appendChild(card);
+  });
+}
+</script>
+
+</body>
+</html>

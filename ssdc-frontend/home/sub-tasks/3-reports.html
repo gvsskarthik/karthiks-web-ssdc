@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Reports</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Poppins,Arial;
+  background:#ecf0f3;
+}
+.head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+.head h1{margin:0}
+.date-box{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.date-box input{
+  padding:8px 12px;
+  border-radius:10px;
+  border:none;
+  background:#ecf0f3;
+  box-shadow:inset 4px 4px 8px #c5c9cc,
+             inset -4px -4px 8px #ffffff;
+}
+.table-card{
+  background:#ffffff;
+  border-radius:20px;
+  padding:20px;
+  box-shadow:10px 10px 20px #c5c9cc,
+             -5px -5px 20px #ffffff;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+th,td{
+  padding:12px;
+  border-bottom:1px solid #dcdde1;
+}
+th{text-align:left;color:#555}
+.status{font-weight:600;color:#e67e22}
+.action-btn{
+  cursor:pointer;
+  color:#2980b9;
+  font-weight:600;
+}
+.no-data{
+  text-align:center;
+  color:#777;
+  padding:20px;
+}
+a{
+  text-decoration:none;
+  color:#2980b9;
+  font-weight:600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="head">
+  <h1>Reports</h1>
+  <div class="date-box">
+    <i class='bx bx-calendar'></i>
+    <input type="date" id="reportDate">
+  </div>
+</div>
+
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th>S.No</th>
+        <th>Patient Name</th>
+        <th>Doctor</th>
+        <th>Status</th>
+        <th>Report</th>
+      </tr>
+    </thead>
+    <tbody id="reportTable"></tbody>
+  </table>
+</div>
+
+<script src="../../api.js"></script>
+<script>
+const reportDate = document.getElementById("reportDate");
+const table = document.getElementById("reportTable");
+
+const today = new Date().toISOString().split("T")[0];
+reportDate.value = today;
+
+loadByDate(today);
+
+reportDate.addEventListener("change",()=>{
+  loadByDate(reportDate.value);
+});
+
+function loadByDate(date){
+  fetch(`${API_BASE_URL}/patients/by-date/${date}`)
+    .then(res=>res.json())
+    .then(data=>renderTable(data))
+    .catch(()=>{
+      table.innerHTML =
+        `<tr><td colspan="5" class="no-data">No data</td></tr>`;
+    });
+}
+
+function renderTable(data){
+  table.innerHTML = "";
+
+  if(!data || data.length===0){
+    table.innerHTML =
+      `<tr><td colspan="5" class="no-data">No patients found</td></tr>`;
+    return;
+  }
+
+  data.forEach((p,i)=>{
+    table.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+
+        <!-- ENTER VALUES -->
+        <td>
+          <a href="#"
+             onclick='openPatient(${JSON.stringify(p)})'>
+            ${p.name || "-"}
+          </a>
+        </td>
+
+        <td>${p.doctor || "SELF"}</td>
+        <td class="status">${p.status}</td>
+
+        <!-- VIEW FINAL REPORT -->
+        <td>
+          <span class="action-btn"
+            onclick='openReport(${JSON.stringify(p)})'>
+            View
+          </span>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+/* ✅ ENTER VALUES PAGE */
+/* ENTER VALUES */
+function openPatient(patient){
+  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.removeItem("selectedTests");
+  localStorage.removeItem("patientResults");
+
+  parent.loadPage(
+    "home/sub-tasks/pt/enter-values.html",
+    "reports"
+  );
+}
+
+/* FINAL REPORT */
+function openReport(patient){
+  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.removeItem("selectedTests");
+  localStorage.removeItem("patientResults");
+
+  parent.loadPage(
+    "home/sub-tasks/pt/reports.html",
+    "reports"
+  );
+}
+</script>
+
+</body>
+</html>

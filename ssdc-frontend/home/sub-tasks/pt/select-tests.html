@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Select Tests</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Poppins,Arial;
+  background:#ecf0f3;
+}
+
+.neo-card{
+  max-width:900px;
+  margin:auto;
+  padding:25px;
+  border-radius:24px;
+  background:#ecf0f3;
+  box-shadow:10px 10px 20px #c5c9cc,
+             -10px -10px 20px #ffffff;
+}
+
+.search{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:14px;
+  margin-bottom:20px;
+  background:#ecf0f3;
+  box-shadow:inset 6px 6px 10px #c5c9cc,
+             inset -6px -6px 10px #ffffff;
+}
+
+.group{
+  margin-bottom:16px;
+}
+
+.level{
+  margin-left:20px;
+  margin-top:6px;
+}
+
+.row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:6px 0;
+  font-weight:500;
+}
+
+.row input{ width:16px; height:16px }
+
+.hidden{ display:none }
+
+.neo-btn{
+  margin-top:25px;
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:18px;
+  background:#ecf0f3;
+  box-shadow:6px 6px 12px #c5c9cc,
+             -6px -6px 12px #ffffff;
+  font-weight:600;
+  cursor:pointer;
+}
+.neo-btn:active{
+  box-shadow:inset 6px 6px 12px #c5c9cc,
+             inset -6px -6px 12px #ffffff;
+}
+
+.no-result{
+  text-align:center;
+  color:#999;
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="neo-card">
+  <h2>Select Tests</h2>
+
+  <input
+    id="search"
+    class="search"
+    placeholder="Search by test name or shortcut (HB, TC...)"
+    onkeyup="searchTest()"
+  >
+
+  <div id="tree"></div>
+
+  <div id="noResult" class="no-result hidden">
+    ❌ No test available
+  </div>
+
+  <button class="neo-btn" onclick="submitTests()">CONTINUE</button>
+</div>
+
+<script src="../../../api.js"></script>
+<script>
+let selected = new Set();
+const slugify = (value) => String(value)
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/(^-|-$)/g, "");
+
+/* 🔹 STRUCTURE */
+const STRUCTURE = {
+  "Biochemistry": {
+    "Hemogram": {
+      "Complete Blood Picture": ["HB","TC","DC","ESR","TRBC","PLC"],
+      "Erythrocyte Indices": ["PCV","MCV","MCH","MCHC"]
+    },
+    "Others": ["RBS","RUS","FBS","FUS"]
+  }
+};
+
+/* 🔹 LOAD TESTS */
+fetch(API_BASE_URL + "/tests/active")
+.then(r => r.json())
+.then(tests => {
+  window.ALL_TESTS = tests;
+  buildTree();
+});
+
+/* 🔹 BUILD TREE CORRECTLY */
+function buildTree(){
+  const tree = document.getElementById("tree");
+  tree.innerHTML = "";
+
+  Object.entries(STRUCTURE).forEach(([category, groups]) => {
+    const categoryKey = slugify(category);
+
+    /* CATEGORY */
+    const catRow = document.createElement("div");
+    catRow.className = "row";
+    catRow.innerHTML = `<b>${category}</b>`;
+    tree.appendChild(catRow);
+
+    Object.entries(groups).forEach(([group, content]) => {
+
+      /* GROUP */
+      const groupWrap = document.createElement("div");
+      groupWrap.className = "level";
+
+      const groupKey = slugify(`${categoryKey}-${group}`);
+      groupWrap.innerHTML = `
+        <div class="row">
+          <input type="checkbox" id="group-${groupKey}" name="group-${groupKey}" onchange="toggleGroup(this)">
+          ${group}
+        </div>
+      `;
+
+      /* SUB-GROUPS OR DIRECT TESTS */
+      if(Array.isArray(content)){
+        content.forEach(sc => addTest(groupWrap, sc));
+      } else {
+        Object.entries(content).forEach(([subGroup, tests]) => {
+
+          const subWrap = document.createElement("div");
+          subWrap.className = "level";
+
+          const subKey = slugify(`${categoryKey}-${group}-${subGroup}`);
+          subWrap.innerHTML = `
+            <div class="row">
+              <input type="checkbox" id="sub-${subKey}" name="sub-${subKey}" onchange="toggleGroup(this)">
+              ${subGroup}
+            </div>
+          `;
+
+          tests.forEach(sc => addTest(subWrap, sc));
+          groupWrap.appendChild(subWrap);
+        });
+      }
+
+      tree.appendChild(groupWrap);
+    });
+  });
+}
+
+/* 🔹 ADD TEST AT CORRECT LEVEL */
+function addTest(parent, shortcut){
+  const test = ALL_TESTS.find(
+    t => t.shortcut.toUpperCase() === shortcut
+  );
+  if(!test) return;
+
+  const row = document.createElement("div");
+  row.className = "level test-row";
+  row.dataset.name = test.testName.toLowerCase();
+  row.dataset.shortcut = test.shortcut.toLowerCase();
+
+  row.innerHTML = `
+    <div class="row">
+      <input type="checkbox" id="test-${test.id}" name="test-${test.id}" value="${test.id}"
+             onchange="toggleTest(this)">
+      ${test.testName} (${test.shortcut})
+    </div>
+  `;
+
+  parent.appendChild(row);
+}
+
+/* 🔹 PARENT → CHILD TOGGLE */
+function toggleGroup(cb){
+  const wrap = cb.closest(".level");
+  wrap.querySelectorAll("input[type=checkbox]").forEach(c=>{
+    c.checked = cb.checked;
+    toggleTest(c,true);
+  });
+}
+
+/* 🔹 SINGLE TEST */
+function toggleTest(cb){
+  const id = Number(cb.value);
+  if(cb.checked) selected.add(id);
+  else selected.delete(id);
+}
+
+/* 🔹 SEARCH (NAME + SHORTCUT) */
+function searchTest(){
+  const q = search.value.toLowerCase();
+  let found = false;
+
+  document.querySelectorAll(".test-row").forEach(row=>{
+    const name = row.dataset.name;
+    const sc = row.dataset.shortcut;
+
+    if(!q || name.includes(q) || sc === q){
+      row.classList.remove("hidden");
+      if(sc === q){
+        const cb = row.querySelector("input");
+        cb.checked = true;
+        selected.add(Number(cb.value));
+      }
+      found = true;
+    } else {
+      row.classList.add("hidden");
+    }
+  });
+
+  noResult.classList.toggle("hidden", found || !q);
+}
+
+/* 🔹 SUBMIT */
+function submitTests(){
+  if(!selected.size){
+    alert("Select at least one test");
+    return;
+  }
+  localStorage.setItem(
+    "selectedTests",
+    JSON.stringify([...selected])
+  );
+    parent.loadPage("home/sub-tasks/pt/enter-values.html");}
+</script>
+</body>
+</html>

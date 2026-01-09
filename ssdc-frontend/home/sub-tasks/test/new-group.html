@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>New Group</title>
+
+<style>
+:root {
+  --bg: #ecf0f3;
+  --shadow-dark: #c5c9cc;
+  --shadow-light: #ffffff;
+  --text: #444;
+  --muted: #777;
+  --error: #c0392b;
+}
+
+body {
+  font-family: Poppins, Arial, sans-serif;
+  background: var(--bg);
+  padding: 20px;
+  color: var(--text);
+}
+
+.neo-card {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--bg);
+  box-shadow: 10px 10px 20px var(--shadow-dark),
+              -10px -10px 20px var(--shadow-light);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--bg);
+  box-shadow: 6px 6px 12px var(--shadow-dark),
+              -6px -6px 12px var(--shadow-light);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.secondary {
+  font-weight: 500;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 20px;
+}
+
+.panel {
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--bg);
+  box-shadow: 6px 6px 12px var(--shadow-dark),
+              -6px -6px 12px var(--shadow-light);
+}
+
+.panel h3 {
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 14px;
+  border: none;
+  background: var(--bg);
+  box-shadow: inset 5px 5px 8px var(--shadow-dark),
+              inset -5px -5px 8px var(--shadow-light);
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.search {
+  margin-top: 10px;
+}
+
+.test-list,
+.selected-list {
+  margin-top: 16px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.test-item,
+.selected-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: inset 4px 4px 6px var(--shadow-dark),
+              inset -4px -4px 6px var(--shadow-light);
+  margin-bottom: 10px;
+}
+
+.test-item input {
+  width: auto;
+}
+
+.selected-item button {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--error);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status {
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.status.error {
+  color: var(--error);
+}
+
+.error {
+  box-shadow: inset 5px 5px 8px var(--shadow-dark),
+              inset -5px -5px 8px var(--shadow-light),
+              0 0 0 2px var(--error);
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="neo-card">
+  <div class="header">
+    <div>
+      <h2 id="title">New Group</h2>
+      <p>Create a panel by combining active tests.</p>
+    </div>
+    <div>
+      <button class="btn" id="saveBtn">Save Group</button>
+      <button class="btn secondary" onclick="location.href='../5-tests.html'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h3>Group Details</h3>
+      <div class="grid-3">
+        <div>
+          <label for="groupName">Group Name</label>
+          <input id="groupName" placeholder="Group Name">
+        </div>
+        <div>
+          <label for="shortcut">Shortcut</label>
+          <input id="shortcut" placeholder="Shortcut">
+        </div>
+        <div>
+          <label for="cost">Price</label>
+          <input id="cost" type="number" step="0.01" placeholder="Price">
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 style="margin-top:20px;">Selected Tests</h3>
+        <div class="count" id="selectedCount">0 selected</div>
+        <div id="selectedList" class="selected-list muted">No tests selected.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Select Tests</h3>
+      <input id="search" class="search" placeholder="Search tests">
+      <div id="testList" class="test-list muted">Loading tests...</div>
+    </div>
+  </div>
+
+  <div id="status" class="status"></div>
+</div>
+
+<script src="../../../api.js"></script>
+<script>
+const title = document.getElementById("title");
+const groupName = document.getElementById("groupName");
+const shortcut = document.getElementById("shortcut");
+const cost = document.getElementById("cost");
+const search = document.getElementById("search");
+const testList = document.getElementById("testList");
+const selectedList = document.getElementById("selectedList");
+const selectedCount = document.getElementById("selectedCount");
+const status = document.getElementById("status");
+const saveBtn = document.getElementById("saveBtn");
+
+const params = new URLSearchParams(location.search);
+const editId = params.get("edit");
+
+let tests = [];
+let selected = new Set();
+
+search.addEventListener("input", () => renderTests());
+saveBtn.addEventListener("click", () => saveGroup());
+
+function setStatus(message, type) {
+  status.textContent = message || "";
+  status.className = "status" + (type ? " " + type : "");
+}
+
+function clearErrors() {
+  [groupName, shortcut].forEach(el => el.classList.remove("error"));
+}
+
+function renderTests() {
+  testList.innerHTML = "";
+  if (!tests.length) {
+    testList.textContent = "No active tests found.";
+    return;
+  }
+
+  const query = search.value.trim().toLowerCase();
+  const filtered = tests.filter(t =>
+    (t.testName + " " + t.shortcut).toLowerCase().includes(query)
+  );
+
+  if (!filtered.length) {
+    testList.textContent = "No matches for this search.";
+    return;
+  }
+
+  filtered.forEach(t => {
+    const item = document.createElement("label");
+    item.className = "test-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = selected.has(t.id);
+    checkbox.addEventListener("change", e => {
+      toggleSelection(t.id, e.target.checked);
+    });
+
+    const info = document.createElement("div");
+    info.innerHTML = "<strong>" + t.testName + "</strong> (" + t.shortcut + ")";
+
+    item.appendChild(checkbox);
+    item.appendChild(info);
+    testList.appendChild(item);
+  });
+}
+
+function renderSelected() {
+  selectedCount.textContent = selected.size + " selected";
+  selectedList.innerHTML = "";
+
+  if (!selected.size) {
+    selectedList.textContent = "No tests selected.";
+    selectedList.classList.add("muted");
+    return;
+  }
+
+  selectedList.classList.remove("muted");
+  tests.filter(t => selected.has(t.id)).forEach(t => {
+    const item = document.createElement("div");
+    item.className = "selected-item";
+
+    const info = document.createElement("div");
+    info.innerHTML = "<strong>" + t.testName + "</strong> (" + t.shortcut + ")";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = "Remove";
+    removeBtn.addEventListener("click", () => toggleSelection(t.id, false));
+
+    item.appendChild(info);
+    item.appendChild(removeBtn);
+    selectedList.appendChild(item);
+  });
+}
+
+function toggleSelection(id, on) {
+  if (on) {
+    selected.add(id);
+  } else {
+    selected.delete(id);
+  }
+  renderTests();
+  renderSelected();
+}
+
+async function loadData() {
+  setStatus("Loading tests...");
+  try {
+    const testRes = await fetch(API_BASE_URL + "/tests/active");
+    if (!testRes.ok) {
+      throw new Error("Failed to load tests.");
+    }
+    tests = await testRes.json();
+
+    if (editId) {
+      const groupRes = await fetch(API_BASE_URL + "/groups/" + editId);
+      if (!groupRes.ok) {
+        throw new Error("Failed to load group.");
+      }
+      const group = await groupRes.json();
+      title.textContent = "Edit Group";
+      groupName.value = group.groupName || "";
+      shortcut.value = group.shortcut || "";
+      cost.value = group.cost == null ? "" : group.cost;
+      selected = new Set(group.testIds || []);
+    }
+
+    renderTests();
+    renderSelected();
+    setStatus("");
+  } catch (err) {
+    console.error(err);
+    setStatus("Failed to load data. Check backend connection.", "error");
+    testList.textContent = "Unable to load tests.";
+  }
+}
+
+async function saveGroup() {
+  clearErrors();
+  if (!groupName.value.trim()) {
+    groupName.classList.add("error");
+    setStatus("Group name is required.", "error");
+    return;
+  }
+  if (!shortcut.value.trim()) {
+    shortcut.classList.add("error");
+    setStatus("Shortcut is required.", "error");
+    return;
+  }
+  if (!selected.size) {
+    setStatus("Select at least one test.", "error");
+    return;
+  }
+
+  setStatus("Saving...");
+  saveBtn.disabled = true;
+
+  const payload = {
+    groupName: groupName.value.trim(),
+    shortcut: shortcut.value.trim(),
+    cost: cost.value.trim() === "" ? null : Number(cost.value),
+    testIds: Array.from(selected)
+  };
+
+  try {
+    const url = editId
+      ? API_BASE_URL + "/groups/" + editId
+      : API_BASE_URL + "/groups";
+    const method = editId ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      setStatus(errText || "Save failed.", "error");
+      saveBtn.disabled = false;
+      return;
+    }
+
+    setStatus("Saved successfully.");
+    setTimeout(() => {
+      window.location.href = "../5-tests.html";
+    }, 600);
+  } catch (err) {
+    console.error(err);
+    setStatus("Backend not running or network error.", "error");
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+loadData();
+</script>
+
+</body>
+</html>
