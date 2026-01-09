@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Report</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Poppins,Arial;
+  background:#ecf0f3;
+}
+
+.neo-card{
+  max-width:900px;
+  margin:auto;
+  padding:30px;
+  background:#fff;
+  border-radius:10px;
+}
+
+/* HEADER */
+.header{text-align:center;margin-bottom:20px}
+.header h2{margin:0}
+
+/* PATIENT */
+.patient-box{
+  border:1px solid #000;
+  padding:12px;
+  font-size:13px;
+  margin-bottom:20px;
+}
+.row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.label{font-weight:700}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:10px;
+}
+th,td{
+  border:1px solid #000;
+  padding:4px;
+}
+th{background:#f2f2f2}
+
+/* BUTTONS */
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:25px;
+}
+.btn{
+  flex:1;
+  padding:12px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  border-radius:6px;
+}
+.save{background:#27ae60;color:#fff}
+.print{background:#2980b9;color:#fff}
+.download{background:#8e44ad;color:#fff}
+.whatsapp{background:#25d366;color:#fff}
+
+.legend{
+  margin-top:10px;
+  font-size:11px;
+}
+
+@media print{
+  body{background:#fff}
+  .actions{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<div class="neo-card" id="report">
+
+  <div class="header">
+    <h2>SAI SREE SWETHA DIAGNOSTICS</h2>
+    <p><b>BLOOD EXAMINATION REPORT</b></p>
+  </div>
+
+  <!-- PATIENT -->
+  <div class="patient-box">
+    <div class="row">
+      <div><span class="label">PATIENT</span> : <span id="pName"></span></div>
+      <div><span class="label">DATE</span> : <span id="pDate"></span></div>
+    </div>
+    <div class="row">
+      <div><span class="label">ADDRESS</span> : <span id="pAddress"></span></div>
+      <div><span class="label">AGE / SEX</span> : <span id="pAgeSex"></span></div>
+    </div>
+    <div class="row">
+      <div><span class="label">REF BY Dr.</span> : <span id="pDoctor"></span></div>
+      <div><span class="label">MOBILE</span> : <span id="pMobile"></span></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>TEST</th>
+        <th>RESULT</th>
+        <th>UNIT</th>
+        <th>NORMAL VALUES</th>
+      </tr>
+    </thead>
+    <tbody id="reportBody"></tbody>
+  </table>
+
+  <div class="legend">
+    <span style="color:red;font-weight:bold">Red</span> = Abnormal value
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn save" onclick="goPatients()">SAVE</button>
+    <button class="btn print" onclick="window.print()">PRINT</button>
+    <button class="btn download" onclick="downloadPDF()">DOWNLOAD</button>
+    <button class="btn whatsapp" onclick="shareWhatsApp()">WHATSAPP</button>
+  </div>
+
+</div>
+
+<script src="../../../api.js"></script>
+<script>
+/* ================= LOAD DATA ================= */
+const patient =
+  JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
+let results = [];
+let selectedTestIds = [];
+
+/* ================= PATIENT DETAILS ================= */
+document.getElementById("pName").innerText =
+  patient.name || "";
+
+document.getElementById("pAddress").innerText =
+  patient.address || "";
+
+document.getElementById("pAgeSex").innerText =
+  (patient.age || "") + " / " + (patient.gender || "");
+
+document.getElementById("pDoctor").innerText =
+  patient.doctor || "SELF";
+
+document.getElementById("pMobile").innerText =
+  patient.mobile || "";
+
+document.getElementById("pDate").innerText =
+  patient.visitDate || new Date().toLocaleDateString();
+
+/* ================= RANGE CHECK ================= */
+function isOutOfRange(value, normalText, gender){
+  if(!value || !normalText) return false;
+
+  const num = parseFloat(value);
+  if(isNaN(num)) return false;
+
+  let rangeText = normalText;
+
+  // Gender-specific normal values
+  if(
+    normalText.toLowerCase().includes("male") ||
+    normalText.toLowerCase().includes("female")
+  ){
+    const lines = normalText.split(/\n|,/);
+    const genderLine = lines.find(l =>
+      l.toLowerCase().includes(gender.toLowerCase())
+    );
+    if(genderLine) rangeText = genderLine;
+  }
+
+  // Extract numeric range (e.g. 14-16)
+  const match = rangeText.match(/([\d.]+)\s*[-–]\s*([\d.]+)/);
+  if(!match) return false;
+
+  const min = parseFloat(match[1]);
+  const max = parseFloat(match[2]);
+
+  return num < min || num > max;
+}
+
+function loadResults(){
+  if (!patient || !patient.id) {
+    return Promise.resolve([]);
+  }
+  return fetch(`${API_BASE_URL}/patient-tests/results/${patient.id}`)
+    .then(res => res.json())
+    .then(list => {
+      results = list || [];
+      localStorage.setItem("patientResults", JSON.stringify(results));
+      return results;
+    })
+    .catch(() => {
+      results = JSON.parse(localStorage.getItem("patientResults") || "[]");
+      return results;
+    });
+}
+
+function loadSelectedTests(){
+  if (!patient || !patient.id) {
+    selectedTestIds = [];
+    return Promise.resolve([]);
+  }
+  return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
+    .then(res => res.json())
+    .then(list => {
+      selectedTestIds = (list || [])
+        .map(x => Number(x.testId))
+        .filter(id => !Number.isNaN(id));
+      return selectedTestIds;
+    })
+    .catch(() => {
+      selectedTestIds = [];
+      return [];
+    });
+}
+
+function deriveSelectedFromResults(){
+  return [...new Set(results.map(r => Number(r.testId)))]
+    .filter(id => !Number.isNaN(id));
+}
+
+/* ================= LOAD TEST MASTER ================= */
+Promise.all([loadResults(), loadSelectedTests()])
+  .then(([, selectedIds]) => {
+    let ids = selectedIds && selectedIds.length
+      ? selectedIds
+      : deriveSelectedFromResults();
+
+    if (!ids.length) {
+      document.getElementById("reportBody").innerHTML =
+        `<tr><td colspan="4">No results found</td></tr>`;
+      return;
+    }
+
+    return fetch(API_BASE_URL + "/tests/active")
+    .then(res => res.json())
+    .then(tests => {
+
+      const body = document.getElementById("reportBody");
+      body.innerHTML = "";
+
+      const selectedTests = tests.filter(t => ids.includes(t.id));
+      if (!selectedTests.length) {
+        body.innerHTML =
+          `<tr><td colspan="4">No tests found</td></tr>`;
+        return;
+      }
+
+      // Sort to prefer the latest entry when duplicates exist
+      results.sort((a, b) => (a.id || 0) - (b.id || 0));
+
+      // Group results by testId + subTest (keep latest)
+      const grouped = {};
+      results.forEach(r => {
+        const tid = r.testId;
+        if(!grouped[tid]) grouped[tid] = {};
+        const key = r.subTest || "__single__";
+        grouped[tid][key] = r;
+      });
+
+      selectedTests.forEach(test => {
+        const itemMap = grouped[test.id] || {};
+
+        /* ================= DIFFERENTIAL COUNT ================= */
+        if(test.units.length > 1){
+
+          body.innerHTML += `
+            <tr>
+              <td colspan="4"><b>${test.testName}</b></td>
+            </tr>
+          `;
+
+          test.units.forEach((u, index) => {
+            const item = itemMap[u.unit];
+
+            const normalText =
+              test.normalValues[index]?.normalValue || "";
+            const resultValue = item?.resultValue || "";
+            const displayValue = resultValue ? `${resultValue} %` : "";
+
+            const out = isOutOfRange(
+              resultValue,
+              normalText,
+              patient.gender
+            );
+
+          body.innerHTML += `
+            <tr>
+              <td style="padding-left:20px">${u.unit}</td>
+              <td style="color:${out ? "red" : "black"}">
+                ${displayValue}
+              </td>
+              <td>%</td>
+              <td>${normalText}</td>
+            </tr>
+          `;
+        });
+
+      }
+
+        /* ================= SINGLE VALUE TEST ================= */
+        else{
+
+          const item = itemMap["__single__"];
+          const normalText =
+            (test.normalValues || [])
+              .map(n => n.normalValue)
+              .join("<br>");
+          const resultValue = item?.resultValue || "";
+
+        const out = isOutOfRange(
+          resultValue,
+          normalText,
+          patient.gender
+        );
+
+        body.innerHTML += `
+          <tr>
+            <td><b>${test.testName}</b></td>
+            <td style="color:${out ? "red" : "black"}">
+              ${resultValue}
+            </td>
+            <td>${test.units[0]?.unit || ""}</td>
+            <td>${normalText}</td>
+          </tr>
+        `;
+      }
+
+      });
+    });
+  });
+
+/* ================= ACTIONS ================= */
+function goPatients(){
+  parent.loadPage("home/sub-tasks/2-patient.html");
+}
+
+function downloadPDF(){
+  window.print(); // browser save as PDF
+}
+
+function shareWhatsApp(){
+  let mobile = (patient.mobile || "").replace(/\D/g, "");
+
+  if(!mobile){
+    alert("Patient mobile number not available");
+    return;
+  }
+
+  if(!mobile.startsWith("91")){
+    mobile = "91" + mobile;
+  }
+
+  const text =
+`Sai Sree Swetha Diagnostics
+
+Patient: ${patient.name}
+Date: ${patient.visitDate}
+
+Please collect your report from the lab.`;
+
+  window.open(
+    `https://wa.me/${mobile}?text=${encodeURIComponent(text)}`,
+    "_blank"
+  );
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tests</title>
+
+<style>
+body{
+  font-family:Poppins,Arial;
+  background:#ecf0f3;
+  padding:20px;
+}
+
+/* ===== NEOMORPHIC ===== */
+.neo{
+  background:#ecf0f3;
+  border-radius:16px;
+  box-shadow:8px 8px 16px #c5c9cc,
+             -8px -8px 16px #ffffff;
+}
+.neo-btn{
+  padding:10px 18px;
+  border:none;
+  border-radius:14px;
+  font-weight:600;
+  cursor:pointer;
+}
+.neo-btn:active{
+  box-shadow:inset 4px 4px 6px #c5c9cc,
+             inset -4px -4px 6px #ffffff;
+}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:20px;
+}
+
+/* TABS */
+.tabs{
+  display:flex;
+  gap:12px;
+  margin-bottom:20px;
+}
+.tabs button{
+  padding:8px 18px;
+  border:none;
+  border-radius:20px;
+  cursor:pointer;
+}
+.tabs .active{
+  color:#3C91E6;
+  box-shadow:inset 4px 4px 6px #c5c9cc,
+             inset -4px -4px 6px #ffffff;
+}
+
+/* TABLE */
+.table-wrap{
+  padding:20px;
+  max-height:calc(100vh - 220px);
+  overflow:auto;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:14px;
+  border-bottom:1px solid #ddd;
+}
+.normal{
+  font-size:13px;
+  white-space:pre-line;
+}
+
+/* MENU */
+.menu{position:relative}
+.menu-btn{cursor:pointer;font-size:20px}
+.menu-list{
+  display:none;
+  position:absolute;
+  right:0;
+  background:#ecf0f3;
+  border-radius:14px;
+  box-shadow:6px 6px 12px #c5c9cc,
+             -6px -6px 12px #ffffff;
+  z-index:10;
+}
+.menu-list div{
+  padding:10px 16px;
+  cursor:pointer;
+}
+.menu-list div:hover{background:#dde1e4}
+
+
+/* MODAL */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  justify-content:center;
+  align-items:center;
+}
+.modal-card{
+  width:560px;
+  max-height:85vh;
+  overflow:auto;
+  padding:22px;
+  border-radius:22px;
+}
+.modal-card input,
+.modal-card textarea{
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  border:none;
+  border-radius:12px;
+  background:#ecf0f3;
+  box-shadow:inset 5px 5px 8px #c5c9cc,
+             inset -5px -5px 8px #ffffff;
+}
+.inline{display:flex;gap:8px;align-items:center}
+.actions{display:flex;gap:10px}
+/* ===== TOGGLE SWITCH ===== */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #3C91E6;
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Tests</h2>
+  <div>
+    <button class="neo neo-btn" onclick="location.href='test/new-tests.html'">➕ New Test</button>
+    <button class="neo neo-btn" onclick="location.href='test/new-group.html'">➕ New Group</button>
+    <button class="neo neo-btn" onclick="location.href='test/arrange-tests.html'">
+      🧩 Arrange Tests
+    </button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="neo active" onclick="setMode('all',this)">ALL</button>
+  <button class="neo" onclick="setMode('single',this)">SINGLE</button>
+  <button class="neo" onclick="setMode('group',this)">GROUP</button>
+</div>
+
+<div class="neo table-wrap">
+<table>
+<thead>
+<tr>
+  <th>SNO</th>
+  <th>NAME</th>
+  <th>CATEGORY</th>
+  <th>SHORTCUT</th>
+  <th>NORMAL VALUES</th>
+  <th>COST</th>
+  <th>ACTIVE</th>
+  <th>OPTION</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+
+<!-- ===== SINGLE TEST EDIT MODAL ===== -->
+<div class="modal" id="testModal">
+  <div class="neo modal-card">
+    <h3>Edit Test</h3>
+
+    <input id="tName" placeholder="Test Name">
+    <input id="tShortcut" placeholder="Shortcut">
+    <input id="tCategory" placeholder="Category">
+    <input id="tCost" type="number" placeholder="Cost">
+
+    <h4>Normal Values</h4>
+    <div id="nBox"></div>
+    <button class="neo neo-btn" onclick="addNormal()">+ Normal</button>
+
+    <div class="actions">
+      <button class="neo neo-btn" onclick="saveTest()">Save</button>
+      <button class="neo neo-btn" onclick="closeTest()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GROUP EDIT MODAL (NEW, FIXED) ===== -->
+<div class="modal" id="groupModal">
+  <div class="neo modal-card">
+    <h3>Edit Group</h3>
+
+    <input id="gName" placeholder="Group Name">
+    <input id="gShortcut" placeholder="Shortcut">
+    <input id="gCost" type="number" placeholder="Cost">
+
+    <h4>Select Tests</h4>
+    <div id="groupTests"></div>
+
+    <div class="actions">
+      <button class="neo neo-btn" onclick="saveGroup()">Save</button>
+      <button class="neo neo-btn" onclick="closeGroup()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../api.js"></script>
+<script>
+let tests=[], groups=[], mode="all";
+let normalIdCounter = 0;
+let editTest=null, editGroup=null;
+
+/* LOAD */
+Promise.all([
+fetch(API_BASE_URL + "/tests").then(r=>r.json()),
+ fetch(API_BASE_URL + "/groups").then(r=>r.json())
+]).then(([t,g])=>{
+ tests=t;
+ groups=g;
+ render();
+});
+
+/* TABS */
+function setMode(m,b){
+ mode=m;
+ document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active");
+ render();
+}
+
+/* MENU */
+function toggleMenu(btn){
+ document.querySelectorAll(".menu-list").forEach(m=>m.style.display="none");
+ btn.nextElementSibling.style.display="block";
+}
+
+function renderNormalValues(test){
+ return (test.normalValues || [])
+  .map(n => (n.normalValue || "").trim())
+  .filter(Boolean)
+  .join("\n");
+}
+
+/* RENDER */
+function render(){
+ tbody.innerHTML="";
+ let i=1;
+
+ if(mode!=="group"){
+  tests.forEach(t=>{
+   tbody.innerHTML+=`
+   <tr>
+    <td>${i++}</td>
+    <td>${t.testName}</td>
+    <td>${t.category}</td>
+    <td>${t.shortcut}</td>
+    <td class="normal">${renderNormalValues(t)}</td>
+    <td>₹${t.cost}</td>
+      <td>
+         <label class="switch">
+           <input type="checkbox"
+           id="active-test-${t.id}"
+           name="active-test-${t.id}"
+           ${t.active ? "checked" : ""}
+           onchange="toggleActive(${t.id}, this.checked)">
+            <span class="slider"></span>
+         </label>
+      </td>
+      <td>
+     <div class="menu">
+      <span class="menu-btn" onclick="toggleMenu(this)">⋮</span>
+      <div class="menu-list">
+       <div onclick='openTest(${JSON.stringify(t)})'>Edit</div>
+      ${t.used ? "" : `<div onclick='deleteTest(${t.id})'>Delete</div>`}      </div>
+     </div>
+    </td>
+   </tr>`;
+  });
+ }
+
+ if(mode!=="single"){
+  groups.forEach(g=>{
+   tbody.innerHTML+=`
+   <tr>
+    <td>${i++}</td>
+    <td>${g.groupName}</td>
+    <td>GROUP</td>
+    <td>${g.shortcut}</td>
+    <td>—</td>
+    <td>₹${g.cost}</td>
+
+    <!-- ✅ ACTIVE COLUMN (groups don't have active toggle) -->
+    <td>—</td>
+
+    <td>
+     <div class="menu">
+      <span class="menu-btn" onclick="toggleMenu(this)">⋮</span>
+      <div class="menu-list">
+       <div onclick='openGroup(${JSON.stringify(g)})'>Edit</div>
+       <div onclick='deleteGroup(${g.id})'>Delete</div>
+      </div>
+     </div>
+    </td>
+   </tr>`;
+  });
+}
+}
+
+/* ===== SINGLE TEST ===== */
+function openTest(t){
+ editTest=t;
+ tName.value=t.testName;
+ tShortcut.value=t.shortcut;
+ tCategory.value=t.category;
+ tCost.value=t.cost;
+ nBox.innerHTML="";
+ normalIdCounter = 0;
+ (t.normalValues||[]).forEach(n=>{
+  const normalId = `normal-${t.id}-${normalIdCounter++}`;
+  nBox.innerHTML+=`<div class="inline"><textarea id="${normalId}" name="${normalId}">${n.normalValue}</textarea></div>`;
+ });
+ testModal.style.display="flex";
+}
+function addNormal(){
+  const normalId = `normal-${editTest ? editTest.id : "new"}-${normalIdCounter++}`;
+  nBox.innerHTML+=`<textarea id="${normalId}" name="${normalId}"></textarea>`;
+}
+function saveTest(){
+ fetch(API_BASE_URL + "/tests/" + editTest.id,{
+  method:"PUT",
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({
+    testName:tName.value,
+    shortcut:tShortcut.value,
+    category:tCategory.value,
+    cost:+tCost.value,
+    normalValues:[...nBox.querySelectorAll("textarea")].map(t=>({normalValue:t.value}))
+  })
+ }).then(()=>location.reload());
+}
+function closeTest(){testModal.style.display="none"}
+
+/* ===== GROUP EDIT (MODAL, NO REDIRECT) ===== */
+function openGroup(g){
+ editGroup=g;
+ gName.value=g.groupName;
+ gShortcut.value=g.shortcut;
+ gCost.value=g.cost;
+
+ fetch(API_BASE_URL + "/groups/" + g.id)
+ .then(r=>r.json())
+ .then(d=>{
+  groupTests.innerHTML="";
+  tests.forEach(t=>{
+   groupTests.innerHTML+=`
+    <div class="inline neo" style="padding:8px">
+      <input type="checkbox" id="group-test-${g.id}-${t.id}" name="group-test-${g.id}-${t.id}" value="${t.id}"
+        ${(d.testIds||[]).includes(t.id)?"checked":""}>
+      ${t.testName} (${t.shortcut})
+    </div>`;
+  });
+  groupModal.style.display="flex";
+ });
+}
+function saveGroup(){
+ const ids=[...groupTests.querySelectorAll("input:checked")].map(i=>+i.value);
+ fetch(API_BASE_URL + "/groups/" + editGroup.id,{
+  method:"PUT",
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({
+   groupName:gName.value,
+   shortcut:gShortcut.value,
+   cost:+gCost.value,
+   testIds:ids
+  })
+ }).then(()=>location.reload());
+}
+function closeGroup(){groupModal.style.display="none"}
+
+/* DELETE */
+function deleteTest(id){
+  if(!confirm("Delete test?")) return;
+
+  fetch(API_BASE_URL + "/tests/" + id,{
+    method:"DELETE"
+  })
+  .then(res=>{
+    if(!res.ok){
+      return res.text().then(msg=>alert(msg));
+    }
+    location.reload();
+  })
+  .catch(()=>{
+    alert("Server error");
+  });
+}
+function deleteGroup(id){
+ if(confirm("Delete group?"))
+  fetch(API_BASE_URL + "/groups/" + id,{method:"DELETE"})
+   .then(()=>location.reload());
+}
+/* TOGGLE ACTIVE */
+function toggleActive(id, state){
+  fetch(`${API_BASE_URL}/tests/${id}/active`,{
+    method:"PUT",
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ active: state })
+  })
+  .then(res=>{
+    if(!res.ok){
+      alert("Failed to update test status");
+      location.reload(); // revert UI
+    }
+  })
+  .catch(()=>{
+    alert("Server error");
+    location.reload();
+  });
+}
+</script>
+
+
+</body>
+</html>

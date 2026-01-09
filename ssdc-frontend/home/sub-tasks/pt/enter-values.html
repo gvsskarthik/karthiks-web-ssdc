@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enter Test Results</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Poppins,Arial;
+  background:#ecf0f3;
+}
+
+.neo-card{
+  max-width:1100px;
+  margin:auto;
+  padding:25px;
+  border-radius:24px;
+  background:#ecf0f3;
+  box-shadow:10px 10px 20px #c5c9cc,
+             -10px -10px 20px #ffffff;
+}
+
+.patient-box{
+  border:2px solid #000;
+  padding:14px 18px;
+  margin-bottom:25px;
+  font-size:14px;
+}
+
+.p-row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.p-row.single{justify-content:flex-start}
+
+.label{font-weight:700}
+.value{margin-left:6px}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+}
+th,td{
+  padding:10px;
+  border-bottom:1px solid #ccc;
+}
+th{font-size:13px;color:#555}
+
+.result-input{
+  width:100%;
+  padding:8px;
+  border:none;
+  border-radius:10px;
+  background:#ecf0f3;
+  box-shadow:inset 5px 5px 8px #c5c9cc,
+             inset -5px -5px 8px #ffffff;
+}
+
+.normal{
+  font-size:12px;
+  white-space:pre-line;
+}
+
+.actions{
+  display:flex;
+  gap:12px;
+  margin-top:25px;
+}
+.neo-btn{
+  flex:1;
+  padding:14px;
+  border:none;
+  border-radius:18px;
+  background:#ecf0f3;
+  box-shadow:6px 6px 12px #c5c9cc,
+             -6px -6px 12px #ffffff;
+  font-weight:600;
+  cursor:pointer;
+}
+.neo-btn:active{
+  box-shadow:inset 6px 6px 12px #c5c9cc,
+             inset -6px -6px 12px #ffffff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="neo-card">
+
+<h2>Enter Test Results</h2>
+
+<!-- ================= PATIENT ================= -->
+<div class="patient-box">
+  <div class="p-row">
+    <div><span class="label">PATIENT NAME</span> : <span id="pName"></span></div>
+    <div><span class="label">DATE</span> : <span id="pDate"></span></div>
+  </div>
+  <div class="p-row">
+    <div><span class="label">ADDRESS</span> : <span id="pAddress"></span></div>
+    <div><span class="label">AGE / SEX</span> : <span id="pAgeSex"></span></div>
+  </div>
+  <div class="p-row single">
+    <div><span class="label">REF BY Dr.</span> : <span id="pDoctor"></span></div>
+  </div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<table>
+<thead>
+<tr>
+  <th>Test Name</th>
+  <th>Result</th>
+  <th>Unit</th>
+  <th>Normal Values</th>
+</tr>
+</thead>
+<tbody id="resultBody"></tbody>
+</table>
+
+<div class="actions">
+  <button class="neo-btn" onclick="saveOnly()">SAVE</button>
+  <button class="neo-btn" onclick="saveAndPrint()">SAVE & PRINT</button>
+</div>
+
+</div>
+
+<script src="../../../api.js"></script>
+<script>
+/* ================= LOAD SAVED RESULTS (LOCAL) ================= */
+let savedResults = [];
+
+/* ================= LOAD PATIENT ================= */
+const patient =
+  JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
+if (!patient || !patient.id) {
+  alert("Patient ID missing. Please open patient from Patient / Reports page.");
+  throw new Error("Patient ID missing");
+}
+
+/* ================= SHOW PATIENT ================= */
+document.getElementById("pName").innerText = patient.name || "";
+document.getElementById("pAddress").innerText = patient.address || "";
+document.getElementById("pAgeSex").innerText =
+  (patient.age || "") + " / " + (patient.gender || "");
+document.getElementById("pDoctor").innerText = patient.doctor || "";
+document.getElementById("pDate").innerText =
+  patient.visitDate || new Date().toLocaleDateString();
+
+/* ================= LOAD SELECTED TEST IDS ================= */
+function loadSelectedIds(){
+  const local =
+    JSON.parse(localStorage.getItem("selectedTests") || "[]");
+  if (local.length) {
+    saveSelectedTestsToDb(local);
+    return Promise.resolve(local);
+  }
+
+  return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
+    .then(res => res.json())
+    .then(list => {
+      const ids = (list || []).map(x => x.testId);
+      localStorage.setItem("selectedTests", JSON.stringify(ids));
+      return ids;
+    });
+}
+
+/* ================= LOAD SAVED RESULTS (DB) ================= */
+function loadSavedResults(){
+  return fetch(`${API_BASE_URL}/patient-tests/results/${patient.id}`)
+    .then(res => res.json())
+    .then(list => {
+      const incoming = list || [];
+      savedResults = normalizeResults(incoming);
+      if (savedResults.length) {
+        localStorage.setItem("patientResults", JSON.stringify(savedResults));
+      }
+      return savedResults;
+    })
+    .catch(() => {
+      const cached =
+        JSON.parse(localStorage.getItem("patientResults") || "[]");
+      savedResults = normalizeResults(cached);
+      return savedResults;
+    });
+}
+
+function saveSelectedTestsToDb(selectedIds){
+  if (!selectedIds.length) {
+    return Promise.resolve();
+  }
+
+  const payload = selectedIds.map(id => ({
+    patientId: patient.id,
+    testId: Number(id)
+  }));
+
+  return fetch(API_BASE_URL + "/patient-tests/select", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
+}
+
+function deriveSelectedFromResults(){
+  return [...new Set(savedResults.map(r => r.testId))];
+}
+
+function normalizeResults(list){
+  const ordered = [...(list || [])].sort((a, b) => (a.id || 0) - (b.id || 0));
+  const map = {};
+  ordered.forEach(r => {
+    const key = `${r.testId}::${r.subTest || ""}`;
+    map[key] = r;
+  });
+  return Object.values(map);
+}
+
+loadSavedResults()
+  .then(() => loadSelectedIds())
+  .then(selectedIds => {
+    let ids = selectedIds;
+    if (!ids.length && savedResults.length) {
+      ids = deriveSelectedFromResults();
+      localStorage.setItem("selectedTests", JSON.stringify(ids));
+    }
+    if (!ids.length) {
+      alert("No tests selected");
+      return;
+    }
+
+    /* ================= LOAD TEST MASTER ================= */
+    return fetch(API_BASE_URL + "/tests/active")
+      .then(res => res.json())
+      .then(allTests => {
+        const selectedTests =
+          allTests.filter(t => ids.includes(t.id));
+        renderTests(selectedTests);
+      });
+  });
+
+/* ================= RENDER TESTS ================= */
+function renderTests(tests) {
+  const body = document.getElementById("resultBody");
+  body.innerHTML = "";
+
+  tests.forEach(test => {
+
+    /* ===== SINGLE VALUE TEST ===== */
+    if (test.units.length <= 1) {
+
+      const saved = savedResults.find(
+        r => r.testId == test.id && !r.subTest
+      );
+
+      body.innerHTML += `
+        <tr>
+          <td><b>${test.testName}</b></td>
+          <td>
+            <input class="result-input"
+                   id="result-${test.id}"
+                   name="result-${test.id}"
+                   data-testid="${test.id}"
+                   value="${saved?.resultValue || saved?.value || ""}">
+          </td>
+          <td>${test.units[0]?.unit || ""}</td>
+          <td class="normal">
+            ${(test.normalValues || [])
+              .map(n => n.normalValue)
+              .join("<br>")}
+          </td>
+        </tr>`;
+    }
+
+    /* ===== MULTI VALUE TEST (DC) ===== */
+    else {
+      body.innerHTML +=
+        `<tr><td colspan="4"><b>${test.testName}</b></td></tr>`;
+
+      test.units.forEach((u, i) => {
+
+        const saved = savedResults.find(
+          r => r.testId == test.id && r.subTest === u.unit
+        );
+
+        body.innerHTML += `
+          <tr>
+            <td style="padding-left:25px">${u.unit}</td>
+            <td>
+             <input class="result-input"
+                     id="result-${test.id}-${i}"
+                     name="result-${test.id}-${i}"
+                     data-testid="${test.id}"
+                     data-sub="${u.unit}"
+                     value="${saved?.resultValue || saved?.value || ""}">
+            </td>
+            <td>%</td>
+            <td class="normal">
+              ${test.normalValues[i]?.normalValue || ""}
+            </td>
+          </tr>`;
+      });
+    }
+  });
+}
+
+/* ================= COLLECT RESULTS ================= */
+function collectResults() {
+  return [...document.querySelectorAll(".result-input")]
+    .filter(i => i.value.trim() !== "")
+    .map(i => ({
+      patientId: patient.id,
+      testId: Number(i.dataset.testid),
+      subTest: i.dataset.sub || null,
+      resultValue: i.value
+    }));
+}
+
+/* ================= SAVE ONLY ================= */
+function saveOnly() {
+
+  const results = collectResults();
+
+  const finishSave = () => {
+    localStorage.setItem("patientResults", JSON.stringify(results));
+    location.href = "reports.html";
+  };
+
+  if (results.length === 0) {
+    finishSave();
+    return;
+  }
+
+  fetch(API_BASE_URL + "/patient-tests/results", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(results)
+  })
+  .then(() => finishSave())
+  .catch(err => {
+    console.error(err);
+    alert("Failed to save results");
+  });
+}
+
+/* ================= SAVE & PRINT ================= */
+function saveAndPrint() {
+  saveOnly();
+  setTimeout(() => window.print(), 300);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title> SSDC Login</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #ecf0f3;
+    }
+
+    .box {
+      margin: 80px auto;
+      padding: 50px 40px;
+      width: 340px;
+      border-radius: 35px;
+      background-color: #ecf0f3;
+      box-shadow: -8px -8px 8px #feffff,
+      8px 8px 8px #161b1d2f;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 15px;
+      color: #858686;
+    }
+
+    .input-box {
+      width: 100%;
+      height: 35px;
+      padding-left: 20px;
+      border: none;
+      margin-top: 10px;
+      background-color: #ecf0f3;
+      outline: none;
+      border-radius: 20px;
+      box-shadow: inset 5px 5px 5px #cbced1,
+      inset -5px -5px 5px #ffffff;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 20px;
+      height: 38px;
+      border: none;
+      border-radius: 20px;
+      background-color: #727171;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #535658;
+    }
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    .toggle-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>SSDC LABS</h1>
+
+  <!-- LOGIN FORM -->
+  <form id="loginForm">
+    <label for="loginUser">Username</label>
+    <input type="text" id="loginUser" class="input-box" autocomplete="username" required>
+
+    <br><br>
+
+    <label for="loginPass">Password</label>
+    <input type="password" id="loginPass" class="input-box" autocomplete="current-password" required>
+
+    <button class="btn" type="submit">Sign In</button>
+    <button type="button" class="toggle-btn" onclick="showSignup()">
+      New user? Sign Up
+    </button>
+  </form>
+
+  <!-- SIGNUP FORM -->
+  <form id="signupForm" style="display:none;">
+    <label for="signupUser">Username</label>
+    <input type="text" id="signupUser" class="input-box" autocomplete="username" required>
+
+    <br><br>
+
+    <label for="signupEmail">Email</label>
+    <input type="email" id="signupEmail" class="input-box" autocomplete="email" required>
+
+    <br><br>
+
+    <label for="signupPass">Password</label>
+    <input type="password" id="signupPass" class="input-box" autocomplete="new-password" required>
+
+    <button class="btn" type="submit">Sign Up</button>
+    <button type="button" class="toggle-btn" onclick="showLogin()">
+      Already have an account? Sign In
+    </button>
+  </form>
+</div>
+
+<script>
+  function showSignup() {
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("signupForm").style.display = "block";
+  }
+
+  function showLogin() {
+    document.getElementById("signupForm").style.display = "none";
+    document.getElementById("loginForm").style.display = "block";
+  }
+
+  // TEMP login logic
+  document.getElementById("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if (
+            document.getElementById("loginUser").value === "admin" &&
+            document.getElementById("loginPass").value === "1234"
+    ) {
+      window.location.href = "dashboard.html";
+    } else {
+      alert("Invalid login");
+    }
+  });
+
+  // TEMP signup logic
+  document.getElementById("signupForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    alert("Signup successful! Now login.");
+    showLogin();
+  });
+</script>
+
+</body>
+</html>

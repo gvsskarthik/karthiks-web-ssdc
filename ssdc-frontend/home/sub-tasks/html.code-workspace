@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../../opt"
+		},
+		{
+			"path": "../../../../../etc/nginx/sites-available"
+		},
+		{
+			"path": "../../../../../etc/systemd/system"
+		}
+	],
+	"settings": {}
+}
