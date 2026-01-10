@@ -17,6 +17,11 @@ body{
   align-items:center;
   margin-bottom:12px;
 }
+.header h1{
+  font-size:36px;
+  font-weight:600;
+  margin:0;
+}
 .top-bar{
   display:flex;
   gap:12px;
@@ -84,7 +89,7 @@ tr{ border-bottom:1px solid #ddd; }
 <body>
 
 <div class="header">
-  <h2>Patients</h2>
+  <h1>Patient</h1>
   <button class="neo-btn" onclick="location.href='pt/new.html'">NEW</button>
 </div>
 
@@ -133,6 +138,7 @@ const selectedCount = document.getElementById("selectedCount");
 
 let allPatients = [];
 let selectMode = false;
+let isAutoDate = true;
 
 function getLocalDateInputValue(date = new Date()) {
   const year = date.getFullYear();
@@ -144,7 +150,33 @@ function getLocalDateInputValue(date = new Date()) {
 datePicker.value = getLocalDateInputValue();
 loadByDate(datePicker.value);
 
-datePicker.onchange = () => loadByDate(datePicker.value);
+function setDateToToday(){
+  const today = getLocalDateInputValue();
+  if (datePicker.value !== today) {
+    datePicker.value = today;
+    loadByDate(today);
+  }
+}
+
+function scheduleMidnightUpdate(){
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0);
+  const delay = Math.max(0, nextMidnight.getTime() - now.getTime() + 1000);
+  setTimeout(() => {
+    if (isAutoDate) {
+      setDateToToday();
+    }
+    scheduleMidnightUpdate();
+  }, delay);
+}
+
+datePicker.onchange = () => {
+  isAutoDate = datePicker.value === getLocalDateInputValue();
+  loadByDate(datePicker.value);
+};
+
+scheduleMidnightUpdate();
 
 function loadByDate(date){
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)

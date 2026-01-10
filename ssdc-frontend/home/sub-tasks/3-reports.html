@@ -20,7 +20,11 @@ body{
   align-items:center;
   margin-bottom:20px;
 }
-.head h1{margin:0}
+.head h1{
+  margin:0;
+  font-size:36px;
+  font-weight:600;
+}
 .date-box{
   display:flex;
   align-items:center;
@@ -99,15 +103,45 @@ a{
 <script>
 const reportDate = document.getElementById("reportDate");
 const table = document.getElementById("reportTable");
+let isAutoDate = true;
 
-const today = new Date().toISOString().split("T")[0];
-reportDate.value = today;
+function getLocalDateInputValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-loadByDate(today);
+function setDateToToday(){
+  const today = getLocalDateInputValue();
+  if (reportDate.value !== today) {
+    reportDate.value = today;
+    loadByDate(today);
+  }
+}
 
-reportDate.addEventListener("change",()=>{
+function scheduleMidnightUpdate(){
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0);
+  const delay = Math.max(0, nextMidnight.getTime() - now.getTime() + 1000);
+  setTimeout(() => {
+    if (isAutoDate) {
+      setDateToToday();
+    }
+    scheduleMidnightUpdate();
+  }, delay);
+}
+
+reportDate.value = getLocalDateInputValue();
+loadByDate(reportDate.value);
+
+reportDate.addEventListener("change", () => {
+  isAutoDate = reportDate.value === getLocalDateInputValue();
   loadByDate(reportDate.value);
 });
+
+scheduleMidnightUpdate();
 
 function loadByDate(date){
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)
