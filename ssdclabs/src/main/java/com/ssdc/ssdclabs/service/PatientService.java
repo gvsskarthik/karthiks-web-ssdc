@@ -103,8 +103,16 @@ public class PatientService {
             return null;
         }
         String trimmed = doctorName.trim();
-        if (trimmed.isEmpty() || "SELF".equalsIgnoreCase(trimmed)) {
+        if (trimmed.isEmpty()) {
             return null;
+        }
+        if ("SELF".equalsIgnoreCase(trimmed)) {
+            return doctorRepo.findFirstByNameIgnoreCase(trimmed)
+                .orElseGet(() -> {
+                    Doctor doctor = new Doctor();
+                    doctor.setName("SELF");
+                    return doctorRepo.save(doctor);
+                });
         }
         return doctorRepo.findFirstByNameIgnoreCase(trimmed)
             .orElseGet(() -> {
