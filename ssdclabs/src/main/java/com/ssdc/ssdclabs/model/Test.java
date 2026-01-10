@@ -16,6 +16,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(
     name = "tests",
@@ -71,7 +72,9 @@ public class Test {
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
 
+    @SuppressWarnings("unused")
     public Integer getDisplayOrder() { return displayOrder; }
+    @SuppressWarnings("unused")
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
@@ -82,6 +85,7 @@ public class Test {
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
 
+    @SuppressWarnings("unused")
     public List<TestParameter> getParameters() { return parameters; }
     public void setParameters(List<TestParameter> parameters) {
         this.parameters = parameters;

@@ -91,6 +91,18 @@ label {
   font-weight: 600;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 input {
   width: 100%;
   padding: 10px;
@@ -124,6 +136,7 @@ input {
   padding-right: 4px;
 }
 
+/*noinspection CssUnusedSymbol*/
 .test-item,
 .selected-item {
   display: flex;
@@ -160,10 +173,12 @@ input {
   font-size: 13px;
 }
 
+/*noinspection CssUnusedSymbol*/
 .status.error {
   color: var(--error);
 }
 
+/*noinspection CssUnusedSymbol*/
 .error {
   box-shadow: inset 5px 5px 8px var(--shadow-dark),
               inset -5px -5px 8px var(--shadow-light),
@@ -219,6 +234,7 @@ input {
 
     <div class="panel">
       <h3>Select Tests</h3>
+      <label class="visually-hidden" for="search">Search tests</label>
       <input id="search" class="search" placeholder="Search tests">
       <div id="testList" class="test-list muted">Loading tests...</div>
     </div>
@@ -335,30 +351,37 @@ function toggleSelection(id, on) {
 }
 
 async function loadData() {
+  let hasError = false;
   setStatus("Loading tests...");
   try {
     const testRes = await fetch(API_BASE_URL + "/tests/active");
     if (!testRes.ok) {
-      throw new Error("Failed to load tests.");
+      setStatus("Failed to load tests.", "error");
+      testList.textContent = "Unable to load tests.";
+      return;
     }
     tests = await testRes.json();
 
     if (editId) {
       const groupRes = await fetch(API_BASE_URL + "/groups/" + editId);
       if (!groupRes.ok) {
-        throw new Error("Failed to load group.");
+        setStatus("Failed to load group.", "error");
+        hasError = true;
+      } else {
+        const group = await groupRes.json();
+        title.textContent = "Edit Group";
+        groupName.value = group.groupName || "";
+        shortcut.value = group.shortcut || "";
+        cost.value = group.cost == null ? "" : group.cost;
+        selected = new Set(group.testIds || []);
       }
-      const group = await groupRes.json();
-      title.textContent = "Edit Group";
-      groupName.value = group.groupName || "";
-      shortcut.value = group.shortcut || "";
-      cost.value = group.cost == null ? "" : group.cost;
-      selected = new Set(group.testIds || []);
     }
 
     renderTests();
     renderSelected();
-    setStatus("");
+    if (!hasError) {
+      setStatus("");
+    }
   } catch (err) {
     console.error(err);
     setStatus("Failed to load data. Check backend connection.", "error");

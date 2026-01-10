@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(
     name = "test_group_mappings",
@@ -42,6 +43,7 @@ public class TestGroupMapping {
     public Test getTest() { return test; }
     public void setTest(Test test) { this.test = test; }
 
+    @SuppressWarnings("unused")
     public Integer getDisplayOrder() { return displayOrder; }
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;

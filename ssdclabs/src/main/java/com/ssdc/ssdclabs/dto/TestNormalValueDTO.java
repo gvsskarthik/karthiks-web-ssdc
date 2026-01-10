@@ -4,6 +4,7 @@ public class TestNormalValueDTO {
 
     public String normalValue;
 
+    @SuppressWarnings("unused")
     public TestNormalValueDTO() {}
 
     public TestNormalValueDTO(String normalValue) {

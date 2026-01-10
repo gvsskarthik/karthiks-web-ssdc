@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "test_parameters")
 public class TestParameter {
@@ -67,6 +68,7 @@ public class TestParameter {
     public ValueType getValueType() { return valueType; }
     public void setValueType(ValueType valueType) { this.valueType = valueType; }
 
+    @SuppressWarnings("unused")
     public Integer getDisplayOrder() { return displayOrder; }
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;

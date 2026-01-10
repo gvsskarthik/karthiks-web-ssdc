@@ -10,6 +10,7 @@ body{
   background:#ecf0f3;
   padding:20px;
 }
+/*noinspection CssUnusedSymbol*/
 .card{
   background:#ecf0f3;
   padding:20px;
@@ -27,6 +28,7 @@ h2,h3{margin:10px 0}
 }
 .indent-1{margin-left:20px}
 .indent-2{margin-left:40px}
+/*noinspection CssUnusedSymbol*/
 .indent-3{margin-left:60px}
 .arrow{
   border:none;
@@ -42,7 +44,6 @@ h2,h3{margin:10px 0}
              inset -3px -3px 6px #ffffff;
 }
 .title{font-weight:600}
-.section{margin-top:10px}
 </style>
 </head>
 
@@ -56,8 +57,8 @@ h2,h3{margin:10px 0}
 <script src="../../../api.js"></script>
 <script>
 fetch(API_BASE_URL + "/tests/hierarchy")
-.then(r=>r.json())
-.then(render);
+  .then(r => r.json())
+  .then(data => render(data));
 
 function arrow(type,id,dir){
   fetch(`${API_BASE_URL}/order/${type}/${id}/${dir}`,{
@@ -65,11 +66,16 @@ function arrow(type,id,dir){
   }).then(()=>location.reload());
 }
 
+/**
+ * @param {{[category: string]: {groups?: Array<{id:number,name:string,tests?: Array<{id:number,name:string}>}>, singleTests?: Array<{id:number,name:string}>}}} data
+ */
 function render(data){
   const c=document.getElementById("container");
   c.innerHTML="";
 
   Object.entries(data).forEach(([category,block])=>{
+    const groups = Array.isArray(block.groups) ? block.groups : [];
+    const singleTests = Array.isArray(block.singleTests) ? block.singleTests : [];
     const card=document.createElement("div");
     card.className="card";
 
@@ -77,17 +83,18 @@ function render(data){
                     <div class="indent-1 title">Hemogram</div>`;
 
     /* GROUPS */
-    block.groups.forEach(g=>{
+    groups.forEach(group=>{
       const gRow=document.createElement("div");
       gRow.className="row indent-2";
       gRow.innerHTML=`
-        <button class="arrow" onclick="arrow('group',${g.id},'up')">⬆️</button>
-        <button class="arrow" onclick="arrow('group',${g.id},'down')">⬇️</button>
-        <span class="title">${g.name}</span>
+        <button class="arrow" onclick="arrow('group',${group.id},'up')">⬆️</button>
+        <button class="arrow" onclick="arrow('group',${group.id},'down')">⬇️</button>
+        <span class="title">${group.name}</span>
       `;
       card.appendChild(gRow);
 
-      g.tests.forEach(t=>{
+      const tests = Array.isArray(group.tests) ? group.tests : [];
+      tests.forEach(t=>{
         const tRow=document.createElement("div");
         tRow.className="row indent-3";
         tRow.innerHTML=`
@@ -100,7 +107,7 @@ function render(data){
     });
 
     /* SINGLE TESTS */
-    if(block.singleTests.length){
+    if(singleTests.length){
       card.innerHTML+=`
         <div class="row indent-2">
           <button class="arrow" disabled>⬆️</button>
@@ -109,7 +116,7 @@ function render(data){
         </div>`;
     }
 
-    block.singleTests.forEach(t=>{
+    singleTests.forEach(t=>{
       const s=document.createElement("div");
       s.className="row indent-3";
       s.innerHTML=`
