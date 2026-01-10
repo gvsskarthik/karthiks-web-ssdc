@@ -90,6 +90,18 @@ body.dark {
 	pointer-events: unset;
 }
 
+ main .head-title .right {
+	margin-left: auto;
+	text-align: right;
+}
+
+ main .head-title .right .date-time {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--dark);
+	font-variant-numeric: tabular-nums;
+}
+
  main .box-info {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

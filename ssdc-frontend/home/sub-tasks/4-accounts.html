@@ -219,7 +219,11 @@ async function loadSummary(){
     setSummaryValues(data);
   } catch (err) {
     console.error("Failed to load summary", err);
-    setSummaryMessage("Failed to load");
+    setSummaryValues({
+      totalRevenue: 0,
+      totalCommission: 0,
+      netProfit: 0
+    });
   }
 }
 

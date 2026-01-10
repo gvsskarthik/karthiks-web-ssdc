@@ -35,16 +35,19 @@ public class AccountsService {
     }
 
     public @NonNull AccountsSummaryDTO getSummary() {
-        List<Patient> patients = patientRepo.findAllByOrderByVisitDateDescIdDesc();
+        List<Patient> patients = patientRepo.findAllWithDoctorOrderByVisitDateDescIdDesc();
 
         double totalRevenue = patients.stream()
-            .mapToDouble(Patient::getAmount)
+            .mapToDouble(this::safeAmount)
             .sum();
 
         double totalCommission = patients.stream()
             .mapToDouble(p -> {
                 String doctorName = normalizeDoctorName(resolveDoctorName(p));
-                return calculateCommission(p.getAmount(), commissionRateFor(doctorName));
+                return calculateCommission(
+                    safeAmount(p),
+                    commissionRateFor(doctorName)
+                );
             })
             .sum();
 
@@ -119,7 +122,7 @@ public class AccountsService {
 
         List<AccountsDoctorDetailDTO> details = new ArrayList<>();
         for (Patient patient : patients) {
-            double bill = patient.getAmount();
+            double bill = safeAmount(patient);
             double commission = calculateCommission(bill, rate);
             String date = patient.getVisitDate() == null
                 ? ""
@@ -161,6 +164,14 @@ public class AccountsService {
 
     private double calculateCommission(double bill, double rate) {
         return bill * (rate / 100.0);
+    }
+
+    private double safeAmount(Patient patient) {
+        if (patient == null) {
+            return 0;
+        }
+        Double amount = patient.getAmount();
+        return amount == null ? 0 : amount;
     }
 
     private Long parseLong(String value) {
