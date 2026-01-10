@@ -2,7 +2,9 @@ package com.ssdc.ssdclabs.service;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -43,10 +45,10 @@ public class AccountsService {
 
         double totalCommission = patients.stream()
             .mapToDouble(p -> {
-                String doctorName = normalizeDoctorName(resolveDoctorName(p));
+                String doctorName = resolveDoctorName(p);
                 return calculateCommission(
                     safeAmount(p),
-                    commissionRateFor(doctorName)
+                    commissionRateFor(p.getDoctor(), doctorName)
                 );
             })
             .sum();
@@ -62,6 +64,12 @@ public class AccountsService {
             patientRepo.findDoctorBillAggregatesOrdered();
 
         List<Doctor> doctors = doctorRepo.findAllByOrderByNameAsc();
+        Map<Long, Doctor> doctorById = new HashMap<>();
+        for (Doctor doctor : doctors) {
+            if (doctor.getId() != null) {
+                doctorById.put(doctor.getId(), doctor);
+            }
+        }
         List<AccountsDoctorDTO> summaries = new ArrayList<>();
         Set<String> addedNames = new HashSet<>();
 
@@ -69,7 +77,8 @@ public class AccountsService {
             Long docId = agg.getDoctorId();
             String name = normalizeDoctorName(agg.getDoctorName());
             String doctorId = docId == null ? "SELF" : String.valueOf(docId);
-            double rate = commissionRateFor(name);
+            Doctor doctor = docId == null ? null : doctorById.get(docId);
+            double rate = commissionRateFor(doctor, name);
             long patientCount =
                 agg.getPatientCount() == null ? 0 : agg.getPatientCount();
             double totalBill =
@@ -92,7 +101,7 @@ public class AccountsService {
             if (addedNames.contains(doctorId)) {
                 continue;
             }
-            double rate = commissionRateFor(name);
+            double rate = commissionRateFor(doc, name);
             summaries.add(new AccountsDoctorDTO(
                 doctorId,
                 name,
@@ -113,7 +122,10 @@ public class AccountsService {
             return new ArrayList<>();
         }
 
-        double rate = commissionRateFor(selection.name());
+        Doctor doctor = selection.id() == null
+            ? null
+            : doctorRepo.findById(selection.id()).orElse(null);
+        double rate = commissionRateFor(doctor, selection.name());
         // Ordered by report date desc, then report id desc.
         List<Patient> patients = selection.id() == null
             ? patientRepo.findByDoctorIsNullOrderByVisitDateDescIdDesc()
@@ -155,9 +167,13 @@ public class AccountsService {
         return "SELF".equalsIgnoreCase(doctorName);
     }
 
-    private double commissionRateFor(String doctorName) {
-        if (isSelfDoctor(doctorName)) {
+    private double commissionRateFor(Doctor doctor, String doctorName) {
+        String normalized = normalizeDoctorName(doctorName);
+        if (isSelfDoctor(normalized)) {
             return 0;
+        }
+        if (doctor != null && doctor.getCommissionRate() != null) {
+            return doctor.getCommissionRate();
         }
         return defaultCommissionRate;
     }
