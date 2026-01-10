@@ -5,7 +5,8 @@ CREATE TABLE doctors (
   name VARCHAR(255),
   specialization VARCHAR(255),
   phone VARCHAR(50),
-  hospital VARCHAR(255)
+  hospital VARCHAR(255),
+  commission_rate DECIMAL(5,2)
 );
 
 CREATE TABLE patients (

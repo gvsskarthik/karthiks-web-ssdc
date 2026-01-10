@@ -19,6 +19,7 @@ public class Doctor {
     private String specialization;
     private String phone;
     private String hospital;
+    private Double commissionRate;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -42,4 +43,11 @@ public class Doctor {
     public String getHospital() { return hospital; }
     @SuppressWarnings("unused")
     public void setHospital(String hospital) { this.hospital = hospital; }
+
+    @SuppressWarnings("unused")
+    public Double getCommissionRate() { return commissionRate; }
+    @SuppressWarnings("unused")
+    public void setCommissionRate(Double commissionRate) {
+        this.commissionRate = commissionRate;
+    }
 }

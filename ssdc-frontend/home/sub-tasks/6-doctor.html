@@ -207,6 +207,11 @@ tr {
         <input type="text" id="editHospital" class="neo-input" required>
       </div>
 
+      <div class="form-group">
+        <label for="editCommissionRate">Share %</label>
+        <input type="number" id="editCommissionRate" class="neo-input" min="0" max="100" step="0.01" inputmode="decimal">
+      </div>
+
       <div class="action-row">
         <button type="button" class="neo-btn secondary" id="cancelEdit">Cancel</button>
         <button type="submit" class="neo-btn">Save</button>
@@ -225,6 +230,7 @@ const editName = document.getElementById("editName");
 const editSpecialization = document.getElementById("editSpecialization");
 const editPhone = document.getElementById("editPhone");
 const editHospital = document.getElementById("editHospital");
+const editCommissionRate = document.getElementById("editCommissionRate");
 const cancelEdit = document.getElementById("cancelEdit");
 
 let doctors = [];
@@ -309,6 +315,8 @@ function openEdit(id) {
   editSpecialization.value = doctor.specialization || "";
   editPhone.value = doctor.phone || "";
   editHospital.value = doctor.hospital || "";
+  editCommissionRate.value =
+    doctor.commissionRate == null ? "" : doctor.commissionRate;
   editModal.style.display = "flex";
 }
 
@@ -351,6 +359,12 @@ editForm.addEventListener("submit", function (e) {
     phone: editPhone.value.trim(),
     hospital: editHospital.value.trim()
   };
+  const commissionRateRaw = editCommissionRate.value.trim();
+  const commissionRate =
+    commissionRateRaw === "" ? null : Number(commissionRateRaw);
+  if (commissionRate !== null && Number.isFinite(commissionRate)) {
+    doctor.commissionRate = commissionRate;
+  }
 
   fetch(API_BASE_URL + "/doctors", {
     method: "POST",
