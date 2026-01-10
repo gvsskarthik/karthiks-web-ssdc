@@ -2,8 +2,11 @@ package com.ssdc.ssdclabs.controller;
 
 import java.util.List;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,5 +35,16 @@ public class DoctorController {
     @GetMapping
     public List<Doctor> getAllDoctors() {
         return doctorService.getAllDoctors();
+    }
+
+    // DELETE doctor
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteDoctor(@PathVariable @NonNull Long id) {
+        try {
+            doctorService.deleteDoctor(id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 }
