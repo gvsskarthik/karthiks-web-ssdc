@@ -30,6 +30,15 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     // Ordered for consistent listings.
     List<Patient> findAllByOrderByVisitDateDescIdDesc();
 
+    // Fetch doctor data to avoid lazy-loading issues in summaries.
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Patient> findAllWithDoctorOrderByVisitDateDescIdDesc();
+
     /* 🔍 Mobile search (PARTIAL match) */
     // Ordered by most recent visit first, then newest id.
     List<Patient> findByMobileContainingOrderByVisitDateDescIdDesc(String mobile);
