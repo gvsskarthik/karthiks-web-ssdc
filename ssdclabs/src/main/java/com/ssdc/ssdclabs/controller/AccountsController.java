@@ -14,7 +14,7 @@ import com.ssdc.ssdclabs.dto.AccountsSummaryDTO;
 import com.ssdc.ssdclabs.service.AccountsService;
 
 @RestController
-@RequestMapping("/api/accounts")
+@RequestMapping("/accounts")
 public class AccountsController {
 
     private final AccountsService accountsService;
