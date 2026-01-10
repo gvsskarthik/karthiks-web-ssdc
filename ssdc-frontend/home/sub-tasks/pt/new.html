@@ -212,7 +212,21 @@ amountInput.addEventListener("input", () => {
 /* LOAD DOCTORS */
 fetch(API_BASE_URL + "/doctors")
 .then(r=>r.json())
-.then(d=>d.forEach(x=>doctor.innerHTML+=`<option>${x.name}</option>`));
+.then(list => {
+  const seen = new Set(["self"]);
+  (list || []).forEach(x => {
+    const name = String(x?.name || "").trim();
+    if (!name) {
+      return;
+    }
+    const key = name.toLowerCase();
+    if (key === "self" || seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    doctor.innerHTML += `<option>${name}</option>`;
+  });
+});
 
 /* LOAD EXISTING PATIENTS (DB SEARCH) */
 applyPatientFilter();
