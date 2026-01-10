@@ -1,5 +1,41 @@
 /* ================= SIDEBAR ACTIVE ================= */
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
+const pageFrame = document.getElementById('page-frame');
+
+const menuByPage = {
+    "home/sub-tasks/1-home.html": "dashboard",
+    "home/sub-tasks/2-patient.html": "patient",
+    "home/sub-tasks/3-reports.html": "reports",
+    "home/sub-tasks/4-accounts.html": "accounts",
+    "home/sub-tasks/5-tests.html": "tests",
+    "home/sub-tasks/6-doctor.html": "doctors",
+    "home/sub-tasks/7-settings.html": "settings"
+};
+
+function normalizePagePath(page) {
+    if (!page) {
+        return "";
+    }
+
+    try {
+        const url = new URL(String(page), window.location.href);
+        return url.pathname.replace(/^\//, "");
+    } catch (error) {
+        return String(page).replace(/^\//, "");
+    }
+}
+
+function inferMenuKey(page) {
+    const normalized = normalizePagePath(page);
+    return normalized ? menuByPage[normalized] || null : null;
+}
+
+function updateMenuForPage(page, menuKey) {
+    const key = menuKey || inferMenuKey(page);
+    if (key) {
+        setActiveMenu(key);
+    }
+}
 
 /* 🔹 Set active menu by key */
 function setActiveMenu(menuKey) {
@@ -45,12 +81,10 @@ switchMode.addEventListener('change', function () {
 
 /* ================= LOAD PAGE INTO IFRAME ================= */
 function loadPage(page, menuKey = null) {
-    const frame = document.getElementById('page-frame');
-    frame.src = page;
-
-    if (menuKey) {
-        setActiveMenu(menuKey);
+    if (pageFrame) {
+        pageFrame.src = page;
     }
+    updateMenuForPage(page, menuKey);
 }
 
 /* ================= AUTO HIDE SIDEBAR ================= */
@@ -68,8 +102,32 @@ window.addEventListener('resize', () => {
 window.setActiveMenu = setActiveMenu;
 window.loadPage = loadPage;
 
+function getFramePagePath() {
+    if (!pageFrame) {
+        return "";
+    }
+
+    try {
+        const href = pageFrame.contentWindow?.location?.href;
+        if (href) {
+            return normalizePagePath(href);
+        }
+    } catch (error) {
+        // Ignore access errors if the iframe isn't ready or is cross-origin.
+    }
+
+    return normalizePagePath(pageFrame.getAttribute("src"));
+}
+
+if (pageFrame) {
+    pageFrame.addEventListener("load", () => {
+        const framePage = getFramePagePath();
+        updateMenuForPage(framePage);
+    });
+}
+
 /* ================= DASHBOARD DATE/TIME ================= */
-const dashboardFrame = document.getElementById('page-frame');
+const dashboardFrame = pageFrame;
 const dashboardDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad2 = (value) => String(value).padStart(2, '0');
 
