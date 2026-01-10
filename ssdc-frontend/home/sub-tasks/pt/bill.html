@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Bill</title>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  font-family:Poppins,Arial;
+  background:#ecf0f3;
+}
+
+.neo-card{
+  max-width:900px;
+  margin:auto;
+  padding:30px;
+  background:#fff;
+  border-radius:10px;
+}
+
+/* HEADER */
+.header{text-align:center;margin-bottom:20px}
+.header h2{margin:0}
+
+/* PATIENT */
+.patient-box{
+  border:1px solid #000;
+  padding:12px;
+  font-size:13px;
+  margin-bottom:20px;
+}
+.row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.label{font-weight:700}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+th,td{
+  border:1px solid #000;
+  padding:6px;
+}
+th{background:#f2f2f2}
+td.amount{text-align:right;width:140px}
+
+/* TOTALS */
+.totals{
+  margin-top:16px;
+  margin-left:auto;
+  max-width:260px;
+  font-size:13px;
+}
+.total-row{
+  display:flex;
+  justify-content:space-between;
+  padding:4px 0;
+}
+.total-row.grand{
+  border-top:1px solid #000;
+  font-weight:700;
+  margin-top:6px;
+  padding-top:8px;
+}
+
+/* BUTTONS */
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:25px;
+}
+.btn{
+  flex:1;
+  padding:12px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  border-radius:6px;
+}
+.back{background:#7f8c8d;color:#fff}
+.print{background:#2980b9;color:#fff}
+
+@media print{
+  body{background:#fff}
+  .actions{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<div class="neo-card" id="bill">
+
+  <div class="header">
+    <h2>SAI SREE SWETHA DIAGNOSTICS</h2>
+    <p><b>BILL / RECEIPT</b></p>
+  </div>
+
+  <!-- PATIENT -->
+  <div class="patient-box">
+    <div class="row">
+      <div><span class="label">PATIENT</span> : <span id="pName"></span></div>
+      <div><span class="label">DATE</span> : <span id="pDate"></span></div>
+    </div>
+    <div class="row">
+      <div><span class="label">ADDRESS</span> : <span id="pAddress"></span></div>
+      <div><span class="label">AGE / SEX</span> : <span id="pAgeSex"></span></div>
+    </div>
+    <div class="row">
+      <div><span class="label">REF BY Dr.</span> : <span id="pDoctor"></span></div>
+      <div><span class="label">MOBILE</span> : <span id="pMobile"></span></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>TEST NAME</th>
+        <th style="width:140px">PRICE</th>
+      </tr>
+    </thead>
+    <tbody id="billBody"></tbody>
+  </table>
+
+  <!-- TOTALS -->
+  <div class="totals">
+    <div class="total-row">
+      <div class="label">Subtotal</div>
+      <div id="subtotal">₹0</div>
+    </div>
+    <div class="total-row">
+      <div class="label">Discount</div>
+      <div id="discount">₹0</div>
+    </div>
+    <div class="total-row grand">
+      <div class="label">Total</div>
+      <div id="total">₹0</div>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn back" onclick="goPatients()">BACK</button>
+    <button class="btn print" onclick="window.print()">PRINT</button>
+  </div>
+
+</div>
+
+<script src="../../../api.js"></script>
+<script>
+const patient =
+  JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
+function setText(id, value){
+  const el = document.getElementById(id);
+  if (el) {
+    el.innerText = value;
+  }
+}
+
+function formatMoney(value){
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "0";
+  return String(Math.round(num * 100) / 100);
+}
+
+function formatMoneyWithSymbol(value){
+  return `₹${formatMoney(value)}`;
+}
+
+function hydratePatient(){
+  const age = patient.age ? String(patient.age) : "";
+  const gender = patient.gender || "";
+  const ageSex =
+    age && gender ? `${age} / ${gender}` : `${age}${gender}`;
+
+  setText("pName", patient.name || "");
+  setText("pDate", patient.visitDate || new Date().toLocaleDateString());
+  setText("pAddress", patient.address || "");
+  setText("pAgeSex", ageSex);
+  setText("pDoctor", patient.doctor || "SELF");
+  setText("pMobile", patient.mobile || "");
+}
+
+function loadSelectedTests(){
+  if (!patient || !patient.id) {
+    return Promise.resolve([]);
+  }
+
+  return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
+    .then(res => res.json())
+    .then(list => (list || [])
+      .map(x => Number(x.testId))
+      .filter(id => !Number.isNaN(id)))
+    .catch(() => {
+      const stored =
+        JSON.parse(localStorage.getItem("selectedTests") || "[]");
+      return (stored || [])
+        .map(id => Number(id))
+        .filter(id => !Number.isNaN(id));
+    });
+}
+
+function setTotals(subtotalValue, discountValue, totalValue){
+  setText("subtotal", formatMoneyWithSymbol(subtotalValue));
+  setText("discount", formatMoneyWithSymbol(discountValue));
+  setText("total", formatMoneyWithSymbol(totalValue));
+}
+
+function renderBill(){
+  const body = document.getElementById("billBody");
+
+  if (!patient || !patient.id) {
+    body.innerHTML = `<tr><td colspan="2">No patient selected</td></tr>`;
+    setTotals(0, 0, 0);
+    return;
+  }
+
+  loadSelectedTests()
+    .then(ids => {
+      const uniqueIds = [...new Set(ids)];
+      if (!uniqueIds.length) {
+        body.innerHTML = `<tr><td colspan="2">No tests found</td></tr>`;
+        const amount = Number(patient.amount) || 0;
+        setTotals(0, 0, amount);
+        return;
+      }
+
+      return fetch(`${API_BASE_URL}/tests/active`)
+        .then(res => res.json())
+        .then(tests => {
+          const selected =
+            (tests || []).filter(t => uniqueIds.includes(t.id));
+
+          if (!selected.length) {
+            body.innerHTML = `<tr><td colspan="2">No tests found</td></tr>`;
+            const amount = Number(patient.amount) || 0;
+            setTotals(0, 0, amount);
+            return;
+          }
+
+          let subtotal = 0;
+          body.innerHTML = "";
+
+          selected.forEach(test => {
+            const cost = Number(test.cost) || 0;
+            subtotal += cost;
+            body.innerHTML += `
+              <tr>
+                <td>${test.testName || "-"}</td>
+                <td class="amount">₹${formatMoney(cost)}</td>
+              </tr>
+            `;
+          });
+
+          const patientAmount = Number(patient.amount);
+          const total = Number.isFinite(patientAmount)
+            ? patientAmount
+            : subtotal;
+          const discount = Math.max(0, subtotal - total);
+
+          setTotals(subtotal, discount, total);
+        })
+        .catch(() => {
+          body.innerHTML = `<tr><td colspan="2">Failed to load tests</td></tr>`;
+          const amount = Number(patient.amount) || 0;
+          setTotals(0, 0, amount);
+        });
+    })
+    .catch(() => {
+      body.innerHTML = `<tr><td colspan="2">Failed to load tests</td></tr>`;
+      const amount = Number(patient.amount) || 0;
+      setTotals(0, 0, amount);
+    });
+}
+
+function goPatients(){
+  if (parent?.loadPage) {
+    parent.loadPage("home/sub-tasks/2-patient.html", "patient");
+  } else {
+    location.href = "../2-patient.html";
+  }
+}
+
+hydratePatient();
+renderBill();
+</script>
+</body>
+</html>

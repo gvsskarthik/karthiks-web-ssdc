@@ -185,6 +185,7 @@ function renderTable(data){
         <div class="menu-box" id="menu-${p.id}">
           <div onclick="enterSelectMode()">Select</div>
           <div onclick="editPatient(${p.id})">Edit</div>
+          <div onclick='openBill(${JSON.stringify(p)})'>Bill</div>
           <div onclick="deleteOne(${p.id})" style="color:red">Delete</div>
         </div>
       </td>
@@ -292,6 +293,23 @@ function deleteSelected(){
 
 function editPatient(id){
   alert("Edit coming soon");
+}
+
+function openBill(patient){
+  if (!patient || !patient.id) {
+    alert("Patient not found");
+    return;
+  }
+
+  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.removeItem("selectedTests");
+  localStorage.removeItem("patientResults");
+
+  if (parent?.loadPage) {
+    parent.loadPage("home/sub-tasks/pt/bill.html", "patient");
+  } else {
+    location.href = "pt/bill.html";
+  }
 }
 </script>
 
