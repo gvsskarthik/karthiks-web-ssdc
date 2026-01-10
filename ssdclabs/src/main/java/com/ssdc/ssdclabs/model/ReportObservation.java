@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "report_observations")
 public class ReportObservation {
@@ -32,13 +33,17 @@ public class ReportObservation {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
+    @SuppressWarnings("unused")
     public Patient getPatient() { return patient; }
+    @SuppressWarnings("unused")
     public void setPatient(Patient patient) { this.patient = patient; }
 
     public Test getTest() { return test; }
     public void setTest(Test test) { this.test = test; }
 
+    @SuppressWarnings("unused")
     public String getObservation() { return observation; }
+    @SuppressWarnings("unused")
     public void setObservation(String observation) {
         this.observation = observation;
     }

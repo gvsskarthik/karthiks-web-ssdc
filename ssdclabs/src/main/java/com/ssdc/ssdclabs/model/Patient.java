@@ -18,6 +18,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "patients")
 public class Patient {
@@ -59,16 +60,22 @@ public class Patient {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
+    @SuppressWarnings("unused")
     public Integer getAge() { return age; }
+    @SuppressWarnings("unused")
     public void setAge(Integer age) { this.age = age; }
 
     public Gender getGender() { return gender; }
     public void setGender(Gender gender) { this.gender = gender; }
 
+    @SuppressWarnings("unused")
     public String getMobile() { return mobile; }
+    @SuppressWarnings("unused")
     public void setMobile(String mobile) { this.mobile = mobile; }
 
+    @SuppressWarnings("unused")
     public String getAddress() { return address; }
+    @SuppressWarnings("unused")
     public void setAddress(String address) { this.address = address; }
 
     @JsonIgnore
@@ -94,6 +101,7 @@ public class Patient {
     }
 
     public Double getAmount() { return amount; }
+    @SuppressWarnings("unused")
     public void setAmount(Double amount) { this.amount = amount; }
 
     public String getStatus() { return status; }

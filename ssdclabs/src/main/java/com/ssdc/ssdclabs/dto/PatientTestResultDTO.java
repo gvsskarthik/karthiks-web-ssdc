@@ -8,6 +8,7 @@ public class PatientTestResultDTO {
     public String subTest;
     public String resultValue;
 
+    @SuppressWarnings("unused")
     public PatientTestResultDTO() {}
 
     public PatientTestResultDTO(Long id,

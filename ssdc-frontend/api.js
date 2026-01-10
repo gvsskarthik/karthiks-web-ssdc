@@ -1,7 +1,7 @@
 (function () {
-  var defaultBase = "/api";
+  const defaultBase = "/api";
 
-  var stored = null;
+  let stored = null;
   if (window.localStorage) {
     stored = window.localStorage.getItem("SSDC_API_BASE_URL");
   }
@@ -10,8 +10,8 @@
     stored = stored.trim();
   }
 
-  var isAbsoluteApiBase = stored && /^https?:\/\//i.test(stored);
-  var isValidRelativeApiBase = stored && stored.indexOf("/api") === 0;
+  const isAbsoluteApiBase = stored && /^https?:\/\//i.test(stored);
+  const isValidRelativeApiBase = stored && stored.indexOf("/api") === 0;
   window.API_BASE_URL =
     isAbsoluteApiBase || isValidRelativeApiBase ? stored : defaultBase;
   window.apiUrl = function (path) {

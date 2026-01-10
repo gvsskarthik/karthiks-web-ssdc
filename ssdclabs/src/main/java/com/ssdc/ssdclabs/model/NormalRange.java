@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "normal_ranges")
 public class NormalRange {
@@ -43,6 +44,7 @@ public class NormalRange {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
+    @SuppressWarnings("unused")
     public TestParameter getParameter() { return parameter; }
     public void setParameter(TestParameter parameter) {
         this.parameter = parameter;

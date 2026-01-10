@@ -111,7 +111,10 @@ document.getElementById("doctorForm").addEventListener("submit", function(e) {
     alert("Doctor saved successfully");
     window.location.href = "../6-doctor.html";
   })
-  .catch(err => alert("Error saving doctor"));
+  .catch(err => {
+    console.error("Error saving doctor", err);
+    alert("Error saving doctor");
+  });
 });
 </script>
 

@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "test_groups")
 public class TestGroup {
@@ -42,11 +43,15 @@ public class TestGroup {
     public String getShortcut() { return shortcut; }
     public void setShortcut(String shortcut) { this.shortcut = shortcut; }
 
+    @SuppressWarnings("unused")
     public Integer getDisplayOrder() { return displayOrder; }
+    @SuppressWarnings("unused")
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
 
+    @SuppressWarnings("unused")
     public Boolean getActive() { return active; }
+    @SuppressWarnings("unused")
     public void setActive(Boolean active) { this.active = active; }
 }

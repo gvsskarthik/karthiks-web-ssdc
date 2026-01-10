@@ -8,6 +8,7 @@ import com.ssdc.ssdclabs.model.ReportObservation;
 
 public interface ReportObservationRepository
         extends JpaRepository<ReportObservation, Long> {
+    @SuppressWarnings("unused")
     List<ReportObservation> findByPatient_Id(Long patientId);
 
     void deleteByPatient_Id(Long patientId);

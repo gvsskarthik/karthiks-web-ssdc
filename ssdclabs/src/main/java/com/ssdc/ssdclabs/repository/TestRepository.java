@@ -15,6 +15,7 @@ public interface TestRepository extends JpaRepository<Test, Long> {
 
     boolean existsByShortcut(String shortcut);
 
+    @SuppressWarnings("unused")
     List<Test> findByActiveTrue();
 
     // Ordered by display order, then name for stable fallback.

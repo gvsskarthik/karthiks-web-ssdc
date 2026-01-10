@@ -71,7 +71,7 @@ public class TestHierarchyService {
                         g.getCost(),
                         new ArrayList<>()
                     )
-                ).getTests().add(   // ✅ FIX IS HERE
+                ).tests().add(   // ✅ FIX IS HERE
                     new TestDTO(
                         t.getId(),
                         t.getTestName(),

@@ -5,6 +5,7 @@ public class PatientTestSelectionDTO {
     public Long patientId;
     public Long testId;
 
+    @SuppressWarnings("unused")
     public PatientTestSelectionDTO() {}
 
     public PatientTestSelectionDTO(Long patientId, Long testId) {
