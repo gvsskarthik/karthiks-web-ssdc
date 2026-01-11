@@ -38,4 +38,9 @@ public class AccountsController {
             @PathVariable @NonNull String doctorId) {
         return accountsService.getDoctorDetails(doctorId);
     }
+
+    @GetMapping("/details")
+    public List<AccountsDoctorDetailDTO> getAllDetails() {
+        return accountsService.getAllDetails();
+    }
 }

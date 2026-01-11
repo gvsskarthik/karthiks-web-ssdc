@@ -3,155 +3,288 @@
 <head>
 <meta charset="UTF-8">
 <title>Accounts</title>
+<link href="../../vendor/fonts/fonts.css" rel="stylesheet">
 
 <style>
+:root{
+  --bg:#ecf0f3;
+  --bg-soft:#f6f8fb;
+  --text:#2f3a4a;
+  --muted:#7a8594;
+  --accent:#1f7a8c;
+  --shadow-dark:#c5c9cc;
+  --shadow-light:#ffffff;
+  --radius-lg:22px;
+  --radius-md:16px;
+}
 body{
   margin:0;
-  padding:20px;
-  font-family:Arial, sans-serif;
-  background:#ecf0f3;
-  color:#555;
+  padding:24px;
+  font-family:"Poppins","Lato",Arial,sans-serif;
+  background:radial-gradient(circle at 10% 0%, #f8fafc 0%, #edf1f4 35%, #e7ecf1 100%);
+  color:var(--text);
+  min-height:100vh;
+}
+.page{
+  max-width:1200px;
+  margin:0 auto;
 }
 
 /* ===== NEOMORPHIC ===== */
 .neo{
-  background:#ecf0f3;
-  border-radius:20px;
-  box-shadow:8px 8px 16px #c5c9cc,
-             -8px -8px 16px #ffffff;
+  background:var(--bg);
+  border-radius:var(--radius-lg);
+  box-shadow:10px 10px 20px var(--shadow-dark),
+             -10px -10px 20px var(--shadow-light);
 }
 .neo-pressed{
-  box-shadow:inset 6px 6px 10px #c5c9cc,
-             inset -6px -6px 10px #ffffff;
+  box-shadow:inset 6px 6px 10px var(--shadow-dark),
+             inset -6px -6px 10px var(--shadow-light);
 }
 
 .header{
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px;
+  align-items:flex-end;
+  gap:16px;
+  margin-bottom:24px;
 }
 .header h1{
-  font-size:36px;
-  font-weight:600;
+  font-size:32px;
+  font-weight:700;
   margin:0;
+  letter-spacing:.2px;
+}
+.header-actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
 }
 
 .btn{
-  padding:10px 18px;
+  padding:10px 16px;
   border:none;
-  border-radius:16px;
+  border-radius:14px;
   font-weight:600;
+  background:var(--bg);
+  color:var(--text);
+  box-shadow:6px 6px 12px var(--shadow-dark),
+             -6px -6px 12px var(--shadow-light);
+  border:1px solid rgba(255,255,255,0.6);
   cursor:pointer;
+}
+.btn:active{
+  box-shadow:inset 4px 4px 8px var(--shadow-dark),
+             inset -4px -4px 8px var(--shadow-light);
 }
 .btn:hover{opacity:.9}
 
 .summary{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:20px;
-  margin-bottom:30px;
+  gap:16px;
+  margin-bottom:24px;
+}
+.summary-card{
+  padding:18px 20px;
+  position:relative;
+  overflow:hidden;
+  animation:rise .4s ease both;
+}
+.summary-card:nth-child(2){animation-delay:.05s}
+.summary-card:nth-child(3){animation-delay:.1s}
+.summary-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg, rgba(31,122,140,0.08), transparent 60%);
+  pointer-events:none;
 }
 .summary h4{
   font-size:12px;
   text-transform:uppercase;
-  color:#888;
+  color:var(--muted);
+  letter-spacing:.6px;
 }
 .summary p{
   font-size:28px;
   font-weight:800;
+  margin:6px 0 0;
 }
 
 .layout{
   display:grid;
-  grid-template-columns:1fr 2fr;
-  gap:30px;
+  grid-template-columns:320px 1fr;
+  gap:24px;
+  align-items:start;
+}
+.card{
+  padding:20px;
+  border-radius:var(--radius-lg);
+  animation:rise .45s ease both;
+}
+.card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.card-head h3{
+  margin:0;
+  font-size:18px;
+  letter-spacing:.2px;
 }
 
 /* LEFT */
+#doctorList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:520px;
+  overflow:auto;
+  padding-right:4px;
+}
 .doctor{
-  padding:14px;
-  border-radius:16px;
+  padding:12px 14px;
+  border-radius:14px;
   cursor:pointer;
   display:flex;
   justify-content:space-between;
+  gap:12px;
+  border:1px solid transparent;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
-.doctor:hover{background:rgba(255,255,255,.3)}
-.doctor.active{box-shadow:inset 5px 5px 8px #c5c9cc,
-               inset -5px -5px 8px #ffffff;}
+.doctor:hover{
+  transform:translateY(-1px);
+  box-shadow:6px 6px 12px var(--shadow-dark),
+             -6px -6px 12px var(--shadow-light);
+}
+.doctor.active{
+  border-color:rgba(31,122,140,0.3);
+  box-shadow:inset 5px 5px 8px var(--shadow-dark),
+             inset -5px -5px 8px var(--shadow-light);
+}
 
 .small{
   font-size:11px;
-  color:#999;
-  font-weight:bold;
+  color:var(--muted);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.4px;
 }
 
 /* TABLE */
+.table-wrap{
+  max-height:520px;
+  overflow:auto;
+  border-radius:14px;
+  border:1px solid #e2e6ea;
+  background:#f7f9fb;
+}
 table{
   width:100%;
   border-collapse:collapse;
 }
 th,td{
-  padding:10px;
+  padding:12px 14px;
   font-size:13px;
-  border:1px solid #ddd;
+  border-bottom:1px solid #e3e7eb;
 }
 th{
-  background:#f4f6f8;
+  background:#f2f5f7;
   text-transform:uppercase;
   font-size:11px;
-  color:#777;
+  color:var(--muted);
+  letter-spacing:.5px;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+tbody tr:hover{
+  background:rgba(255,255,255,0.6);
+}
+.num{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+@keyframes rise{
+  from{opacity:0; transform:translateY(8px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+@media (max-width:980px){
+  body{padding:16px;}
+  .header{flex-direction:column; align-items:flex-start;}
+  .summary{grid-template-columns:1fr;}
+  .layout{grid-template-columns:1fr;}
+  #doctorList, .table-wrap{max-height:none;}
+}
+@media (max-width:600px){
+  .header h1{font-size:28px;}
+  .summary p{font-size:24px;}
+  .btn{width:100%; justify-content:center;}
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h1>Accounts</h1>
-  <div>
+<div class="page">
+  <div class="header">
+    <h1>Accounts</h1>
+    <div class="header-actions">
     <button class="btn neo">📅 Date Range</button>
     <button class="btn neo">⬇ Export Excel</button>
+    </div>
   </div>
-</div>
 
 <!-- SUMMARY -->
 <div class="summary">
-  <div class="neo" id="sumRevenue"></div>
-  <div class="neo" id="sumCommission"></div>
-  <div class="neo" id="sumProfit"></div>
+  <div class="neo summary-card" id="sumRevenue"></div>
+  <div class="neo summary-card" id="sumCommission"></div>
+  <div class="neo summary-card" id="sumProfit"></div>
 </div>
 
 <div class="layout">
 
   <!-- LEFT -->
-  <div class="neo" style="padding:20px">
-    <h3>Doctor Wise Billing</h3>
+  <div class="neo card">
+    <div class="card-head">
+      <h3>Doctor Wise Billing</h3>
+    </div>
     <div id="doctorList"></div>
   </div>
 
   <!-- RIGHT -->
-  <div class="neo" style="padding:20px">
-    <h3 id="detailTitle">Select a doctor</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Report ID</th>
-          <th>Patient</th>
-          <th>Bill</th>
-          <th>Commission</th>
-        </tr>
-      </thead>
-      <tbody id="detailsBody">
-        <tr>
-          <td colspan="5" style="text-align:center;color:#999">
-            Select a doctor to see details
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="neo card">
+    <div class="card-head">
+      <h3 id="detailTitle">All Accounts</h3>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Report ID</th>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Bill</th>
+            <th>Commission</th>
+          </tr>
+        </thead>
+        <tbody id="detailsBody">
+          <tr>
+            <td colspan="6" style="text-align:center;color:#999">
+              All accounts will appear here
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
+
+</div>
 
 </div>
 
@@ -206,7 +339,29 @@ function setDoctorListMessage(message){
 
 function setDetailsMessage(message){
   detailsBody.innerHTML =
-    `<tr><td colspan="5" style="text-align:center;color:#999">${message}</td></tr>`;
+    `<tr><td colspan="6" style="text-align:center;color:#999">${message}</td></tr>`;
+}
+
+function renderDetails(rows, doctorNameFallback){
+  if (!Array.isArray(rows) || rows.length === 0) {
+    setDetailsMessage("No records found");
+    return;
+  }
+
+  detailsBody.innerHTML = "";
+  rows.forEach(r => {
+    const doctorName = r.doctorName || doctorNameFallback || "-";
+    detailsBody.innerHTML += `
+      <tr>
+        <td>${r.date || "-"}</td>
+        <td>${r.reportId || "-"}</td>
+        <td>${r.patientName || "-"}</td>
+        <td>${doctorName}</td>
+        <td class="num">₹${formatNumber(r.billAmount)}</td>
+        <td class="num" style="color:#e67e22">₹${formatNumber(r.commissionAmount)}</td>
+      </tr>
+    `;
+  });
 }
 
 async function fetchJson(url){
@@ -229,6 +384,18 @@ async function loadSummary(){
       totalCommission: 0,
       netProfit: 0
     });
+  }
+}
+
+async function loadAllDetails(){
+  detailTitle.innerText = "All Accounts";
+  setDetailsMessage("Loading...");
+  try{
+    const rows = await fetchJson(apiPath("/accounts/details"));
+    renderDetails(rows);
+  } catch (err) {
+    console.error("Failed to load all account details", err);
+    setDetailsMessage("Failed to load");
   }
 }
 
@@ -264,7 +431,7 @@ function renderDoctors(){
         <div class="small">${formatNumber(d.patientCount)} patients</div>
       </div>
       <div style="text-align:right">
-        <b>₹${formatNumber(d.totalBill)}</b>
+        <b class="num">₹${formatNumber(d.totalBill)}</b>
         <div class="small">Comm ₹${formatNumber(d.totalCommission)}</div>
       </div>
     `;
@@ -293,23 +460,7 @@ async function selectDoctor(id){
       apiPath(`/accounts/doctor/${encodeURIComponent(id)}/details`)
     );
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      setDetailsMessage("No records found");
-      return;
-    }
-
-    detailsBody.innerHTML = "";
-    rows.forEach(r => {
-      detailsBody.innerHTML += `
-        <tr>
-          <td>${r.date || "-"}</td>
-          <td>${r.reportId || "-"}</td>
-          <td>${r.patientName || "-"}</td>
-          <td>₹${formatNumber(r.billAmount)}</td>
-          <td style="color:#e67e22">₹${formatNumber(r.commissionAmount)}</td>
-        </tr>
-      `;
-    });
+    renderDetails(rows, doc.doctorName || "Doctor");
   } catch (err) {
     console.error("Failed to load doctor details", err);
     setDetailsMessage("Failed to load");
@@ -317,10 +468,9 @@ async function selectDoctor(id){
 }
 
 function init(){
-  detailTitle.innerText = "Select a doctor";
-  setDetailsMessage("Select a doctor to see details");
   loadSummary();
   loadDoctors();
+  loadAllDetails();
 }
 
 init();

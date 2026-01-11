@@ -142,10 +142,40 @@ public class AccountsService {
             String reportId = patient.getId() == null
                 ? ""
                 : "R" + patient.getId();
+            String doctorName = normalizeDoctorName(resolveDoctorName(patient));
             details.add(new AccountsDoctorDetailDTO(
                 date,
                 reportId,
                 patient.getName(),
+                doctorName,
+                bill,
+                commission
+            ));
+        }
+
+        return details;
+    }
+
+    public @NonNull List<AccountsDoctorDetailDTO> getAllDetails() {
+        List<Patient> patients = patientRepo.findAllWithDoctorOrderByVisitDateDescIdDesc();
+        List<AccountsDoctorDetailDTO> details = new ArrayList<>();
+
+        for (Patient patient : patients) {
+            double bill = safeAmount(patient);
+            String doctorName = resolveDoctorName(patient);
+            double rate = commissionRateFor(patient.getDoctor(), doctorName);
+            double commission = calculateCommission(bill, rate);
+            String date = patient.getVisitDate() == null
+                ? ""
+                : patient.getVisitDate().toString();
+            String reportId = patient.getId() == null
+                ? ""
+                : "R" + patient.getId();
+            details.add(new AccountsDoctorDetailDTO(
+                date,
+                reportId,
+                patient.getName(),
+                normalizeDoctorName(doctorName),
                 bill,
                 commission
             ));
