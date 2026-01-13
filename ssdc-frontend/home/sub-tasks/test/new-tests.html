@@ -127,14 +127,6 @@ input[type="checkbox"] {
   margin-top: 10px;
 }
 
-.allowed-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
-  margin-top: 10px;
-}
-
 .hidden {
   display: none;
 }
@@ -215,8 +207,7 @@ input[type="checkbox"] {
 .grid-2 > div,
 .grid-3 > div,
 /*noinspection CssUnusedSymbol*/
-.normal-row > *,
-.allowed-row > * {
+.normal-row > * {
   min-width: 0;
 }
 
@@ -302,7 +293,6 @@ let shortcutsLoaded = false;
 let existingShortcuts = new Set();
 let paramIdCounter = 0;
 let normalIdCounter = 0;
-let allowedIdCounter = 0;
 
 addParamBtn.addEventListener("click", () => addParameter());
 saveBtn.addEventListener("click", () => saveTest());
@@ -336,8 +326,6 @@ function addParameter() {
           <option value="">Select value type</option>
           <option value="NUMBER">NUMBER</option>
           <option value="TEXT">TEXT</option>
-          <option value="RANGE">RANGE</option>
-          <option value="SELECT">SELECT</option>
         </select>
       </div>
     </div>
@@ -346,11 +334,6 @@ function addParameter() {
       <button class="btn small add-normal" type="button">Add Normal</button>
     </div>
     <div class="normals"></div>
-    <div class="section-row allowed-section hidden">
-      <h4>Allowed Values</h4>
-      <button class="btn small add-allowed" type="button">Add Value</button>
-    </div>
-    <div class="allowed-values hidden"></div>
   `;
 
   paramList.appendChild(card);
@@ -361,15 +344,8 @@ function addParameter() {
   card.querySelector(".add-normal").addEventListener("click", () => {
     addNormalRow(card.querySelector(".normals"));
   });
-  card.querySelector(".add-allowed").addEventListener("click", () => {
-    addAllowedRow(card.querySelector(".allowed-values"));
-  });
-  card.querySelector(".param-type").addEventListener("change", () => {
-    toggleValueTypeUI(card);
-  });
 
   addNormalRow(card.querySelector(".normals"));
-  toggleValueTypeUI(card);
   refreshParameterLabels();
 }
 
@@ -384,45 +360,6 @@ function addNormalRow(container) {
   `;
   container.appendChild(row);
   row.querySelector(".remove-normal").addEventListener("click", () => row.remove());
-}
-
-function addAllowedRow(container) {
-  const row = document.createElement("div");
-  row.className = "allowed-row";
-  const allowedId = `allowed-${allowedIdCounter++}`;
-  row.innerHTML = `
-    <input id="${allowedId}" name="${allowedId}" type="text" class="allowed-value" placeholder="Allowed value (e.g. NIL)">
-    <button class="btn link remove-allowed" type="button">Remove</button>
-    <div class="row-error"></div>
-  `;
-  container.appendChild(row);
-  row.querySelector(".remove-allowed").addEventListener("click", () => row.remove());
-}
-
-function toggleValueTypeUI(card) {
-  const typeSelect = card.querySelector(".param-type");
-  const normalSection = card.querySelector(".normal-section");
-  const normals = card.querySelector(".normals");
-  const allowedSection = card.querySelector(".allowed-section");
-  const allowedValues = card.querySelector(".allowed-values");
-  const isSelect = typeSelect.value === "SELECT";
-
-  if (allowedSection) {
-    allowedSection.classList.toggle("hidden", !isSelect);
-  }
-  if (allowedValues) {
-    allowedValues.classList.toggle("hidden", !isSelect);
-  }
-  if (normalSection) {
-    normalSection.classList.toggle("hidden", isSelect);
-  }
-  if (normals) {
-    normals.classList.toggle("hidden", isSelect);
-  }
-
-  if (isSelect && allowedValues && allowedValues.children.length === 0) {
-    addAllowedRow(allowedValues);
-  }
 }
 
 function refreshParameterLabels() {
@@ -565,23 +502,10 @@ function collectPayload() {
       });
     });
 
-    const allowedValues = [...card.querySelectorAll(".allowed-value")]
-      .map(input => input.value.trim())
-      .filter(Boolean);
-
-    if (typeSelect.value === "SELECT" && allowedValues.length === 0) {
-      card.querySelectorAll(".allowed-value").forEach(input => {
-        input.classList.add("error");
-      });
-      errors.push("Allowed values are required for SELECT parameters.");
-      return;
-    }
-
     parameters.push({
       name: name || `Parameter ${index + 1}`,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,
-      allowedValues: typeSelect.value === "SELECT" ? allowedValues : null,
       normalRanges: normals
     });
   });

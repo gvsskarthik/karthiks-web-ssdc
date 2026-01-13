@@ -262,7 +262,7 @@ function resolveUnit(param){
     return unit;
   }
   const valueType = (param.valueType || "").toUpperCase();
-  if (valueType === "TEXT" || valueType === "SELECT") {
+  if (valueType === "TEXT") {
     return "";
   }
   if (valueType) {
@@ -271,34 +271,10 @@ function resolveUnit(param){
   return "%";
 }
 
-function buildSelectOptions(values, selectedValue){
-  const options = ['<option value=""></option>'];
-  (values || []).forEach(value => {
-    const text = String(value || "").trim();
-    if (!text) {
-      return;
-    }
-    const selected = text === selectedValue ? " selected" : "";
-    options.push(`<option value="${text}"${selected}>${text}</option>`);
-  });
-  return options.join("");
-}
-
 function renderResultControl(testId, inputId, subTest, param, savedValue){
   const valueType = (param.valueType || "").toUpperCase();
   const subAttr = subTest ? ` data-sub="${subTest}"` : "";
   const safeValue = savedValue || "";
-
-  if (valueType === "SELECT") {
-    return `
-      <select class="result-input"
-              id="${inputId}"
-              name="${inputId}"
-              data-testid="${testId}"${subAttr}>
-        ${buildSelectOptions(param.allowedValues || [], safeValue)}
-      </select>
-    `;
-  }
 
   return `
     <input class="result-input"
@@ -376,16 +352,14 @@ function renderTests(tests) {
         unit: p.unit || "",
         valueType: p.valueType,
         normalText: p.normalText || "",
-        sectionName: p.sectionName || "",
-        allowedValues: p.allowedValues || []
+        sectionName: p.sectionName || ""
       }))
       : (test.units || []).map((u, i) => ({
         name: u.unit || "",
         unit: "",
         valueType: null,
         normalText: test.normalValues?.[i]?.normalValue || "",
-        sectionName: "",
-        allowedValues: []
+        sectionName: ""
       }));
 
     let currentSection = null;

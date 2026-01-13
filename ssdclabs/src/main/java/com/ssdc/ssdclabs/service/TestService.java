@@ -142,8 +142,7 @@ public class TestService {
             return TestType.MULTI;
         }
         TestParameter param = params.get(0);
-        if (param != null && (ValueType.TEXT.equals(param.getValueType())
-                || ValueType.SELECT.equals(param.getValueType()))) {
+        if (param != null && ValueType.TEXT.equals(param.getValueType())) {
             return TestType.QUALITATIVE;
         }
         return TestType.SINGLE;
@@ -188,9 +187,6 @@ public class TestService {
             param.setTest(test);
             param.setName(name);
             param.setUnit(trimToNull(payloadParam.unit));
-            List<String> allowedValues =
-                normalizeStringList(payloadParam.allowedValues);
-            param.setAllowedValues(allowedValues);
 
             List<NormalRange> ranges = new ArrayList<>();
             if (payloadParam.normalRanges != null) {
@@ -206,11 +202,7 @@ public class TestService {
 
             ValueType valueType = payloadParam.valueType;
             if (valueType == null) {
-                if (allowedValues != null && !allowedValues.isEmpty()) {
-                    valueType = ValueType.SELECT;
-                } else {
-                    valueType = determineValueType(ranges);
-                }
+                valueType = determineValueType(ranges);
             }
             if (valueType == null) {
                 valueType = ValueType.NUMBER;
@@ -242,7 +234,6 @@ public class TestService {
         List<String> units = extractUnits(payload, existingParams);
         List<String> normals = extractNormalValues(payload, existingParams);
         List<String> names = extractNames(existingParams);
-        List<List<String>> allowedValuesList = extractAllowedValues(existingParams);
 
         int count = Math.max(units.size(), normals.size());
         count = Math.max(count, names.size());
@@ -263,9 +254,6 @@ public class TestService {
                 payload.testName
             ));
             param.setUnit(i < units.size() ? units.get(i) : null);
-            List<String> existingAllowedValues =
-                i < allowedValuesList.size() ? allowedValuesList.get(i) : null;
-            param.setAllowedValues(existingAllowedValues);
 
             List<NormalRange> ranges = new ArrayList<>();
             if (singleParam && normals.size() > 1) {
@@ -285,9 +273,6 @@ public class TestService {
             }
             param.setNormalRanges(ranges);
             ValueType valueType = determineValueType(ranges);
-            if (existingAllowedValues != null && !existingAllowedValues.isEmpty()) {
-                valueType = ValueType.SELECT;
-            }
             param.setValueType(valueType);
             params.add(param);
         }
@@ -354,15 +339,6 @@ public class TestService {
             .collect(Collectors.toList());
     }
 
-    private List<List<String>> extractAllowedValues(List<TestParameter> existingParams) {
-        if (existingParams == null) {
-            return List.of();
-        }
-        return existingParams.stream()
-            .map(TestParameter::getAllowedValues)
-            .collect(Collectors.toList());
-    }
-
     private String resolveParamName(List<String> names,
                                     int index,
                                     int total,
@@ -413,9 +389,6 @@ public class TestService {
             if (range.getTextValue() != null && !range.getTextValue().isEmpty()) {
                 return ValueType.TEXT;
             }
-            if (range.getMinValue() != null || range.getMaxValue() != null) {
-                return ValueType.RANGE;
-            }
         }
         return ValueType.NUMBER;
     }
@@ -453,18 +426,6 @@ public class TestService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private List<String> normalizeStringList(List<String> values) {
-        if (values == null) {
-            return null;
-        }
-        List<String> cleaned = values.stream()
-            .filter(Objects::nonNull)
-            .map(String::trim)
-            .filter(value -> !value.isEmpty())
-            .collect(Collectors.toList());
-        return cleaned.isEmpty() ? null : cleaned;
-    }
-
     @Transactional(readOnly = true)
     public @NonNull TestViewDTO toView(Test test) {
         List<TestParameter> params =
@@ -482,8 +443,7 @@ public class TestService {
                 param.getName(),
                 param.getUnit(),
                 valueType,
-                formatNormalRanges(param.getNormalRanges()),
-                param.getAllowedValues()
+                formatNormalRanges(param.getNormalRanges())
             ));
         }
 

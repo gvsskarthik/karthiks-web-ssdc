@@ -140,7 +140,7 @@ function resolveUnit(param){
     return unit;
   }
   const valueType = (param.valueType || "").toUpperCase();
-  if (valueType === "TEXT" || valueType === "SELECT") {
+  if (valueType === "TEXT") {
     return "";
   }
   if (valueType) {
@@ -257,16 +257,14 @@ Promise.all([loadResults(), loadSelectedTests()])
               unit: p.unit || "",
               valueType: p.valueType,
               normalText: p.normalText || "",
-              sectionName: p.sectionName || "",
-              allowedValues: p.allowedValues || []
+              sectionName: p.sectionName || ""
             }))
             : (test.units || []).map((u, index) => ({
               name: u.unit || "",
               unit: "",
               valueType: null,
               normalText: test.normalValues?.[index]?.normalValue || "",
-              sectionName: "",
-              allowedValues: []
+              sectionName: ""
             }));
 
           let currentSection = null;

@@ -14,12 +14,12 @@ VALUES
 INSERT INTO test_parameters
   (id, test_id, parameter_name, unit, value_type)
 VALUES
-  (1, 1, 'Haemoglobin', 'g/dL', 'RANGE'),
-  (2, 2, 'Neutrophils', '%', 'RANGE'),
-  (3, 2, 'Lymphocytes', '%', 'RANGE'),
-  (4, 2, 'Eosinophils', '%', 'RANGE'),
-  (5, 2, 'Monocytes', '%', 'RANGE'),
-  (6, 2, 'Basophils', '%', 'RANGE');
+  (1, 1, 'Haemoglobin', 'g/dL', 'NUMBER'),
+  (2, 2, 'Neutrophils', '%', 'NUMBER'),
+  (3, 2, 'Lymphocytes', '%', 'NUMBER'),
+  (4, 2, 'Eosinophils', '%', 'NUMBER'),
+  (5, 2, 'Monocytes', '%', 'NUMBER'),
+  (6, 2, 'Basophils', '%', 'NUMBER');
 
 INSERT INTO normal_ranges
   (id, parameter_id, gender, min_value, max_value, text_value)

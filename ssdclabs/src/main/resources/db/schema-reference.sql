@@ -45,9 +45,6 @@ CREATE TABLE test_parameters (
     FOREIGN KEY (test_id) REFERENCES tests(id)
 );
 
-ALTER TABLE test_parameters
-  ADD COLUMN allowed_values TEXT;
-
 CREATE TABLE normal_ranges (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   parameter_id BIGINT NOT NULL,
