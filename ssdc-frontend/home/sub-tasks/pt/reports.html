@@ -22,6 +22,10 @@ th,td{
   margin-top:10px;
   font-size:11px;
 }
+
+.observation{
+  white-space:pre-line;
+}
 </style>
 </head>
 
@@ -73,6 +77,7 @@ const patient =
 
 let results = [];
 let selectedTestIds = [];
+let observations = {};
 
 /* ================= PATIENT DETAILS ================= */
 document.getElementById("pName").innerText =
@@ -124,6 +129,25 @@ function isOutOfRange(value, normalText, gender){
   return num < min || num > max;
 }
 
+function normalizeKey(value){
+  return (value || "").trim().toLowerCase();
+}
+
+function resolveUnit(param){
+  const unit = (param.unit || "").trim();
+  if (unit) {
+    return unit;
+  }
+  const valueType = (param.valueType || "").toUpperCase();
+  if (valueType === "TEXT") {
+    return "";
+  }
+  if (valueType) {
+    return "%";
+  }
+  return "%";
+}
+
 function loadResults(){
   if (!patient || !patient.id) {
     return Promise.resolve([]);
@@ -138,6 +162,44 @@ function loadResults(){
     .catch(() => {
       results = JSON.parse(localStorage.getItem("patientResults") || "[]");
       return results;
+    });
+}
+
+function normalizeObservations(list){
+  const map = {};
+  (list || []).forEach(item => {
+    if (!item || item.testId == null) {
+      return;
+    }
+    const text = (item.observation || "").trim();
+    if (!text) {
+      return;
+    }
+    map[String(item.testId)] = text;
+  });
+  return map;
+}
+
+function loadObservations(){
+  if (!patient || !patient.id) {
+    observations = {};
+    return Promise.resolve(observations);
+  }
+  return fetch(`${API_BASE_URL}/patient-tests/observations/${patient.id}`)
+    .then(res => res.json())
+    .then(list => {
+      observations = normalizeObservations(list || []);
+      localStorage.setItem(
+        "patientObservations",
+        JSON.stringify(observations)
+      );
+      return observations;
+    })
+    .catch(() => {
+      observations = JSON.parse(
+        localStorage.getItem("patientObservations") || "{}"
+      );
+      return observations;
     });
 }
 
@@ -161,12 +223,20 @@ function loadSelectedTests(){
 }
 
 function deriveSelectedFromResults(){
-  return [...new Set(results.map(r => Number(r.testId)))]
-    .filter(id => !Number.isNaN(id));
+  const ids = new Set(
+    results.map(r => Number(r.testId)).filter(id => !Number.isNaN(id))
+  );
+  Object.keys(observations || {}).forEach(id => {
+    const parsed = Number(id);
+    if (!Number.isNaN(parsed)) {
+      ids.add(parsed);
+    }
+  });
+  return [...ids];
 }
 
 /* ================= LOAD TEST MASTER ================= */
-Promise.all([loadResults(), loadSelectedTests()])
+Promise.all([loadResults(), loadSelectedTests(), loadObservations()])
   .then(([, selectedIds]) => {
     let ids = selectedIds && selectedIds.length
       ? selectedIds
@@ -205,24 +275,43 @@ Promise.all([loadResults(), loadSelectedTests()])
       });
 
       selectedTests.forEach(test => {
-        const itemMap = grouped[test.id] || {};
+        const params = Array.isArray(test.parameters) ? test.parameters : [];
+        const hasParams = params.length > 0;
+        const isMulti = (hasParams && params.length > 1)
+          || (!hasParams && (test.units || []).length > 1);
+        const rawItemMap = grouped[test.id] || {};
 
-        /* ================= DIFFERENTIAL COUNT ================= */
-        if(test.units.length > 1){
-
+        if (isMulti) {
           body.innerHTML += `
             <tr>
               <td colspan="4"><b>${test.testName}</b></td>
             </tr>
           `;
 
-          test.units.forEach((u, index) => {
-            const item = itemMap[u.unit];
+          const normalizedItems = {};
+          Object.entries(rawItemMap).forEach(([key, value]) => {
+            const normalized = normalizeKey(key === "__single__" ? "" : key);
+            normalizedItems[normalized] = value;
+          });
 
-            const normalText =
-              test.normalValues[index]?.normalValue || "";
+          const rows = hasParams && params.length > 1
+            ? params.map(p => ({
+              name: p.name || "",
+              unit: p.unit || "",
+              valueType: p.valueType,
+              normalText: p.normalText || ""
+            }))
+            : (test.units || []).map((u, index) => ({
+              name: u.unit || "",
+              unit: "",
+              valueType: null,
+              normalText: test.normalValues?.[index]?.normalValue || ""
+            }));
+
+          rows.forEach(param => {
+            const item = normalizedItems[normalizeKey(param.name)];
+            const normalText = param.normalText || "";
             const resultValue = item?.resultValue || "";
-            const displayValue = resultValue ? `${resultValue} %` : "";
 
             const out = isOutOfRange(
               resultValue,
@@ -230,47 +319,60 @@ Promise.all([loadResults(), loadSelectedTests()])
               patient.gender
             );
 
-          body.innerHTML += `
-            <tr>
-              <td style="padding-left:20px">${u.unit}</td>
-              <td style="color:${out ? "red" : "black"}">
-                ${displayValue}
-              </td>
-              <td>%</td>
-              <td>${normalText}</td>
-            </tr>
-          `;
-        });
-
-      }
-
-        /* ================= SINGLE VALUE TEST ================= */
-        else{
-
-          const item = itemMap["__single__"];
+            body.innerHTML += `
+              <tr>
+                <td style="padding-left:20px">${param.name}</td>
+                <td style="color:${out ? "red" : "black"}">
+                  ${resultValue}
+                </td>
+                <td>${resolveUnit(param)}</td>
+                <td>${normalText}</td>
+              </tr>
+            `;
+          });
+        } else {
+          const item = rawItemMap["__single__"];
           const normalText =
             (test.normalValues || [])
               .map(n => n.normalValue)
               .join("<br>");
+          const fallbackNormal = params[0]?.normalText || "";
           const resultValue = item?.resultValue || "";
 
-        const out = isOutOfRange(
-          resultValue,
-          normalText,
-          patient.gender
-        );
+          const out = isOutOfRange(
+            resultValue,
+            normalText || fallbackNormal,
+            patient.gender
+          );
 
-        body.innerHTML += `
-          <tr>
-            <td><b>${test.testName}</b></td>
-            <td style="color:${out ? "red" : "black"}">
-              ${resultValue}
-            </td>
-            <td>${test.units[0]?.unit || ""}</td>
-            <td>${normalText}</td>
-          </tr>
-        `;
-      }
+          const unit =
+            (params[0]?.unit || "").trim()
+            || test.units?.[0]?.unit
+            || "";
+
+          body.innerHTML += `
+            <tr>
+              <td><b>${test.testName}</b></td>
+              <td style="color:${out ? "red" : "black"}">
+                ${resultValue}
+              </td>
+              <td>${unit}</td>
+              <td>${normalText || fallbackNormal}</td>
+            </tr>
+          `;
+        }
+
+        const observation = (observations[String(test.id)] || "").trim();
+        if (observation) {
+          body.innerHTML += `
+            <tr>
+              <td style="padding-left:20px"><i>Additional Findings</i></td>
+              <td colspan="3" class="observation">
+                ${observation.replace(/\n/g, "<br>")}
+              </td>
+            </tr>
+          `;
+        }
 
       });
     });

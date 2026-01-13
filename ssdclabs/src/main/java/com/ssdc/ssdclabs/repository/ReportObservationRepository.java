@@ -12,4 +12,6 @@ public interface ReportObservationRepository
     List<ReportObservation> findByPatient_Id(Long patientId);
 
     void deleteByPatient_Id(Long patientId);
+
+    void deleteByPatient_IdAndTest_Id(Long patientId, Long testId);
 }

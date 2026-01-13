@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ssdc.ssdclabs.dto.PatientTestObservationDTO;
 import com.ssdc.ssdclabs.dto.PatientTestResultDTO;
 import com.ssdc.ssdclabs.dto.PatientTestSelectionDTO;
 import com.ssdc.ssdclabs.service.ReportService;
@@ -38,6 +39,13 @@ public class PatientTestController {
         reportService.saveResults(results);
     }
 
+    // SAVE OBSERVATIONS
+    @PostMapping("/observations")
+    public void saveObservations(
+            @RequestBody @NonNull List<PatientTestObservationDTO> observations) {
+        reportService.saveObservations(observations);
+    }
+
     // LOAD TESTS FOR PATIENT
     @GetMapping("/{patientId}")
     public List<PatientTestSelectionDTO> getTests(
@@ -50,5 +58,12 @@ public class PatientTestController {
     public List<PatientTestResultDTO> getResults(
             @PathVariable @NonNull Long patientId) {
         return reportService.getResults(patientId);
+    }
+
+    // LOAD OBSERVATIONS FOR PATIENT
+    @GetMapping("/observations/{patientId}")
+    public List<PatientTestObservationDTO> getObservations(
+            @PathVariable @NonNull Long patientId) {
+        return reportService.getObservations(patientId);
     }
 }
