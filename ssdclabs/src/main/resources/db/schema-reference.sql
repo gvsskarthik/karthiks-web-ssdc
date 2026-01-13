@@ -41,14 +41,9 @@ CREATE TABLE test_parameters (
   parameter_name VARCHAR(255) NOT NULL,
   unit VARCHAR(100),
   value_type VARCHAR(20) NOT NULL,
-  display_order INT NOT NULL DEFAULT 0,
   CONSTRAINT fk_params_test
     FOREIGN KEY (test_id) REFERENCES tests(id)
 );
-
--- Optional urine-style metadata (additive)
-ALTER TABLE test_parameters
-  ADD COLUMN section_name VARCHAR(255);
 
 ALTER TABLE test_parameters
   ADD COLUMN allowed_values TEXT;
@@ -98,15 +93,4 @@ CREATE TABLE report_results (
     FOREIGN KEY (test_id) REFERENCES tests(id),
   CONSTRAINT fk_report_param
     FOREIGN KEY (parameter_id) REFERENCES test_parameters(id)
-);
-
-CREATE TABLE report_observations (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  patient_id BIGINT NOT NULL,
-  test_id BIGINT,
-  observation TEXT NOT NULL,
-  CONSTRAINT fk_observation_patient
-    FOREIGN KEY (patient_id) REFERENCES patients(id),
-  CONSTRAINT fk_observation_test
-    FOREIGN KEY (test_id) REFERENCES tests(id)
 );

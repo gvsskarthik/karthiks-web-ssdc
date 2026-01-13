@@ -23,10 +23,6 @@ th,td{
   font-size:11px;
 }
 
-.observation{
-  white-space:pre-line;
-}
-
 .section-header td{
   padding-top:8px;
   font-size:11px;
@@ -83,7 +79,6 @@ const patient =
 
 let results = [];
 let selectedTestIds = [];
-let observations = {};
 
 /* ================= PATIENT DETAILS ================= */
 document.getElementById("pName").innerText =
@@ -171,44 +166,6 @@ function loadResults(){
     });
 }
 
-function normalizeObservations(list){
-  const map = {};
-  (list || []).forEach(item => {
-    if (!item || item.testId == null) {
-      return;
-    }
-    const text = (item.observation || "").trim();
-    if (!text) {
-      return;
-    }
-    map[String(item.testId)] = text;
-  });
-  return map;
-}
-
-function loadObservations(){
-  if (!patient || !patient.id) {
-    observations = {};
-    return Promise.resolve(observations);
-  }
-  return fetch(`${API_BASE_URL}/patient-tests/observations/${patient.id}`)
-    .then(res => res.json())
-    .then(list => {
-      observations = normalizeObservations(list || []);
-      localStorage.setItem(
-        "patientObservations",
-        JSON.stringify(observations)
-      );
-      return observations;
-    })
-    .catch(() => {
-      observations = JSON.parse(
-        localStorage.getItem("patientObservations") || "{}"
-      );
-      return observations;
-    });
-}
-
 function loadSelectedTests(){
   if (!patient || !patient.id) {
     selectedTestIds = [];
@@ -232,17 +189,11 @@ function deriveSelectedFromResults(){
   const ids = new Set(
     results.map(r => Number(r.testId)).filter(id => !Number.isNaN(id))
   );
-  Object.keys(observations || {}).forEach(id => {
-    const parsed = Number(id);
-    if (!Number.isNaN(parsed)) {
-      ids.add(parsed);
-    }
-  });
   return [...ids];
 }
 
 /* ================= LOAD TEST MASTER ================= */
-Promise.all([loadResults(), loadSelectedTests(), loadObservations()])
+Promise.all([loadResults(), loadSelectedTests()])
   .then(([, selectedIds]) => {
     let ids = selectedIds && selectedIds.length
       ? selectedIds
@@ -386,18 +337,6 @@ Promise.all([loadResults(), loadSelectedTests(), loadObservations()])
               </td>
               <td>${unit}</td>
               <td>${normalText || fallbackNormal}</td>
-            </tr>
-          `;
-        }
-
-        const observation = (observations[String(test.id)] || "").trim();
-        if (observation) {
-          body.innerHTML += `
-            <tr>
-              <td style="padding-left:20px"><i>Additional Findings</i></td>
-              <td colspan="3" class="observation">
-                ${observation.replace(/\n/g, "<br>")}
-              </td>
             </tr>
           `;
         }

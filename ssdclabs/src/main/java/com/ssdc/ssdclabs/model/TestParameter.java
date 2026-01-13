@@ -43,9 +43,6 @@ public class TestParameter {
     @Column(name = "value_type", nullable = false)
     private ValueType valueType;
 
-    @Column(name = "display_order", nullable = false)
-    private Integer displayOrder = 0;
-
     @OneToMany(
         mappedBy = "parameter",
         cascade = CascadeType.ALL,
@@ -53,9 +50,6 @@ public class TestParameter {
     )
     @JsonManagedReference("parameter-ranges")
     private List<NormalRange> normalRanges;
-
-    @Column(name = "section_name")
-    private String sectionName;
 
     @Column(name = "allowed_values", columnDefinition = "TEXT")
     @Convert(converter = StringListConverter.class)
@@ -76,20 +70,9 @@ public class TestParameter {
     public ValueType getValueType() { return valueType; }
     public void setValueType(ValueType valueType) { this.valueType = valueType; }
 
-    @SuppressWarnings("unused")
-    public Integer getDisplayOrder() { return displayOrder; }
-    public void setDisplayOrder(Integer displayOrder) {
-        this.displayOrder = displayOrder;
-    }
-
     public List<NormalRange> getNormalRanges() { return normalRanges; }
     public void setNormalRanges(List<NormalRange> normalRanges) {
         this.normalRanges = normalRanges;
-    }
-
-    public String getSectionName() { return sectionName; }
-    public void setSectionName(String sectionName) {
-        this.sectionName = sectionName;
     }
 
     public List<String> getAllowedValues() { return allowedValues; }

@@ -8,5 +8,5 @@ import com.ssdc.ssdclabs.model.TestParameter;
 
 public interface TestParameterRepository
         extends JpaRepository<TestParameter, Long> {
-    List<TestParameter> findByTest_IdOrderByDisplayOrderAsc(Long testId);
+    List<TestParameter> findByTest_IdOrderByIdAsc(Long testId);
 }

@@ -13,7 +13,6 @@ import com.ssdc.ssdclabs.model.Gender;
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.repository.DoctorRepository;
 import com.ssdc.ssdclabs.repository.PatientRepository;
-import com.ssdc.ssdclabs.repository.ReportObservationRepository;
 import com.ssdc.ssdclabs.repository.ReportResultRepository;
 
 @Service
@@ -21,17 +20,14 @@ public class PatientService {
 
     private final PatientRepository patientRepo;
     private final ReportResultRepository resultRepo;
-    private final ReportObservationRepository observationRepo;
     private final DoctorRepository doctorRepo;
 
     public PatientService(
             PatientRepository patientRepo,
             ReportResultRepository resultRepo,
-            ReportObservationRepository observationRepo,
             DoctorRepository doctorRepo) {
         this.patientRepo = patientRepo;
         this.resultRepo = resultRepo;
-        this.observationRepo = observationRepo;
         this.doctorRepo = doctorRepo;
     }
 
@@ -89,11 +85,7 @@ public class PatientService {
         resultRepo.deleteByPatient_Id(
             Objects.requireNonNull(patientId, "patientId"));
 
-        // 2️⃣ delete report observations
-        observationRepo.deleteByPatient_Id(
-            Objects.requireNonNull(patientId, "patientId"));
-
-        // 3️⃣ delete patient
+        // 2️⃣ delete patient
         patientRepo.deleteById(
             Objects.requireNonNull(patientId, "patientId"));
     }

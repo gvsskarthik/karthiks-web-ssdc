@@ -73,7 +73,7 @@ public class TestService {
         Test test = testRepo.findById(Objects.requireNonNull(id, "id"))
             .orElseThrow(() -> new RuntimeException("Test not found"));
         List<TestParameter> existingParams =
-            paramRepo.findByTest_IdOrderByDisplayOrderAsc(test.getId());
+            paramRepo.findByTest_IdOrderByIdAsc(test.getId());
         applyPayload(test, payload, existingParams);
         Test saved = testRepo.save(test);
         return toView(saved);
@@ -188,13 +188,9 @@ public class TestService {
             param.setTest(test);
             param.setName(name);
             param.setUnit(trimToNull(payloadParam.unit));
-            param.setSectionName(trimToNull(payloadParam.sectionName));
             List<String> allowedValues =
                 normalizeStringList(payloadParam.allowedValues);
             param.setAllowedValues(allowedValues);
-            param.setDisplayOrder(
-                payloadParam.displayOrder == null ? index : payloadParam.displayOrder
-            );
 
             List<NormalRange> ranges = new ArrayList<>();
             if (payloadParam.normalRanges != null) {
@@ -231,7 +227,6 @@ public class TestService {
             param.setName(
                 test.getTestName() == null ? "Parameter 1" : test.getTestName()
             );
-            param.setDisplayOrder(0);
             param.setValueType(ValueType.NUMBER);
             param.setNormalRanges(new ArrayList<>());
             params.add(param);
@@ -247,7 +242,6 @@ public class TestService {
         List<String> units = extractUnits(payload, existingParams);
         List<String> normals = extractNormalValues(payload, existingParams);
         List<String> names = extractNames(existingParams);
-        List<String> sectionNames = extractSectionNames(existingParams);
         List<List<String>> allowedValuesList = extractAllowedValues(existingParams);
 
         int count = Math.max(units.size(), normals.size());
@@ -262,7 +256,6 @@ public class TestService {
         for (int i = 0; i < count; i++) {
             TestParameter param = new TestParameter();
             param.setTest(test);
-            param.setDisplayOrder(i);
             param.setName(resolveParamName(
                 names,
                 i,
@@ -270,7 +263,6 @@ public class TestService {
                 payload.testName
             ));
             param.setUnit(i < units.size() ? units.get(i) : null);
-            param.setSectionName(i < sectionNames.size() ? sectionNames.get(i) : null);
             List<String> existingAllowedValues =
                 i < allowedValuesList.size() ? allowedValuesList.get(i) : null;
             param.setAllowedValues(existingAllowedValues);
@@ -359,15 +351,6 @@ public class TestService {
         return existingParams.stream()
             .map(TestParameter::getName)
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-    }
-
-    private List<String> extractSectionNames(List<TestParameter> existingParams) {
-        if (existingParams == null) {
-            return List.of();
-        }
-        return existingParams.stream()
-            .map(TestParameter::getSectionName)
             .collect(Collectors.toList());
     }
 
@@ -485,7 +468,7 @@ public class TestService {
     @Transactional(readOnly = true)
     public @NonNull TestViewDTO toView(Test test) {
         List<TestParameter> params =
-            paramRepo.findByTest_IdOrderByDisplayOrderAsc(test.getId());
+            paramRepo.findByTest_IdOrderByIdAsc(test.getId());
         boolean multi = params.size() > 1;
         List<TestUnitDTO> units = new ArrayList<>();
         List<TestNormalValueDTO> normalValues = new ArrayList<>();
@@ -500,7 +483,6 @@ public class TestService {
                 param.getUnit(),
                 valueType,
                 formatNormalRanges(param.getNormalRanges()),
-                param.getSectionName(),
                 param.getAllowedValues()
             ));
         }
