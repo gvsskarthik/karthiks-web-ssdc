@@ -13,13 +13,16 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ssdc.ssdclabs.dto.PatientTestObservationDTO;
 import com.ssdc.ssdclabs.dto.PatientTestResultDTO;
 import com.ssdc.ssdclabs.dto.PatientTestSelectionDTO;
 import com.ssdc.ssdclabs.model.Patient;
+import com.ssdc.ssdclabs.model.ReportObservation;
 import com.ssdc.ssdclabs.model.ReportResult;
 import com.ssdc.ssdclabs.model.Test;
 import com.ssdc.ssdclabs.model.TestParameter;
 import com.ssdc.ssdclabs.repository.PatientRepository;
+import com.ssdc.ssdclabs.repository.ReportObservationRepository;
 import com.ssdc.ssdclabs.repository.ReportResultRepository;
 import com.ssdc.ssdclabs.repository.TestParameterRepository;
 import com.ssdc.ssdclabs.repository.TestRepository;
@@ -28,15 +31,18 @@ import com.ssdc.ssdclabs.repository.TestRepository;
 public class ReportService {
 
     private final ReportResultRepository resultRepo;
+    private final ReportObservationRepository observationRepo;
     private final TestRepository testRepo;
     private final TestParameterRepository paramRepo;
     private final PatientRepository patientRepo;
 
     public ReportService(ReportResultRepository resultRepo,
+                         ReportObservationRepository observationRepo,
                          TestRepository testRepo,
                          TestParameterRepository paramRepo,
                          PatientRepository patientRepo) {
         this.resultRepo = resultRepo;
+        this.observationRepo = observationRepo;
         this.testRepo = testRepo;
         this.paramRepo = paramRepo;
         this.patientRepo = patientRepo;
@@ -213,6 +219,80 @@ public class ReportService {
         if (!toSave.isEmpty()) {
             resultRepo.saveAll(toSave);
         }
+    }
+
+    @Transactional
+    public void saveObservations(List<PatientTestObservationDTO> observations) {
+        if (observations == null || observations.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Patient> patientCache = new HashMap<>();
+        Map<Long, Test> testCache = new HashMap<>();
+        List<ReportObservation> toSave = new ArrayList<>();
+
+        for (PatientTestObservationDTO incoming : observations) {
+            if (incoming == null) {
+                continue;
+            }
+            Long patientId = incoming.patientId;
+            Long testId = incoming.testId;
+            if (patientId == null || testId == null) {
+                continue;
+            }
+
+            observationRepo.deleteByPatient_IdAndTest_Id(patientId, testId);
+
+            if (isBlank(incoming.observation)) {
+                continue;
+            }
+
+            Patient patient = patientCache.computeIfAbsent(
+                patientId,
+                id -> patientRepo.findById(Objects.requireNonNull(id, "patientId"))
+                    .orElse(null)
+            );
+            if (patient == null) {
+                continue;
+            }
+            Test test = testCache.computeIfAbsent(
+                testId,
+                id -> testRepo.findById(Objects.requireNonNull(id, "testId"))
+                    .orElse(null)
+            );
+            if (test == null) {
+                continue;
+            }
+
+            ReportObservation obs = new ReportObservation();
+            obs.setPatient(patient);
+            obs.setTest(test);
+            obs.setObservation(incoming.observation.trim());
+            toSave.add(obs);
+        }
+
+        if (!toSave.isEmpty()) {
+            observationRepo.saveAll(toSave);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<PatientTestObservationDTO> getObservations(@NonNull Long patientId) {
+        List<ReportObservation> observations =
+            observationRepo.findByPatient_Id(Objects.requireNonNull(patientId, "patientId"));
+
+        List<PatientTestObservationDTO> response = new ArrayList<>();
+        for (ReportObservation observation : observations) {
+            if (observation.getTest() == null || observation.getTest().getId() == null) {
+                continue;
+            }
+            response.add(new PatientTestObservationDTO(
+                patientId,
+                observation.getTest().getId(),
+                observation.getObservation()
+            ));
+        }
+        return response;
     }
 
     @Transactional(readOnly = true)

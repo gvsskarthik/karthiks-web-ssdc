@@ -60,6 +60,25 @@ th{font-size:13px;color:#555}
              inset -5px -5px 8px #ffffff;
 }
 
+.observation-input{
+  width:100%;
+  min-height:70px;
+  padding:8px;
+  border:none;
+  border-radius:10px;
+  background:#ecf0f3;
+  box-shadow:inset 5px 5px 8px #c5c9cc,
+             inset -5px -5px 8px #ffffff;
+  resize:vertical;
+}
+
+.observation-label{
+  font-size:12px;
+  font-weight:600;
+  color:#555;
+  margin-bottom:6px;
+}
+
 .normal{
   font-size:12px;
   white-space:pre-line;
@@ -133,6 +152,7 @@ th{font-size:13px;color:#555}
 <script>
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
+let savedObservations = {};
 
 /* ================= LOAD PATIENT ================= */
 const patient =
@@ -190,6 +210,40 @@ function loadSavedResults(){
     });
 }
 
+function normalizeObservations(list){
+  const map = {};
+  (list || []).forEach(item => {
+    if (!item || item.testId == null) {
+      return;
+    }
+    const text = (item.observation || "").trim();
+    if (!text) {
+      return;
+    }
+    map[String(item.testId)] = text;
+  });
+  return map;
+}
+
+function loadSavedObservations(){
+  return fetch(`${API_BASE_URL}/patient-tests/observations/${patient.id}`)
+    .then(res => res.json())
+    .then(list => {
+      savedObservations = normalizeObservations(list || []);
+      localStorage.setItem(
+        "patientObservations",
+        JSON.stringify(savedObservations)
+      );
+      return savedObservations;
+    })
+    .catch(() => {
+      savedObservations = JSON.parse(
+        localStorage.getItem("patientObservations") || "{}"
+      );
+      return savedObservations;
+    });
+}
+
 function saveSelectedTestsToDb(selectedIds){
   if (!selectedIds.length) {
     return Promise.resolve();
@@ -208,7 +262,14 @@ function saveSelectedTestsToDb(selectedIds){
 }
 
 function deriveSelectedFromResults(){
-  return [...new Set(savedResults.map(r => r.testId))];
+  const ids = new Set(savedResults.map(r => r.testId));
+  Object.keys(savedObservations || {}).forEach(id => {
+    const parsed = Number(id);
+    if (!Number.isNaN(parsed)) {
+      ids.add(parsed);
+    }
+  });
+  return [...ids];
 }
 
 function normalizeResults(list){
@@ -221,7 +282,7 @@ function normalizeResults(list){
   return Object.values(map);
 }
 
-loadSavedResults()
+Promise.all([loadSavedResults(), loadSavedObservations()])
   .then(() => loadSelectedIds())
   .then(selectedIds => {
     let ids = selectedIds;
@@ -244,19 +305,63 @@ loadSavedResults()
       });
   });
 
+function normalizeKey(value){
+  return (value || "").trim().toLowerCase();
+}
+
+function resolveUnit(param){
+  const unit = (param.unit || "").trim();
+  if (unit) {
+    return unit;
+  }
+  const valueType = (param.valueType || "").toUpperCase();
+  if (valueType === "TEXT") {
+    return "";
+  }
+  if (valueType) {
+    return "%";
+  }
+  return "%";
+}
+
+function renderObservationRow(testId){
+  const text = (savedObservations[String(testId)] || "");
+  return `
+    <tr class="observation-row">
+      <td colspan="4">
+        <div class="observation-label">Additional Findings</div>
+        <textarea class="observation-input" data-testid="${testId}">${text}</textarea>
+      </td>
+    </tr>`;
+}
+
 /* ================= RENDER TESTS ================= */
 function renderTests(tests) {
   const body = document.getElementById("resultBody");
   body.innerHTML = "";
 
   tests.forEach(test => {
+    const params = Array.isArray(test.parameters) ? test.parameters : [];
+    const hasParams = params.length > 0;
+    const isMulti = (hasParams && params.length > 1)
+      || (!hasParams && (test.units || []).length > 1);
 
     /* ===== SINGLE VALUE TEST ===== */
-    if (test.units.length <= 1) {
+    if (!isMulti) {
 
       const saved = savedResults.find(
         r => r.testId == test.id && !r.subTest
       );
+
+      const unit =
+        (params[0]?.unit || "").trim()
+        || test.units?.[0]?.unit
+        || "";
+      const normalText =
+        (test.normalValues || [])
+          .map(n => n.normalValue)
+          .join("<br>");
+      const fallbackNormal = params[0]?.normalText || "";
 
       body.innerHTML += `
         <tr>
@@ -268,44 +373,61 @@ function renderTests(tests) {
                    data-testid="${test.id}"
                    value="${saved?.resultValue || saved?.value || ""}">
           </td>
-          <td>${test.units[0]?.unit || ""}</td>
+          <td>${unit}</td>
           <td class="normal">
-            ${(test.normalValues || [])
-              .map(n => n.normalValue)
-              .join("<br>")}
+            ${normalText || fallbackNormal}
           </td>
         </tr>`;
+      body.innerHTML += renderObservationRow(test.id);
+      return;
     }
 
-    /* ===== MULTI VALUE TEST (DC) ===== */
-    else {
-      body.innerHTML +=
-        `<tr><td colspan="4"><b>${test.testName}</b></td></tr>`;
+    /* ===== MULTI VALUE TEST ===== */
+    body.innerHTML +=
+      `<tr><td colspan="4"><b>${test.testName}</b></td></tr>`;
 
-      test.units.forEach((u, i) => {
+    const savedBySub = {};
+    savedResults.forEach(r => {
+      if (r.testId == test.id) {
+        savedBySub[normalizeKey(r.subTest)] = r;
+      }
+    });
 
-        const saved = savedResults.find(
-          r => r.testId == test.id && r.subTest === u.unit
-        );
+    const rows = hasParams && params.length > 1
+      ? params.map(p => ({
+        name: p.name || "",
+        unit: p.unit || "",
+        valueType: p.valueType,
+        normalText: p.normalText || ""
+      }))
+      : (test.units || []).map((u, i) => ({
+        name: u.unit || "",
+        unit: "",
+        valueType: null,
+        normalText: test.normalValues?.[i]?.normalValue || ""
+      }));
 
-        body.innerHTML += `
-          <tr>
-            <td style="padding-left:25px">${u.unit}</td>
-            <td>
-             <input class="result-input"
-                     id="result-${test.id}-${i}"
-                     name="result-${test.id}-${i}"
-                     data-testid="${test.id}"
-                     data-sub="${u.unit}"
-                     value="${saved?.resultValue || saved?.value || ""}">
-            </td>
-            <td>%</td>
-            <td class="normal">
-              ${test.normalValues[i]?.normalValue || ""}
-            </td>
-          </tr>`;
-      });
-    }
+    rows.forEach((param, i) => {
+      const saved = savedBySub[normalizeKey(param.name)];
+
+      body.innerHTML += `
+        <tr>
+          <td style="padding-left:25px">${param.name}</td>
+          <td>
+            <input class="result-input"
+                   id="result-${test.id}-${i}"
+                   name="result-${test.id}-${i}"
+                   data-testid="${test.id}"
+                   data-sub="${param.name}"
+                   value="${saved?.resultValue || saved?.value || ""}">
+          </td>
+          <td>${resolveUnit(param)}</td>
+          <td class="normal">
+            ${param.normalText || ""}
+          </td>
+        </tr>`;
+    });
+    body.innerHTML += renderObservationRow(test.id);
   });
 }
 
@@ -321,31 +443,72 @@ function collectResults() {
     }));
 }
 
+function collectObservations() {
+  return [...document.querySelectorAll(".observation-input")]
+    .map(input => {
+      const testId = Number(input.dataset.testid);
+      if (Number.isNaN(testId)) {
+        return null;
+      }
+      const text = input.value.trim();
+      const hadSaved = savedObservations[String(testId)];
+      if (!text && !hadSaved) {
+        return null;
+      }
+      return {
+        patientId: patient.id,
+        testId: testId,
+        observation: text
+      };
+    })
+    .filter(Boolean);
+}
+
 /* ================= SAVE ONLY ================= */
 function saveOnly() {
 
   const results = collectResults();
+  const observations = collectObservations();
 
   const finishSave = () => {
     localStorage.setItem("patientResults", JSON.stringify(results));
+    const obsMap = {};
+    observations.forEach(o => {
+      if (o.observation) {
+        obsMap[String(o.testId)] = o.observation;
+      }
+    });
+    localStorage.setItem("patientObservations", JSON.stringify(obsMap));
     location.href = "reports.html";
   };
 
-  if (results.length === 0) {
+  if (results.length === 0 && observations.length === 0) {
     finishSave();
     return;
   }
 
-  fetch(API_BASE_URL + "/patient-tests/results", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(results)
-  })
-  .then(() => finishSave())
-  .catch(err => {
-    console.error(err);
-    alert("Failed to save results");
-  });
+  const requests = [];
+  if (results.length) {
+    requests.push(fetch(API_BASE_URL + "/patient-tests/results", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(results)
+    }));
+  }
+  if (observations.length) {
+    requests.push(fetch(API_BASE_URL + "/patient-tests/observations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(observations)
+    }));
+  }
+
+  Promise.all(requests)
+    .then(() => finishSave())
+    .catch(err => {
+      console.error(err);
+      alert("Failed to save results");
+    });
 }
 
 /* ================= SAVE & PRINT ================= */

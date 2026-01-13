@@ -12,6 +12,7 @@ public class TestViewDTO {
     public Boolean active;
     public List<TestUnitDTO> units;
     public List<TestNormalValueDTO> normalValues;
+    public List<TestParameterViewDTO> parameters;
 
     public TestViewDTO(Long id,
                        String testName,
@@ -20,7 +21,8 @@ public class TestViewDTO {
                        Double cost,
                        Boolean active,
                        List<TestUnitDTO> units,
-                       List<TestNormalValueDTO> normalValues) {
+                       List<TestNormalValueDTO> normalValues,
+                       List<TestParameterViewDTO> parameters) {
         this.id = id;
         this.testName = testName;
         this.category = category;
@@ -29,5 +31,6 @@ public class TestViewDTO {
         this.active = active;
         this.units = units;
         this.normalValues = normalValues;
+        this.parameters = parameters;
     }
 }

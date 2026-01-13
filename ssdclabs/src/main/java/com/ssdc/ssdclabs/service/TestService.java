@@ -18,6 +18,7 @@ import com.ssdc.ssdclabs.dto.TestNormalValueDTO;
 import com.ssdc.ssdclabs.dto.NormalRangePayload;
 import com.ssdc.ssdclabs.dto.TestParameterPayload;
 import com.ssdc.ssdclabs.dto.TestPayload;
+import com.ssdc.ssdclabs.dto.TestParameterViewDTO;
 import com.ssdc.ssdclabs.dto.TestUnitDTO;
 import com.ssdc.ssdclabs.dto.TestViewDTO;
 import com.ssdc.ssdclabs.model.Gender;
@@ -428,6 +429,19 @@ public class TestService {
         boolean multi = params.size() > 1;
         List<TestUnitDTO> units = new ArrayList<>();
         List<TestNormalValueDTO> normalValues = new ArrayList<>();
+        List<TestParameterViewDTO> parameterViews = new ArrayList<>();
+
+        for (TestParameter param : params) {
+            ValueType valueType =
+                param.getValueType() == null ? ValueType.NUMBER : param.getValueType();
+            parameterViews.add(new TestParameterViewDTO(
+                param.getId(),
+                param.getName(),
+                param.getUnit(),
+                valueType,
+                formatNormalRanges(param.getNormalRanges())
+            ));
+        }
 
         if (multi) {
             for (TestParameter param : params) {
@@ -458,7 +472,8 @@ public class TestService {
             test.getCost(),
             test.getActive(),
             units,
-            normalValues
+            normalValues,
+            parameterViews
         );
     }
 
