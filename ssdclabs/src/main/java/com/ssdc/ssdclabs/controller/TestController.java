@@ -51,13 +51,32 @@ public class TestController {
 
     /* ================= CREATE TEST ================= */
     @PostMapping
-    public @NonNull TestViewDTO save(@RequestBody @NonNull TestPayload test) {
-
-        if (repo.existsByShortcut(test.shortcut)) {
-            throw new RuntimeException("Shortcut already exists");
+    public ResponseEntity<?> save(@RequestBody @NonNull TestPayload test) {
+        String testName = trimToNull(test.testName);
+        if (testName == null) {
+            return ResponseEntity.badRequest().body("Test name is required.");
+        }
+        String shortcut = trimToNull(test.shortcut);
+        if (shortcut == null) {
+            return ResponseEntity.badRequest().body("Shortcut is required.");
+        }
+        String category = trimToNull(test.category);
+        if (category == null) {
+            return ResponseEntity.badRequest().body("Category is required.");
+        }
+        if (test.cost == null) {
+            return ResponseEntity.badRequest().body("Cost is required.");
         }
 
-        return testService.createTest(test);
+        test.testName = testName;
+        test.shortcut = shortcut;
+        test.category = category;
+
+        if (repo.existsByShortcutIgnoreCase(shortcut)) {
+            return ResponseEntity.badRequest().body("Shortcut already exists.");
+        }
+
+        return ResponseEntity.ok(testService.createTest(test));
     }
 
     /* ================= UPDATE TEST ================= */
@@ -66,10 +85,26 @@ public class TestController {
             @PathVariable @NonNull Long id,
             @RequestBody @NonNull TestPayload incoming) {
 
-        if (incoming.shortcut != null
-                && repo.existsByShortcut(incoming.shortcut)
+        if (incoming.testName != null && trimToNull(incoming.testName) == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (incoming.category != null && trimToNull(incoming.category) == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String shortcut = null;
+        if (incoming.shortcut != null) {
+            shortcut = trimToNull(incoming.shortcut);
+            if (shortcut == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            incoming.shortcut = shortcut;
+        }
+
+        if (shortcut != null
+                && repo.existsByShortcutIgnoreCase(shortcut)
                 && repo.findById(id)
-                       .map(t -> !incoming.shortcut.equalsIgnoreCase(t.getShortcut()))
+                       .map(t -> !shortcut.equalsIgnoreCase(t.getShortcut()))
                        .orElse(true)) {
             return ResponseEntity.badRequest().build();
         }
@@ -113,5 +148,13 @@ public class TestController {
     @GetMapping("/hierarchy")
     public Map<String, Object> getHierarchy() {
         return hierarchyService.getHierarchy();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

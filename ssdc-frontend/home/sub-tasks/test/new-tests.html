@@ -66,9 +66,9 @@ input[type="checkbox"] {
   gap: 16px;
 }
 
-.grid-4 {
+.grid-3 {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 12px;
 }
 
@@ -133,10 +133,6 @@ input[type="checkbox"] {
   gap: 10px;
   align-items: center;
   margin-top: 10px;
-}
-
-.param-section-row {
-  margin-top: 12px;
 }
 
 .hidden {
@@ -217,7 +213,7 @@ input[type="checkbox"] {
 }
 
 .grid-2 > div,
-.grid-4 > div,
+.grid-3 > div,
 /*noinspection CssUnusedSymbol*/
 .normal-row > *,
 .allowed-row > * {
@@ -225,7 +221,7 @@ input[type="checkbox"] {
 }
 
 @media (max-width: 980px) {
-  .grid-4 {
+  .grid-3 {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -236,7 +232,7 @@ input[type="checkbox"] {
 }
 @media (max-width: 640px) {
   .grid-2,
-  .grid-4 {
+  .grid-3 {
     grid-template-columns: 1fr;
   }
 }
@@ -304,17 +300,13 @@ const shortcutMsg = document.getElementById("shortcutMsg");
 
 let shortcutsLoaded = false;
 let existingShortcuts = new Set();
-let shortcutTimer;
 let paramIdCounter = 0;
 let normalIdCounter = 0;
 let allowedIdCounter = 0;
 
 addParamBtn.addEventListener("click", () => addParameter());
 saveBtn.addEventListener("click", () => saveTest());
-shortcutInput.addEventListener("input", () => {
-  clearTimeout(shortcutTimer);
-  shortcutTimer = setTimeout(validateShortcut, 250);
-});
+shortcutInput.addEventListener("input", () => validateShortcut());
 shortcutInput.addEventListener("blur", () => validateShortcut());
 
 function addParameter() {
@@ -324,13 +316,12 @@ function addParameter() {
   const nameId = `${paramId}-name`;
   const unitId = `${paramId}-unit`;
   const typeId = `${paramId}-type`;
-  const orderId = `${paramId}-order`;
   card.innerHTML = `
     <div class="param-header">
       <h4 class="param-title">Parameter</h4>
       <button class="btn link remove-param" type="button">Remove</button>
     </div>
-    <div class="grid-4">
+    <div class="grid-3">
       <div>
         <label for="${nameId}">Parameter Name</label>
         <input id="${nameId}" type="text" class="param-name" placeholder="Parameter Name">
@@ -342,20 +333,13 @@ function addParameter() {
       <div>
         <label for="${typeId}">Value Type</label>
         <select id="${typeId}" class="param-type">
+          <option value="">Select value type</option>
           <option value="NUMBER">NUMBER</option>
           <option value="TEXT">TEXT</option>
           <option value="RANGE">RANGE</option>
           <option value="SELECT">SELECT</option>
         </select>
       </div>
-      <div>
-        <label for="${orderId}">Display Order</label>
-        <input id="${orderId}" type="number" class="param-order" min="0" step="1" placeholder="0">
-      </div>
-    </div>
-    <div class="param-section-row">
-      <label for="${paramId}-section">Section (optional)</label>
-      <input id="${paramId}-section" type="text" class="param-section" placeholder="Chemical Examination">
     </div>
     <div class="section-row normal-section">
       <h4>Normal Ranges</h4>
@@ -493,7 +477,7 @@ function validateShortcut() {
   }
 
   if (shortcutsLoaded && existingShortcuts.has(normalized)) {
-    shortcutMsg.textContent = "Shortcut already available.";
+    shortcutMsg.textContent = "Shortcut already exists.";
     shortcutInput.classList.add("error");
     return true;
   }
@@ -526,7 +510,24 @@ function collectPayload() {
     errors.push("Shortcut is required.");
   }
   if (validateShortcut()) {
-    errors.push("Shortcut already available.");
+    errors.push("Shortcut already exists.");
+  }
+  if (!category.value.trim()) {
+    category.classList.add("error");
+    errors.push("Category is required.");
+  }
+
+  const costRaw = cost.value.trim();
+  let costValue = null;
+  if (!costRaw) {
+    cost.classList.add("error");
+    errors.push("Cost is required.");
+  } else {
+    costValue = Number(costRaw);
+    if (Number.isNaN(costValue)) {
+      cost.classList.add("error");
+      errors.push("Cost must be a number.");
+    }
   }
 
   const parameters = [];
@@ -540,15 +541,8 @@ function collectPayload() {
     const nameInput = card.querySelector(".param-name");
     const unitInput = card.querySelector(".param-unit");
     const typeSelect = card.querySelector(".param-type");
-    const sectionInput = card.querySelector(".param-section");
-    const orderInput = card.querySelector(".param-order");
 
     const name = nameInput.value.trim();
-    if (!name) {
-      nameInput.classList.add("error");
-      errors.push("Parameter name is required.");
-      return;
-    }
     if (!typeSelect.value) {
       typeSelect.classList.add("error");
       errors.push("Value type is required.");
@@ -571,10 +565,6 @@ function collectPayload() {
       });
     });
 
-    const displayOrder = orderInput.value.trim() === ""
-      ? index
-      : Number(orderInput.value);
-
     const allowedValues = [...card.querySelectorAll(".allowed-value")]
       .map(input => input.value.trim())
       .filter(Boolean);
@@ -588,12 +578,10 @@ function collectPayload() {
     }
 
     parameters.push({
-      name: name,
+      name: name || `Parameter ${index + 1}`,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,
-      sectionName: sectionInput?.value.trim() || null,
       allowedValues: typeSelect.value === "SELECT" ? allowedValues : null,
-      displayOrder: Number.isNaN(displayOrder) ? index : displayOrder,
       normalRanges: normals
     });
   });
@@ -603,13 +591,11 @@ function collectPayload() {
     return null;
   }
 
-  const costValue = cost.value.trim() === "" ? null : Number(cost.value);
-
   return {
     testName: testName.value.trim(),
     shortcut: shortcut.value.trim(),
-    category: category.value.trim() || null,
-    cost: Number.isNaN(costValue) ? null : costValue,
+    category: category.value.trim(),
+    cost: costValue,
     active: active.checked,
     parameters: parameters
   };

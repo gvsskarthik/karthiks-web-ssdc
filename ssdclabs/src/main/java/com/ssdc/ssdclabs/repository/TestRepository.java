@@ -15,6 +15,8 @@ public interface TestRepository extends JpaRepository<Test, Long> {
 
     boolean existsByShortcut(String shortcut);
 
+    boolean existsByShortcutIgnoreCase(String shortcut);
+
     @SuppressWarnings("unused")
     List<Test> findByActiveTrue();
 

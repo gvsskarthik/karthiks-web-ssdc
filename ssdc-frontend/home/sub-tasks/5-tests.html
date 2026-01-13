@@ -283,9 +283,41 @@ function toggleMenu(btn){
  btn.nextElementSibling.style.display="block";
 }
 
+function normalizeText(value){
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value).trim();
+}
+
+function formatCost(value){
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? `₹${numeric}` : "—";
+}
+
 function renderNormalValues(test){
+ const params = Array.isArray(test.parameters) ? test.parameters : [];
+ const hasMultiple = params.length > 1;
+ const paramLines = params
+  .map(param => {
+    const normalText = normalizeText(param.normalText);
+    if (!normalText) {
+      return "";
+    }
+    const name = hasMultiple ? normalizeText(param.name) : "";
+    return name ? `${name}: ${normalText}` : normalText;
+  })
+  .filter(Boolean);
+
+ if (paramLines.length) {
+  return paramLines.join("\n");
+ }
+
  return (test.normalValues || [])
-  .map(n => (n.normalValue || "").trim())
+  .map(n => normalizeText(n.normalValue))
   .filter(Boolean)
   .join("\n");
 }
@@ -301,10 +333,10 @@ function render(){
    <tr>
     <td>${i++}</td>
     <td>${t.testName}</td>
-    <td>${t.category}</td>
+    <td>${t.category || "—"}</td>
     <td>${t.shortcut}</td>
     <td class="normal">${renderNormalValues(t)}</td>
-    <td>₹${t.cost}</td>
+    <td>${formatCost(t.cost)}</td>
       <td>
          <label class="switch">
            <input type="checkbox"
@@ -336,7 +368,7 @@ function render(){
     <td>GROUP</td>
     <td>${g.shortcut}</td>
     <td>—</td>
-    <td>₹${g.cost}</td>
+    <td>${formatCost(g.cost)}</td>
 
     <!-- ✅ ACTIVE COLUMN (groups don't have active toggle) -->
     <td>—</td>

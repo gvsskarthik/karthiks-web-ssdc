@@ -163,6 +163,12 @@ public class TestService {
             Test test,
             List<TestParameterPayload> payloadParams) {
         List<TestParameter> params = new ArrayList<>();
+        int totalParams = 0;
+        for (TestParameterPayload payloadParam : payloadParams) {
+            if (payloadParam != null) {
+                totalParams++;
+            }
+        }
         int index = 0;
         for (TestParameterPayload payloadParam : payloadParams) {
             if (payloadParam == null) {
@@ -170,7 +176,12 @@ public class TestService {
             }
             String name = trimToNull(payloadParam.name);
             if (name == null) {
-                continue;
+                name = resolveParamName(
+                    List.of(),
+                    index,
+                    totalParams,
+                    test.getTestName()
+                );
             }
 
             TestParameter param = new TestParameter();
