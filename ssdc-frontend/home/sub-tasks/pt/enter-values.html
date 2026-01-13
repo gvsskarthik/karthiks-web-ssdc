@@ -60,25 +60,6 @@ th{font-size:13px;color:#555}
              inset -5px -5px 8px #ffffff;
 }
 
-.observation-input{
-  width:100%;
-  min-height:70px;
-  padding:8px;
-  border:none;
-  border-radius:10px;
-  background:#ecf0f3;
-  box-shadow:inset 5px 5px 8px #c5c9cc,
-             inset -5px -5px 8px #ffffff;
-  resize:vertical;
-}
-
-.observation-label{
-  font-size:12px;
-  font-weight:600;
-  color:#555;
-  margin-bottom:6px;
-}
-
 .normal{
   font-size:12px;
   white-space:pre-line;
@@ -159,7 +140,6 @@ th{font-size:13px;color:#555}
 <script>
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
-let savedObservations = {};
 
 /* ================= LOAD PATIENT ================= */
 const patient =
@@ -217,40 +197,6 @@ function loadSavedResults(){
     });
 }
 
-function normalizeObservations(list){
-  const map = {};
-  (list || []).forEach(item => {
-    if (!item || item.testId == null) {
-      return;
-    }
-    const text = (item.observation || "").trim();
-    if (!text) {
-      return;
-    }
-    map[String(item.testId)] = text;
-  });
-  return map;
-}
-
-function loadSavedObservations(){
-  return fetch(`${API_BASE_URL}/patient-tests/observations/${patient.id}`)
-    .then(res => res.json())
-    .then(list => {
-      savedObservations = normalizeObservations(list || []);
-      localStorage.setItem(
-        "patientObservations",
-        JSON.stringify(savedObservations)
-      );
-      return savedObservations;
-    })
-    .catch(() => {
-      savedObservations = JSON.parse(
-        localStorage.getItem("patientObservations") || "{}"
-      );
-      return savedObservations;
-    });
-}
-
 function saveSelectedTestsToDb(selectedIds){
   if (!selectedIds.length) {
     return Promise.resolve();
@@ -270,12 +216,6 @@ function saveSelectedTestsToDb(selectedIds){
 
 function deriveSelectedFromResults(){
   const ids = new Set(savedResults.map(r => r.testId));
-  Object.keys(savedObservations || {}).forEach(id => {
-    const parsed = Number(id);
-    if (!Number.isNaN(parsed)) {
-      ids.add(parsed);
-    }
-  });
   return [...ids];
 }
 
@@ -289,7 +229,7 @@ function normalizeResults(list){
   return Object.values(map);
 }
 
-Promise.all([loadSavedResults(), loadSavedObservations()])
+loadSavedResults()
   .then(() => loadSelectedIds())
   .then(selectedIds => {
     let ids = selectedIds;
@@ -329,17 +269,6 @@ function resolveUnit(param){
     return "%";
   }
   return "%";
-}
-
-function renderObservationRow(testId){
-  const text = (savedObservations[String(testId)] || "");
-  return `
-    <tr class="observation-row">
-      <td colspan="4">
-        <div class="observation-label">Additional Findings</div>
-        <textarea class="observation-input" data-testid="${testId}">${text}</textarea>
-      </td>
-    </tr>`;
 }
 
 function buildSelectOptions(values, selectedValue){
@@ -427,7 +356,6 @@ function renderTests(tests) {
             ${normalText || fallbackNormal}
           </td>
         </tr>`;
-      body.innerHTML += renderObservationRow(test.id);
       return;
     }
 
@@ -496,7 +424,6 @@ function renderTests(tests) {
           </td>
         </tr>`;
     });
-    body.innerHTML += renderObservationRow(test.id);
   });
 }
 
@@ -512,46 +439,17 @@ function collectResults() {
     }));
 }
 
-function collectObservations() {
-  return [...document.querySelectorAll(".observation-input")]
-    .map(input => {
-      const testId = Number(input.dataset.testid);
-      if (Number.isNaN(testId)) {
-        return null;
-      }
-      const text = input.value.trim();
-      const hadSaved = savedObservations[String(testId)];
-      if (!text && !hadSaved) {
-        return null;
-      }
-      return {
-        patientId: patient.id,
-        testId: testId,
-        observation: text
-      };
-    })
-    .filter(Boolean);
-}
-
 /* ================= SAVE ONLY ================= */
 function saveOnly() {
 
   const results = collectResults();
-  const observations = collectObservations();
 
   const finishSave = () => {
     localStorage.setItem("patientResults", JSON.stringify(results));
-    const obsMap = {};
-    observations.forEach(o => {
-      if (o.observation) {
-        obsMap[String(o.testId)] = o.observation;
-      }
-    });
-    localStorage.setItem("patientObservations", JSON.stringify(obsMap));
     location.href = "reports.html";
   };
 
-  if (results.length === 0 && observations.length === 0) {
+  if (results.length === 0) {
     finishSave();
     return;
   }
@@ -562,13 +460,6 @@ function saveOnly() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(results)
-    }));
-  }
-  if (observations.length) {
-    requests.push(fetch(API_BASE_URL + "/patient-tests/observations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(observations)
     }));
   }
 
