@@ -92,19 +92,21 @@ public class TestController {
             return ResponseEntity.badRequest().build();
         }
 
-        String shortcut = null;
-        if (incoming.shortcut != null) {
-            shortcut = trimToNull(incoming.shortcut);
-            if (shortcut == null) {
-                return ResponseEntity.badRequest().build();
-            }
+        String shortcut = incoming.shortcut == null
+            ? null
+            : trimToNull(incoming.shortcut);
+        if (incoming.shortcut != null && shortcut == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (shortcut != null) {
             incoming.shortcut = shortcut;
         }
 
-        if (shortcut != null
-                && repo.existsByShortcutIgnoreCase(shortcut)
+        final String shortcutValue = shortcut;
+        if (shortcutValue != null
+                && repo.existsByShortcutIgnoreCase(shortcutValue)
                 && repo.findById(id)
-                       .map(t -> !shortcut.equalsIgnoreCase(t.getShortcut()))
+                       .map(t -> !shortcutValue.equalsIgnoreCase(t.getShortcut()))
                        .orElse(true)) {
             return ResponseEntity.badRequest().build();
         }
