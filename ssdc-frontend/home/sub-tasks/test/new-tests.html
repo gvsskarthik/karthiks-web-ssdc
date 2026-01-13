@@ -127,6 +127,22 @@ input[type="checkbox"] {
   margin-top: 10px;
 }
 
+.allowed-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.param-section-row {
+  margin-top: 12px;
+}
+
+.hidden {
+  display: none;
+}
+
 .row-error {
   grid-column: 1 / -1;
   color: #c0392b;
@@ -203,7 +219,8 @@ input[type="checkbox"] {
 .grid-2 > div,
 .grid-4 > div,
 /*noinspection CssUnusedSymbol*/
-.normal-row > * {
+.normal-row > *,
+.allowed-row > * {
   min-width: 0;
 }
 
@@ -290,6 +307,7 @@ let existingShortcuts = new Set();
 let shortcutTimer;
 let paramIdCounter = 0;
 let normalIdCounter = 0;
+let allowedIdCounter = 0;
 
 addParamBtn.addEventListener("click", () => addParameter());
 saveBtn.addEventListener("click", () => saveTest());
@@ -327,6 +345,7 @@ function addParameter() {
           <option value="NUMBER">NUMBER</option>
           <option value="TEXT">TEXT</option>
           <option value="RANGE">RANGE</option>
+          <option value="SELECT">SELECT</option>
         </select>
       </div>
       <div>
@@ -334,11 +353,20 @@ function addParameter() {
         <input id="${orderId}" type="number" class="param-order" min="0" step="1" placeholder="0">
       </div>
     </div>
-    <div class="section-row">
+    <div class="param-section-row">
+      <label for="${paramId}-section">Section (optional)</label>
+      <input id="${paramId}-section" type="text" class="param-section" placeholder="Chemical Examination">
+    </div>
+    <div class="section-row normal-section">
       <h4>Normal Ranges</h4>
       <button class="btn small add-normal" type="button">Add Normal</button>
     </div>
     <div class="normals"></div>
+    <div class="section-row allowed-section hidden">
+      <h4>Allowed Values</h4>
+      <button class="btn small add-allowed" type="button">Add Value</button>
+    </div>
+    <div class="allowed-values hidden"></div>
   `;
 
   paramList.appendChild(card);
@@ -349,8 +377,15 @@ function addParameter() {
   card.querySelector(".add-normal").addEventListener("click", () => {
     addNormalRow(card.querySelector(".normals"));
   });
+  card.querySelector(".add-allowed").addEventListener("click", () => {
+    addAllowedRow(card.querySelector(".allowed-values"));
+  });
+  card.querySelector(".param-type").addEventListener("change", () => {
+    toggleValueTypeUI(card);
+  });
 
   addNormalRow(card.querySelector(".normals"));
+  toggleValueTypeUI(card);
   refreshParameterLabels();
 }
 
@@ -365,6 +400,45 @@ function addNormalRow(container) {
   `;
   container.appendChild(row);
   row.querySelector(".remove-normal").addEventListener("click", () => row.remove());
+}
+
+function addAllowedRow(container) {
+  const row = document.createElement("div");
+  row.className = "allowed-row";
+  const allowedId = `allowed-${allowedIdCounter++}`;
+  row.innerHTML = `
+    <input id="${allowedId}" name="${allowedId}" type="text" class="allowed-value" placeholder="Allowed value (e.g. NIL)">
+    <button class="btn link remove-allowed" type="button">Remove</button>
+    <div class="row-error"></div>
+  `;
+  container.appendChild(row);
+  row.querySelector(".remove-allowed").addEventListener("click", () => row.remove());
+}
+
+function toggleValueTypeUI(card) {
+  const typeSelect = card.querySelector(".param-type");
+  const normalSection = card.querySelector(".normal-section");
+  const normals = card.querySelector(".normals");
+  const allowedSection = card.querySelector(".allowed-section");
+  const allowedValues = card.querySelector(".allowed-values");
+  const isSelect = typeSelect.value === "SELECT";
+
+  if (allowedSection) {
+    allowedSection.classList.toggle("hidden", !isSelect);
+  }
+  if (allowedValues) {
+    allowedValues.classList.toggle("hidden", !isSelect);
+  }
+  if (normalSection) {
+    normalSection.classList.toggle("hidden", isSelect);
+  }
+  if (normals) {
+    normals.classList.toggle("hidden", isSelect);
+  }
+
+  if (isSelect && allowedValues && allowedValues.children.length === 0) {
+    addAllowedRow(allowedValues);
+  }
 }
 
 function refreshParameterLabels() {
@@ -466,12 +540,18 @@ function collectPayload() {
     const nameInput = card.querySelector(".param-name");
     const unitInput = card.querySelector(".param-unit");
     const typeSelect = card.querySelector(".param-type");
+    const sectionInput = card.querySelector(".param-section");
     const orderInput = card.querySelector(".param-order");
 
     const name = nameInput.value.trim();
     if (!name) {
       nameInput.classList.add("error");
       errors.push("Parameter name is required.");
+      return;
+    }
+    if (!typeSelect.value) {
+      typeSelect.classList.add("error");
+      errors.push("Value type is required.");
       return;
     }
 
@@ -495,10 +575,24 @@ function collectPayload() {
       ? index
       : Number(orderInput.value);
 
+    const allowedValues = [...card.querySelectorAll(".allowed-value")]
+      .map(input => input.value.trim())
+      .filter(Boolean);
+
+    if (typeSelect.value === "SELECT" && allowedValues.length === 0) {
+      card.querySelectorAll(".allowed-value").forEach(input => {
+        input.classList.add("error");
+      });
+      errors.push("Allowed values are required for SELECT parameters.");
+      return;
+    }
+
     parameters.push({
       name: name,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,
+      sectionName: sectionInput?.value.trim() || null,
+      allowedValues: typeSelect.value === "SELECT" ? allowedValues : null,
       displayOrder: Number.isNaN(displayOrder) ? index : displayOrder,
       normalRanges: normals
     });

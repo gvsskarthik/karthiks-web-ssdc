@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Convert;
 
 @SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
@@ -53,6 +54,13 @@ public class TestParameter {
     @JsonManagedReference("parameter-ranges")
     private List<NormalRange> normalRanges;
 
+    @Column(name = "section_name")
+    private String sectionName;
+
+    @Column(name = "allowed_values", columnDefinition = "TEXT")
+    @Convert(converter = StringListConverter.class)
+    private List<String> allowedValues;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -77,5 +85,15 @@ public class TestParameter {
     public List<NormalRange> getNormalRanges() { return normalRanges; }
     public void setNormalRanges(List<NormalRange> normalRanges) {
         this.normalRanges = normalRanges;
+    }
+
+    public String getSectionName() { return sectionName; }
+    public void setSectionName(String sectionName) {
+        this.sectionName = sectionName;
+    }
+
+    public List<String> getAllowedValues() { return allowedValues; }
+    public void setAllowedValues(List<String> allowedValues) {
+        this.allowedValues = allowedValues;
     }
 }

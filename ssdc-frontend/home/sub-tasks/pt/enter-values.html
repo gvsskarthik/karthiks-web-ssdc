@@ -84,6 +84,13 @@ th{font-size:13px;color:#555}
   white-space:pre-line;
 }
 
+.section-header td{
+  padding-top:12px;
+  font-size:12px;
+  font-weight:600;
+  color:#555;
+}
+
 .actions{
   display:flex;
   gap:12px;
@@ -315,7 +322,7 @@ function resolveUnit(param){
     return unit;
   }
   const valueType = (param.valueType || "").toUpperCase();
-  if (valueType === "TEXT") {
+  if (valueType === "TEXT" || valueType === "SELECT") {
     return "";
   }
   if (valueType) {
@@ -333,6 +340,44 @@ function renderObservationRow(testId){
         <textarea class="observation-input" data-testid="${testId}">${text}</textarea>
       </td>
     </tr>`;
+}
+
+function buildSelectOptions(values, selectedValue){
+  const options = ['<option value=""></option>'];
+  (values || []).forEach(value => {
+    const text = String(value || "").trim();
+    if (!text) {
+      return;
+    }
+    const selected = text === selectedValue ? " selected" : "";
+    options.push(`<option value="${text}"${selected}>${text}</option>`);
+  });
+  return options.join("");
+}
+
+function renderResultControl(testId, inputId, subTest, param, savedValue){
+  const valueType = (param.valueType || "").toUpperCase();
+  const subAttr = subTest ? ` data-sub="${subTest}"` : "";
+  const safeValue = savedValue || "";
+
+  if (valueType === "SELECT") {
+    return `
+      <select class="result-input"
+              id="${inputId}"
+              name="${inputId}"
+              data-testid="${testId}"${subAttr}>
+        ${buildSelectOptions(param.allowedValues || [], safeValue)}
+      </select>
+    `;
+  }
+
+  return `
+    <input class="result-input"
+           id="${inputId}"
+           name="${inputId}"
+           data-testid="${testId}"${subAttr}
+           value="${safeValue}">
+  `;
 }
 
 /* ================= RENDER TESTS ================= */
@@ -353,25 +398,29 @@ function renderTests(tests) {
         r => r.testId == test.id && !r.subTest
       );
 
+      const singleParam = params[0] || {};
       const unit =
-        (params[0]?.unit || "").trim()
+        (singleParam.unit || "").trim()
         || test.units?.[0]?.unit
         || "";
       const normalText =
         (test.normalValues || [])
           .map(n => n.normalValue)
           .join("<br>");
-      const fallbackNormal = params[0]?.normalText || "";
+      const fallbackNormal = singleParam.normalText || "";
+      const inputHtml = renderResultControl(
+        test.id,
+        `result-${test.id}`,
+        null,
+        singleParam,
+        saved?.resultValue || saved?.value || ""
+      );
 
       body.innerHTML += `
         <tr>
           <td><b>${test.testName}</b></td>
           <td>
-            <input class="result-input"
-                   id="result-${test.id}"
-                   name="result-${test.id}"
-                   data-testid="${test.id}"
-                   value="${saved?.resultValue || saved?.value || ""}">
+            ${inputHtml}
           </td>
           <td>${unit}</td>
           <td class="normal">
@@ -398,28 +447,48 @@ function renderTests(tests) {
         name: p.name || "",
         unit: p.unit || "",
         valueType: p.valueType,
-        normalText: p.normalText || ""
+        normalText: p.normalText || "",
+        sectionName: p.sectionName || "",
+        allowedValues: p.allowedValues || []
       }))
       : (test.units || []).map((u, i) => ({
         name: u.unit || "",
         unit: "",
         valueType: null,
-        normalText: test.normalValues?.[i]?.normalValue || ""
+        normalText: test.normalValues?.[i]?.normalValue || "",
+        sectionName: "",
+        allowedValues: []
       }));
 
+    let currentSection = null;
     rows.forEach((param, i) => {
       const saved = savedBySub[normalizeKey(param.name)];
+      const sectionName = String(param.sectionName || "").trim();
+      if (sectionName) {
+        if (sectionName !== currentSection) {
+          body.innerHTML += `
+            <tr class="section-header">
+              <td colspan="4">${sectionName}</td>
+            </tr>`;
+          currentSection = sectionName;
+        }
+      } else {
+        currentSection = null;
+      }
+
+      const inputHtml = renderResultControl(
+        test.id,
+        `result-${test.id}-${i}`,
+        param.name,
+        param,
+        saved?.resultValue || saved?.value || ""
+      );
 
       body.innerHTML += `
         <tr>
           <td style="padding-left:25px">${param.name}</td>
           <td>
-            <input class="result-input"
-                   id="result-${test.id}-${i}"
-                   name="result-${test.id}-${i}"
-                   data-testid="${test.id}"
-                   data-sub="${param.name}"
-                   value="${saved?.resultValue || saved?.value || ""}">
+            ${inputHtml}
           </td>
           <td>${resolveUnit(param)}</td>
           <td class="normal">
