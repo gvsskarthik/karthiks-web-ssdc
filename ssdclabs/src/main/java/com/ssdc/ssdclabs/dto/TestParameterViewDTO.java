@@ -9,16 +9,22 @@ public class TestParameterViewDTO {
     public String unit;
     public ValueType valueType;
     public String normalText;
+    public String sectionName;
+    public java.util.List<String> allowedValues;
 
     public TestParameterViewDTO(Long id,
                                 String name,
                                 String unit,
                                 ValueType valueType,
-                                String normalText) {
+                                String normalText,
+                                String sectionName,
+                                java.util.List<String> allowedValues) {
         this.id = id;
         this.name = name;
         this.unit = unit;
         this.valueType = valueType;
         this.normalText = normalText;
+        this.sectionName = sectionName;
+        this.allowedValues = allowedValues;
     }
 }

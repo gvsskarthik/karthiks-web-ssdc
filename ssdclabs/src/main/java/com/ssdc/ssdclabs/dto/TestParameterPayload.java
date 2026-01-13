@@ -9,6 +9,8 @@ public class TestParameterPayload {
     public String name;
     public String unit;
     public ValueType valueType;
+    public String sectionName;
+    public List<String> allowedValues;
     public Integer displayOrder;
     public List<NormalRangePayload> normalRanges;
 }

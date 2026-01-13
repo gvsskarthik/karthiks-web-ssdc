@@ -26,6 +26,12 @@ th,td{
 .observation{
   white-space:pre-line;
 }
+
+.section-header td{
+  padding-top:8px;
+  font-size:11px;
+  font-weight:bold;
+}
 </style>
 </head>
 
@@ -139,7 +145,7 @@ function resolveUnit(param){
     return unit;
   }
   const valueType = (param.valueType || "").toUpperCase();
-  if (valueType === "TEXT") {
+  if (valueType === "TEXT" || valueType === "SELECT") {
     return "";
   }
   if (valueType) {
@@ -299,19 +305,41 @@ Promise.all([loadResults(), loadSelectedTests(), loadObservations()])
               name: p.name || "",
               unit: p.unit || "",
               valueType: p.valueType,
-              normalText: p.normalText || ""
+              normalText: p.normalText || "",
+              sectionName: p.sectionName || "",
+              allowedValues: p.allowedValues || []
             }))
             : (test.units || []).map((u, index) => ({
               name: u.unit || "",
               unit: "",
               valueType: null,
-              normalText: test.normalValues?.[index]?.normalValue || ""
+              normalText: test.normalValues?.[index]?.normalValue || "",
+              sectionName: "",
+              allowedValues: []
             }));
 
+          let currentSection = null;
           rows.forEach(param => {
             const item = normalizedItems[normalizeKey(param.name)];
             const normalText = param.normalText || "";
             const resultValue = item?.resultValue || "";
+            const unitText = resolveUnit(param);
+            const displayValue =
+              resultValue && unitText === "%" ? `${resultValue} %` : resultValue;
+            const sectionName = String(param.sectionName || "").trim();
+
+            if (sectionName) {
+              if (sectionName !== currentSection) {
+                body.innerHTML += `
+                  <tr class="section-header">
+                    <td colspan="4">${sectionName}</td>
+                  </tr>
+                `;
+                currentSection = sectionName;
+              }
+            } else {
+              currentSection = null;
+            }
 
             const out = isOutOfRange(
               resultValue,
@@ -323,9 +351,9 @@ Promise.all([loadResults(), loadSelectedTests(), loadObservations()])
               <tr>
                 <td style="padding-left:20px">${param.name}</td>
                 <td style="color:${out ? "red" : "black"}">
-                  ${resultValue}
+                  ${displayValue}
                 </td>
-                <td>${resolveUnit(param)}</td>
+                <td>${unitText}</td>
                 <td>${normalText}</td>
               </tr>
             `;
