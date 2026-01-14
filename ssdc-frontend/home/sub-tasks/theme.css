@@ -1,0 +1,73 @@
+@import url("../../vendor/fonts/fonts.css");
+
+:root{
+  --theme-bg:#f6f1e7;
+  --theme-surface:#fffaf2;
+  --theme-surface-2:#f8f3ea;
+  --theme-ink:#1e262d;
+  --theme-muted:#6b737c;
+  --theme-line:#e3d9c9;
+  --theme-accent:#0f766e;
+  --theme-accent-strong:#0b5f58;
+  --theme-warm:#d0812a;
+  --theme-danger:#c0392b;
+  --theme-shadow:0 18px 40px rgba(28, 41, 61, 0.12);
+}
+
+html, body{
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color: var(--theme-ink);
+  font-family:"Poppins","Lato",sans-serif;
+}
+
+.neo-card,
+.table-box,
+.card,
+.modal-card,
+.patient-row{
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
+  box-shadow: var(--theme-shadow);
+}
+
+.neo-btn,
+.btn,
+.small-btn{
+  background: linear-gradient(135deg, var(--theme-accent), #1aa191);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
+}
+
+.neo-btn.secondary,
+.btn.secondary{
+  background: var(--theme-surface);
+  color: var(--theme-ink);
+  border-color: var(--theme-line);
+  box-shadow: none;
+}
+
+.neo-input,
+.neo-select,
+.search,
+.search-input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea{
+  background: #fff;
+  color: var(--theme-ink);
+  border-color: var(--theme-line);
+}
+
+.menu-list{
+  background: #fff;
+  border-color: var(--theme-line);
+}
+.menu-list div:hover{
+  background: var(--theme-surface-2);
+}
+
+.status{color: var(--theme-warm)}
+.danger{color: var(--theme-danger)}

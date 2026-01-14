@@ -7,53 +7,69 @@
 
 <style>
 :root{
-  --bg:#ecf0f3;
-  --bg-soft:#f6f8fb;
-  --text:#2f3a4a;
-  --muted:#7a8594;
-  --accent:#1f7a8c;
-  --shadow-dark:#c5c9cc;
-  --shadow-light:#ffffff;
+  --bg:#f6f1e7;
+  --bg-soft:#fffaf2;
+  --ink:#1e262d;
+  --muted:#6b737c;
+  --accent:#0f766e;
+  --accent-strong:#0b5f58;
+  --warm:#d0812a;
+  --danger:#c0392b;
+  --success:#1b7a3f;
+  --line:#e3d9c9;
+  --shadow:0 18px 40px rgba(28, 41, 61, 0.12);
   --radius-lg:22px;
-  --radius-md:16px;
+  --radius-md:14px;
+  --radius-sm:10px;
 }
 body{
   margin:0;
   padding:24px;
-  font-family:"Poppins","Lato",Arial,sans-serif;
-  background:radial-gradient(circle at 10% 0%, #f8fafc 0%, #edf1f4 35%, #e7ecf1 100%);
-  color:var(--text);
+  font-family:"Poppins","Lato",sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color:var(--ink);
   min-height:100vh;
 }
 .page{
   max-width:1200px;
   margin:0 auto;
+  display:grid;
+  gap:20px;
 }
 
-/* ===== NEOMORPHIC ===== */
 .neo{
-  background:var(--bg);
+  background:var(--bg-soft);
   border-radius:var(--radius-lg);
-  box-shadow:10px 10px 20px var(--shadow-dark),
-             -10px -10px 20px var(--shadow-light);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
 }
 .neo-pressed{
-  box-shadow:inset 6px 6px 10px var(--shadow-dark),
-             inset -6px -6px 10px var(--shadow-light);
+  background:#fff;
+  border:1px solid var(--line);
+  box-shadow:inset 0 1px 2px rgba(20, 30, 45, 0.12);
 }
 
 .header{
   display:flex;
   justify-content:space-between;
-  align-items:flex-end;
+  align-items:center;
   gap:16px;
-  margin-bottom:24px;
+  animation:fadeUp .45s ease both;
 }
 .header h1{
   font-size:32px;
   font-weight:700;
   margin:0;
   letter-spacing:.2px;
+}
+.subtitle{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
 }
 .header-actions{
   display:flex;
@@ -62,34 +78,38 @@ body{
 }
 
 .btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
   padding:10px 16px;
   border:none;
-  border-radius:14px;
+  border-radius:999px;
   font-weight:600;
-  background:var(--bg);
-  color:var(--text);
-  box-shadow:6px 6px 12px var(--shadow-dark),
-             -6px -6px 12px var(--shadow-light);
-  border:1px solid rgba(255,255,255,0.6);
+  background:linear-gradient(135deg, var(--accent), #1aa191);
+  color:#fff;
+  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
   cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
-.btn:active{
-  box-shadow:inset 4px 4px 8px var(--shadow-dark),
-             inset -4px -4px 8px var(--shadow-light);
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+.btn.secondary{
+  background:var(--bg-soft);
+  color:var(--ink);
+  border:1px solid var(--line);
+  box-shadow:none;
 }
-.btn:hover{opacity:.9}
 
 .summary{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(4, minmax(0, 1fr));
   gap:16px;
-  margin-bottom:24px;
 }
 .summary-card{
   padding:18px 20px;
   position:relative;
   overflow:hidden;
-  animation:rise .4s ease both;
+  animation:fadeUp .5s ease both;
 }
 .summary-card:nth-child(2){animation-delay:.05s}
 .summary-card:nth-child(3){animation-delay:.1s}
@@ -98,17 +118,26 @@ body{
   content:"";
   position:absolute;
   inset:0;
-  background:linear-gradient(135deg, rgba(31,122,140,0.08), transparent 60%);
+  background:linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 60%);
   pointer-events:none;
 }
+.summary-card:nth-child(2)::after{
+  background:linear-gradient(135deg, rgba(192, 57, 43, 0.12), transparent 60%);
+}
+.summary-card:nth-child(3)::after{
+  background:linear-gradient(135deg, rgba(208, 129, 42, 0.12), transparent 60%);
+}
+.summary-card:nth-child(4)::after{
+  background:linear-gradient(135deg, rgba(27, 122, 63, 0.12), transparent 60%);
+}
 .summary h4{
-  font-size:12px;
+  font-size:11px;
   text-transform:uppercase;
   color:var(--muted);
   letter-spacing:.6px;
 }
 .summary p{
-  font-size:28px;
+  font-size:26px;
   font-weight:800;
   margin:6px 0 0;
 }
@@ -120,13 +149,13 @@ body{
   align-items:start;
 }
 .card{
-  padding:20px;
+  padding:18px;
   border-radius:var(--radius-lg);
-  animation:rise .45s ease both;
+  animation:fadeUp .55s ease both;
 }
 .filter-card{
   width:100%;
-  max-width:360px;
+  max-width:none;
   padding:14px 16px;
 }
 .filter-card .card-head{
@@ -154,10 +183,11 @@ body{
   padding:0 12px;
   border:none;
   border-radius:12px;
-  background:var(--bg);
+  background:#fff;
   font-size:13px;
-  color:var(--text);
+  color:var(--ink);
   outline:none;
+  border:1px solid var(--line);
 }
 .neo-select{
   appearance:none;
@@ -177,13 +207,13 @@ body{
   padding:0 12px;
   border:none;
   border-radius:12px;
-  background:var(--bg);
+  background:#fff;
   font-size:13px;
-  color:var(--text);
+  color:var(--ink);
   outline:none;
+  border:1px solid var(--line);
 }
 
-/* LEFT */
 .small{
   font-size:11px;
   color:var(--muted);
@@ -191,41 +221,47 @@ body{
   text-transform:uppercase;
   letter-spacing:.4px;
 }
+.muted{color:var(--muted)}
 
-/* TABLE */
 .table-wrap{
   max-height:520px;
   overflow:auto;
-  border-radius:14px;
-  border:1px solid #e2e6ea;
-  background:#f7f9fb;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid var(--line);
 }
 table{
   width:100%;
   border-collapse:collapse;
+  min-width:760px;
 }
 th,td{
-  padding:12px 14px;
+  padding:10px 12px;
+  border:1px solid var(--line);
   font-size:13px;
-  border-bottom:1px solid #e3e7eb;
 }
-th{
-  background:#f2f5f7;
-  text-transform:uppercase;
+thead th{
+  text-align:left;
   font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
   color:var(--muted);
-  letter-spacing:.5px;
-  position:sticky;
-  top:0;
-  z-index:1;
+  background:#f8f3ea;
 }
-tbody tr:hover{
-  background:rgba(255,255,255,0.6);
+.total-row td{
+  font-weight:700;
+  background:#f8f3ea;
+}
+.total-row td:first-child{
+  text-align:left;
 }
 .num{
   text-align:right;
   font-variant-numeric:tabular-nums;
+  font-weight:600;
 }
+.commission{color:var(--warm)}
+
 .modal{
   position:fixed;
   inset:0;
@@ -233,7 +269,8 @@ tbody tr:hover{
   align-items:center;
   justify-content:center;
   padding:16px;
-  background:rgba(47,58,74,0.2);
+  background:rgba(26, 26, 26, 0.4);
+  backdrop-filter:blur(4px);
   z-index:999;
 }
 .modal.is-open{display:flex}
@@ -242,9 +279,9 @@ tbody tr:hover{
   max-width:360px;
   padding:18px;
   border-radius:var(--radius-lg);
-  background:var(--bg);
-  box-shadow:10px 10px 20px var(--shadow-dark),
-             -10px -10px 20px var(--shadow-light);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
 }
 .modal-head{
   display:flex;
@@ -262,9 +299,8 @@ tbody tr:hover{
   height:32px;
   border:none;
   border-radius:10px;
-  background:var(--bg);
-  box-shadow:6px 6px 12px var(--shadow-dark),
-             -6px -6px 12px var(--shadow-light);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
   cursor:pointer;
 }
 .modal-body{
@@ -285,7 +321,7 @@ tbody tr:hover{
 }
 .modal-actions .btn{flex:1}
 
-@keyframes rise{
+@keyframes fadeUp{
   from{opacity:0; transform:translateY(8px);}
   to{opacity:1; transform:translateY(0);}
 }
@@ -293,26 +329,30 @@ tbody tr:hover{
 @media (max-width:980px){
   body{padding:16px;}
   .header{flex-direction:column; align-items:flex-start;}
-  .summary{grid-template-columns:1fr;}
-  .layout{grid-template-columns:1fr;}
+  .summary{grid-template-columns:repeat(2, minmax(0, 1fr));}
   .table-wrap{max-height:none;}
 }
-@media (max-width:600px){
+@media (max-width:640px){
   .header h1{font-size:28px;}
+  .summary{grid-template-columns:1fr;}
   .summary p{font-size:24px;}
   .btn{width:100%; justify-content:center;}
 }
 </style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
 
 <div class="page">
   <div class="header">
-    <h1>Accounts</h1>
+    <div>
+      <h1>Accounts</h1>
+      <div class="subtitle">Revenue, discounts, and commissions</div>
+    </div>
     <div class="header-actions">
-    <button class="btn neo" id="dateRangeBtn">📅 Date Range</button>
-    <button class="btn neo" id="exportExcel">⬇ Export Excel</button>
+    <button class="btn secondary" id="dateRangeBtn">📅 Date Range</button>
+    <button class="btn" id="exportExcel">⬇ Export Excel</button>
     </div>
   </div>
 
@@ -349,13 +389,13 @@ tbody tr:hover{
             <th>Report ID</th>
             <th>Patient</th>
             <th>Doctor</th>
-            <th>Bill</th>
-            <th>Commission</th>
+            <th class="num">Bill</th>
+            <th class="num">Commission</th>
           </tr>
         </thead>
         <tbody id="detailsBody">
           <tr>
-            <td colspan="6" style="text-align:center;color:#999">
+            <td colspan="6" class="muted" style="text-align:center">
               All accounts will appear here
             </td>
           </tr>
@@ -381,8 +421,8 @@ tbody tr:hover{
       <input id="dateTo" type="date" class="neo-input neo-pressed">
     </div>
     <div class="modal-actions">
-      <button class="btn neo" id="applyDateRange" type="button">Apply</button>
-      <button class="btn neo" id="clearDateRange" type="button">Clear</button>
+      <button class="btn" id="applyDateRange" type="button">Apply</button>
+      <button class="btn secondary" id="clearDateRange" type="button">Clear</button>
     </div>
   </div>
 </div>
@@ -427,29 +467,29 @@ function formatNumber(value){
 
 function setSummaryMessage(message){
   sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p style="color:#3498db">${message}</p>`;
+    `<h4>Total Revenue</h4><p style="color:#0f766e">${message}</p>`;
   sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p style="color:#e74c3c">${message}</p>`;
+    `<h4>Discounts Given</h4><p style="color:#c0392b">${message}</p>`;
   sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p style="color:#e67e22">${message}</p>`;
+    `<h4>Total Commission</h4><p style="color:#d0812a">${message}</p>`;
   sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p style="color:#2ecc71">${message}</p>`;
+    `<h4>Net Profit</h4><p style="color:#1b7a3f">${message}</p>`;
 }
 
 function setSummaryValues(data){
   sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p style="color:#3498db">₹${formatNumber(data?.totalRevenue)}</p>`;
+    `<h4>Total Revenue</h4><p style="color:#0f766e">₹${formatNumber(data?.totalRevenue)}</p>`;
   sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p style="color:#e74c3c">₹${formatNumber(data?.totalDiscount)}</p>`;
+    `<h4>Discounts Given</h4><p style="color:#c0392b">₹${formatNumber(data?.totalDiscount)}</p>`;
   sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p style="color:#e67e22">₹${formatNumber(data?.totalCommission)}</p>`;
+    `<h4>Total Commission</h4><p style="color:#d0812a">₹${formatNumber(data?.totalCommission)}</p>`;
   sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p style="color:#2ecc71">₹${formatNumber(data?.netProfit)}</p>`;
+    `<h4>Net Profit</h4><p style="color:#1b7a3f">₹${formatNumber(data?.netProfit)}</p>`;
 }
 
 function setDetailsMessage(message){
   detailsBody.innerHTML =
-    `<tr><td colspan="6" style="text-align:center;color:#999">${message}</td></tr>`;
+    `<tr><td colspan="6" class="muted" style="text-align:center">${message}</td></tr>`;
 }
 
 function renderDetails(rows, doctorNameFallback){
@@ -458,20 +498,37 @@ function renderDetails(rows, doctorNameFallback){
     return;
   }
 
-  detailsBody.innerHTML = "";
+  let totalBill = 0;
+  let totalCommission = 0;
+  let html = "";
+
   rows.forEach(r => {
     const doctorName = r.doctorName || doctorNameFallback || "-";
-    detailsBody.innerHTML += `
+    const bill = parseNumber(r.billAmount);
+    const commission = parseNumber(r.commissionAmount);
+    totalBill += bill;
+    totalCommission += commission;
+    html += `
       <tr>
         <td>${r.date || "-"}</td>
         <td>${r.reportId || "-"}</td>
         <td>${r.patientName || "-"}</td>
         <td>${doctorName}</td>
-        <td class="num">₹${formatNumber(r.billAmount)}</td>
-        <td class="num" style="color:#e67e22">₹${formatNumber(r.commissionAmount)}</td>
+        <td class="num">₹${formatNumber(bill)}</td>
+        <td class="num commission">₹${formatNumber(commission)}</td>
       </tr>
     `;
   });
+
+  html += `
+    <tr class="total-row">
+      <td colspan="4">Total</td>
+      <td class="num">₹${formatNumber(totalBill)}</td>
+      <td class="num commission">₹${formatNumber(totalCommission)}</td>
+    </tr>
+  `;
+
+  detailsBody.innerHTML = html;
 }
 
 function parseDateValue(value){

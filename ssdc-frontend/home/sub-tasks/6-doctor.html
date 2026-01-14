@@ -3,184 +3,333 @@
 <head>
 <meta charset="UTF-8">
 <title>Doctors</title>
+<link href="../../vendor/fonts/fonts.css" rel="stylesheet">
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
 <style>
-body {
-  margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background: #ecf0f3;
+:root{
+  --bg:#f6f1e7;
+  --bg-soft:#fffaf2;
+  --ink:#1e262d;
+  --muted:#6b737c;
+  --accent:#0f766e;
+  --accent-strong:#0b5f58;
+  --warm:#e08f2f;
+  --danger:#c0392b;
+  --line:#e3d9c9;
+  --shadow:0 18px 40px rgba(28, 41, 61, 0.12);
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:10px;
 }
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:24px;
+  font-family:"Poppins","Lato",sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color:var(--ink);
+  min-height:100vh;
 }
-.head-title {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
+.page{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
+}
+.head-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+  animation:fadeUp .45s ease both;
 }
 .head-title h1{
-  font-size:36px;
-  font-weight:600;
+  font-size:32px;
+  font-weight:700;
   margin:0;
+  letter-spacing:.3px;
 }
-.neo-btn {
-  padding: 10px 18px;
-  border-radius: 14px;
-  background: #ecf0f3;
-  box-shadow: 6px 6px 10px #c5c9cc,
-              -6px -6px 10px #ffffff;
-  border: none;
-  cursor: pointer;
+.subtitle{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
 }
-.search-box {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 15px;
+.neo-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 18px;
+  border-radius:999px;
+  background:linear-gradient(135deg, var(--accent), #1aa191);
+  color:#fff;
+  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
+  border:none;
+  font-weight:600;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
-.search-input {
-  width: 260px;
-  padding: 8px 14px;
-  border-radius: 14px;
-  background: #ecf0f3;
-  box-shadow: inset 5px 5px 8px #c5c9cc,
-              inset -5px -5px 8px #ffffff;
-  border: none;
+.neo-btn:hover{transform:translateY(-1px)}
+.neo-btn:active{transform:translateY(1px)}
+.neo-btn.secondary{
+  background:var(--bg-soft);
+  color:var(--ink);
+  border:1px solid var(--line);
+  box-shadow:none;
 }
-.table-box {
-  border-radius: 20px;
-  background: #ecf0f3;
-  box-shadow: 10px 10px 20px #c5c9cc,
-              -10px -10px 20px #ffffff;
-  padding: 20px;
+.search-box{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius:var(--radius-md);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  animation:fadeUp .5s ease both;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
+.search-box i{
+  font-size:18px;
+  color:var(--muted);
 }
-th, td {
-  padding: 12px;
+.search-input{
+  flex:1;
+  border:none;
+  background:transparent;
+  outline:none;
+  font-size:14px;
+  color:var(--ink);
 }
-tr {
-  border-bottom: 1px solid #dcdde1;
+.table-box{
+  border-radius:var(--radius-lg);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  padding:16px;
+  animation:fadeUp .55s ease both;
 }
-.menu {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  width: 100%;
+.table-wrap{overflow-x:visible}
+table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 10px;
+  table-layout:fixed;
 }
-.menu-btn {
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  padding: 2px 8px;
+thead th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  color:var(--muted);
+  padding:0 12px 6px;
 }
-.menu-list {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 22px;
-  background: #ecf0f3;
-  border-radius: 14px;
-  box-shadow: 6px 6px 12px #c5c9cc,
-              -6px -6px 12px #ffffff;
-  z-index: 10;
-  min-width: 120px;
+.name,
+.specialization,
+.hospital{
+  overflow-wrap:anywhere;
 }
-.menu-list div {
-  padding: 10px 16px;
-  cursor: pointer;
-  font-size: 13px;
+.sno{
+  width:56px;
 }
-.menu-list div:hover {
-  background: #dde1e4;
+.name{
+  width:200px;
 }
-.menu-list .danger {
-  color: #c0392b;
+.specialization{
+  width:160px;
 }
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  z-index: 20;
+.hospital{
+  width:180px;
 }
-.neo-card {
-  max-width: 520px;
-  width: 100%;
-  margin: auto;
-  padding: 26px;
-  border-radius: 24px;
-  background: #ecf0f3;
-  box-shadow: 10px 10px 20px #c5c9cc,
-              -10px -10px 20px #ffffff;
+.phone,
+.num{
+  white-space:nowrap;
 }
-.neo-card h2 {
-  margin: 0 0 20px;
-  text-align: center;
+.phone{
+  width:140px;
 }
-.form-group {
-  margin-bottom: 16px;
+.num{
+  width:140px;
 }
-.form-group label {
-  font-size: 14px;
-  color: #555;
+.center{
+  width:90px;
 }
-.neo-input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: #ecf0f3;
-  box-shadow: inset 6px 6px 10px #c5c9cc,
-              inset -6px -6px 10px #ffffff;
-  border: none;
-  outline: none;
+tbody tr{
+  background:#fff;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
-.action-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 20px;
+tbody tr:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
 }
-.neo-btn.secondary {
-  color: #555;
+body.menu-open tbody tr:hover{
+  transform:none;
+  box-shadow:none;
+}
+tbody tr.menu-open{
+  position:relative;
+  z-index:2;
+}
+tbody td{
+  padding:12px;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+tbody td:first-child{
+  border-left:1px solid var(--line);
+  border-radius:12px 0 0 12px;
+}
+tbody td:last-child{
+  border-right:1px solid var(--line);
+  border-radius:0 12px 12px 0;
+}
+.num{
+  text-align:right;
+  font-weight:600;
+}
+.profit{color:#1b7a3f}
+.share{color:#c0781a}
+.center{text-align:center}
+.menu{
+  position:relative;
+  display:inline-flex;
+  justify-content:center;
+  width:100%;
+}
+.menu-btn{
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  padding:6px 10px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
+}
+.menu-list{
+  display:none;
+  position:absolute;
+  right:0;
+  top:32px;
+  background:#fff;
+  border-radius:14px;
+  border:1px solid var(--line);
+  box-shadow:0 12px 24px rgba(20, 30, 45, 0.12);
+  z-index:30;
+  min-width:120px;
+  overflow:hidden;
+}
+.menu-list div{
+  padding:10px 16px;
+  cursor:pointer;
+  font-size:13px;
+}
+.menu-list div:hover{background:#f6f1e7}
+.menu-list .danger{color:var(--danger)}
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(26, 26, 26, 0.4);
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  z-index:20;
+  backdrop-filter:blur(4px);
+}
+.neo-card{
+  max-width:520px;
+  width:100%;
+  margin:auto;
+  padding:26px;
+  border-radius:24px;
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+}
+.neo-card h2{
+  margin:0 0 20px;
+  text-align:center;
+}
+.form-group{margin-bottom:16px}
+.form-group label{
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.neo-input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:14px;
+  background:#fff;
+  border:1px solid var(--line);
+  outline:none;
+  font-size:14px;
+}
+.action-row{
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+  margin-top:20px;
+}
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@media (max-width:900px){
+  body{padding:16px}
+  .head-title{flex-direction:column; align-items:flex-start}
+  .neo-btn{width:100%; justify-content:center}
+}
+@media (max-width:600px){
+  .head-title h1{font-size:28px}
+  .search-box{padding:10px 12px}
 }
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
 
-<div class="head-title">
-  <h1>Doctors</h1>
-  <button class="neo-btn" onclick="location.href='dr/new-doctor.html'">
-    <i class="bx bx-plus"></i> New
-  </button>
-</div>
+<div class="page">
+  <div class="head-title">
+    <div>
+      <h1>Doctors</h1>
+      <div class="subtitle">Monthly performance overview</div>
+    </div>
+    <button class="neo-btn" onclick="location.href='dr/new-doctor.html'">
+      <i class="bx bx-plus"></i> New Doctor
+    </button>
+  </div>
 
-<div class="search-box">
-  <input type="text" id="searchInput" class="search-input" placeholder="Search...">
-</div>
+  <div class="search-box">
+    <i class="bx bx-search"></i>
+    <input type="text" id="searchInput" class="search-input" placeholder="Search by name, hospital, phone...">
+  </div>
 
-<div class="table-box">
-<table>
-  <thead>
-    <tr>
-      <th>S.No</th>
-      <th>Doctor Name</th>
-      <th>Specialization</th>
-      <th>Hospital</th>
-      <th>Phone</th>
-      <th>Monthly Profit (₹)</th>
-      <th>Options</th>
-    </tr>
-  </thead>
-  <tbody id="doctorTable"></tbody>
-</table>
+  <div class="table-box">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="sno">S.No</th>
+            <th class="name">Doctor Name</th>
+            <th class="specialization">Specialization</th>
+            <th class="hospital">Hospital</th>
+            <th class="phone">Phone</th>
+            <th class="num">This Month Profit (₹)</th>
+            <th class="num">This Month Share (₹)</th>
+            <th class="center">Options</th>
+          </tr>
+        </thead>
+        <tbody id="doctorTable"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="modal" id="editModal">
@@ -235,11 +384,99 @@ const cancelEdit = document.getElementById("cancelEdit");
 
 let doctors = [];
 let editDoctorId = null;
+let monthlyStats = new Map();
+
+function parseNumber(value){
+  const cleaned = String(value ?? "").replace(/,/g, "");
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatMoney(value){
+  return String(Math.round(parseNumber(value)));
+}
+
+function normalizeName(value){
+  return String(value || "").trim().toLowerCase();
+}
+
+function parseDateValue(value){
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+  const parts = raw.split(/[\/-]/);
+  if (parts.length === 3) {
+    let year;
+    let month;
+    let day;
+    if (parts[0].length === 4) {
+      year = Number(parts[0]);
+      month = Number(parts[1]);
+      day = Number(parts[2]);
+    } else {
+      day = Number(parts[0]);
+      month = Number(parts[1]);
+      year = Number(parts[2]);
+    }
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return new Date(Date.UTC(year, month - 1, day));
+    }
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return new Date(Date.UTC(
+    parsed.getFullYear(),
+    parsed.getMonth(),
+    parsed.getDate()
+  ));
+}
+
+function isCurrentMonth(date){
+  if (!date) {
+    return false;
+  }
+  const now = new Date();
+  return date.getUTCFullYear() === now.getUTCFullYear()
+    && date.getUTCMonth() === now.getUTCMonth();
+}
+
+function buildMonthlyStats(rows){
+  const stats = new Map();
+  (Array.isArray(rows) ? rows : []).forEach(row => {
+    const date = parseDateValue(row?.date);
+    if (!isCurrentMonth(date)) {
+      return;
+    }
+    const key = normalizeName(row?.doctorName);
+    if (!key) {
+      return;
+    }
+    const current = stats.get(key) || { revenue: 0, commission: 0 };
+    current.revenue += parseNumber(row?.billAmount);
+    current.commission += parseNumber(row?.commissionAmount);
+    stats.set(key, current);
+  });
+  return stats;
+}
 
 function closeAllMenus() {
   document.querySelectorAll(".menu-list").forEach(m => {
     m.style.display = "none";
   });
+  document.querySelectorAll("#doctorTable tr.menu-open").forEach(row => {
+    row.classList.remove("menu-open");
+  });
+  document.body.classList.remove("menu-open");
 }
 
 function toggleMenu(btn) {
@@ -248,6 +485,13 @@ function toggleMenu(btn) {
   closeAllMenus();
   if (menu) {
     menu.style.display = isOpen ? "none" : "block";
+    if (!isOpen) {
+      const row = btn.closest("tr");
+      if (row) {
+        row.classList.add("menu-open");
+      }
+      document.body.classList.add("menu-open");
+    }
   }
 }
 
@@ -261,15 +505,19 @@ function applySearch() {
 function renderDoctors() {
   table.innerHTML = "";
   doctors.forEach((d, i) => {
+    const key = normalizeName(d.name);
+    const stats = key ? (monthlyStats.get(key) || { revenue: 0, commission: 0 }) : { revenue: 0, commission: 0 };
+    const profit = stats.revenue - stats.commission;
     table.innerHTML += `
       <tr>
-        <td>${i + 1}</td>
-        <td>${d.name || "-"}</td>
-        <td>${d.specialization || "-"}</td>
-        <td>${d.hospital || "-"}</td>
-        <td>${d.phone || "-"}</td>
-        <td>₹0</td>
-        <td>
+        <td class="sno">${i + 1}</td>
+        <td class="name">${d.name || "-"}</td>
+        <td class="specialization">${d.specialization || "-"}</td>
+        <td class="hospital">${d.hospital || "-"}</td>
+        <td class="phone">${d.phone || "-"}</td>
+        <td class="num profit">₹${formatMoney(profit)}</td>
+        <td class="num share">₹${formatMoney(stats.commission)}</td>
+        <td class="center">
           <div class="menu">
             <span class="menu-btn" onclick="toggleMenu(this)">⋮</span>
             <div class="menu-list">
@@ -285,17 +533,25 @@ function renderDoctors() {
 }
 
 function loadDoctors() {
-  fetch(API_BASE_URL + "/doctors")
-  .then(res => res.json())
-  .then(data => {
-    doctors = Array.isArray(data) ? data : [];
+  Promise.all([
+    fetch(API_BASE_URL + "/doctors").then(res => res.json()),
+    fetch(API_BASE_URL + "/accounts/details")
+      .then(res => res.json())
+      .catch(err => {
+        console.error("Error loading account details", err);
+        return [];
+      })
+  ])
+  .then(([doctorData, detailRows]) => {
+    doctors = Array.isArray(doctorData) ? doctorData : [];
+    monthlyStats = buildMonthlyStats(detailRows);
     renderDoctors();
   })
   .catch(err => {
     console.error("Error loading doctors", err);
     table.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align:center;color:#888">
+        <td colspan="8" style="text-align:center;color:#888">
           Failed to load doctors
         </td>
       </tr>
