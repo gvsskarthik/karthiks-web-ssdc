@@ -81,7 +81,7 @@ body{
 
 .summary{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:16px;
   margin-bottom:24px;
 }
@@ -93,6 +93,7 @@ body{
 }
 .summary-card:nth-child(2){animation-delay:.05s}
 .summary-card:nth-child(3){animation-delay:.1s}
+.summary-card:nth-child(4){animation-delay:.15s}
 .summary-card::after{
   content:"";
   position:absolute;
@@ -318,6 +319,7 @@ tbody tr:hover{
 <!-- SUMMARY -->
 <div class="summary">
   <div class="neo summary-card" id="sumRevenue"></div>
+  <div class="neo summary-card" id="sumDiscount"></div>
   <div class="neo summary-card" id="sumCommission"></div>
   <div class="neo summary-card" id="sumProfit"></div>
 </div>
@@ -392,6 +394,7 @@ const apiPath = window.apiUrl || function (path) {
 };
 
 const sumRevenue = document.getElementById("sumRevenue");
+const sumDiscount = document.getElementById("sumDiscount");
 const sumCommission = document.getElementById("sumCommission");
 const sumProfit = document.getElementById("sumProfit");
 const doctorSelect = document.getElementById("doctor");
@@ -425,6 +428,8 @@ function formatNumber(value){
 function setSummaryMessage(message){
   sumRevenue.innerHTML =
     `<h4>Total Revenue</h4><p style="color:#3498db">${message}</p>`;
+  sumDiscount.innerHTML =
+    `<h4>Discounts Given</h4><p style="color:#e74c3c">${message}</p>`;
   sumCommission.innerHTML =
     `<h4>Total Commission</h4><p style="color:#e67e22">${message}</p>`;
   sumProfit.innerHTML =
@@ -434,6 +439,8 @@ function setSummaryMessage(message){
 function setSummaryValues(data){
   sumRevenue.innerHTML =
     `<h4>Total Revenue</h4><p style="color:#3498db">₹${formatNumber(data?.totalRevenue)}</p>`;
+  sumDiscount.innerHTML =
+    `<h4>Discounts Given</h4><p style="color:#e74c3c">₹${formatNumber(data?.totalDiscount)}</p>`;
   sumCommission.innerHTML =
     `<h4>Total Commission</h4><p style="color:#e67e22">₹${formatNumber(data?.totalCommission)}</p>`;
   sumProfit.innerHTML =
@@ -549,6 +556,7 @@ async function loadSummary(){
     console.error("Failed to load summary", err);
     setSummaryValues({
       totalRevenue: 0,
+      totalDiscount: 0,
       totalCommission: 0,
       netProfit: 0
     });

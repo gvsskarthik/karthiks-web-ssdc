@@ -43,6 +43,10 @@ public class AccountsService {
             .mapToDouble(this::safeAmount)
             .sum();
 
+        double totalDiscount = patients.stream()
+            .mapToDouble(this::safeDiscount)
+            .sum();
+
         double totalCommission = patients.stream()
             .mapToDouble(p -> {
                 String doctorName = resolveDoctorName(p);
@@ -55,7 +59,12 @@ public class AccountsService {
 
         double netProfit = totalRevenue - totalCommission;
 
-        return new AccountsSummaryDTO(totalRevenue, totalCommission, netProfit);
+        return new AccountsSummaryDTO(
+            totalRevenue,
+            totalDiscount,
+            totalCommission,
+            netProfit
+        );
     }
 
     public @NonNull List<AccountsDoctorDTO> getDoctorSummaries() {
@@ -218,6 +227,17 @@ public class AccountsService {
         }
         Double amount = patient.getAmount();
         return amount == null ? 0 : amount;
+    }
+
+    private double safeDiscount(Patient patient) {
+        if (patient == null) {
+            return 0;
+        }
+        Double discount = patient.getDiscount();
+        if (discount == null) {
+            return 0;
+        }
+        return Math.max(0, discount);
     }
 
     private Long parseLong(String value) {

@@ -743,7 +743,8 @@ patientForm.addEventListener("submit", e => {
     address: document.getElementById("address").value.trim(),
     doctor: document.getElementById("doctor").value || "SELF",
     visitDate: document.getElementById("visitDate").value,
-    amount: Number(amountInput.value) || 0,
+    amount: parseMoney(amountInput.value),
+    discount: parseMoney(discountInput.value),
     status: "NOT COMPLETE"
   };
 

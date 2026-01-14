@@ -50,6 +50,9 @@ public class Patient {
     @Column(nullable = false)
     private Double amount = 0.0;
 
+    @Column(nullable = false)
+    private Double discount = 0.0;
+
     private String status;
 
     private LocalDate visitDate;
@@ -103,6 +106,10 @@ public class Patient {
     public Double getAmount() { return amount; }
     @SuppressWarnings("unused")
     public void setAmount(Double amount) { this.amount = amount; }
+
+    public Double getDiscount() { return discount; }
+    @SuppressWarnings("unused")
+    public void setDiscount(Double discount) { this.discount = discount; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
