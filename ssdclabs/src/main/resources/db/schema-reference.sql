@@ -18,6 +18,7 @@ CREATE TABLE patients (
   address VARCHAR(255),
   doctor_id BIGINT,
   amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount DECIMAL(10,2) NOT NULL DEFAULT 0,
   status VARCHAR(50),
   visit_date DATE,
   CONSTRAINT fk_patients_doctor
