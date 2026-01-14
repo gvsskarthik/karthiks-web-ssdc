@@ -47,14 +47,14 @@ public class TestService {
 
     @Transactional(readOnly = true)
     public List<TestViewDTO> getAllTests() {
-        return testRepo.findAllByOrderByDisplayOrderAscTestNameAsc().stream()
+        return testRepo.findAllByOrderByIdAsc().stream()
             .map(this::toView)
             .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<TestViewDTO> getActiveTests() {
-        return testRepo.findByActiveTrueOrderByDisplayOrderAscTestNameAsc().stream()
+        return testRepo.findByActiveTrueOrderByIdAsc().stream()
             .map(this::toView)
             .collect(Collectors.toList());
     }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Arrange Tests</title>
+<title>Tests</title>
 
 <style>
 body{
@@ -19,29 +19,12 @@ body{
              -8px -8px 16px #ffffff;
   margin-bottom:20px;
 }
-h2,h3{margin:10px 0}
+h2{margin:10px 0}
 .row{
   display:flex;
   align-items:center;
-  gap:10px;
+  justify-content:space-between;
   margin:6px 0;
-}
-.indent-1{margin-left:20px}
-.indent-2{margin-left:40px}
-/*noinspection CssUnusedSymbol*/
-.indent-3{margin-left:60px}
-.arrow{
-  border:none;
-  padding:4px 8px;
-  border-radius:10px;
-  cursor:pointer;
-  background:#ecf0f3;
-  box-shadow:4px 4px 8px #c5c9cc,
-             -4px -4px 8px #ffffff;
-}
-.arrow:active{
-  box-shadow:inset 3px 3px 6px #c5c9cc,
-             inset -3px -3px 6px #ffffff;
 }
 .title{font-weight:600}
 </style>
@@ -49,85 +32,44 @@ h2,h3{margin:10px 0}
 
 <body>
 
-<h2>Arrange Test Order</h2>
-<p>Use ⬆️ ⬇️ buttons only. Structure is fixed.</p>
+<h2>Tests (Order by ID)</h2>
+<p>Ordering is fixed by ID. Add new tests to append.</p>
 
-<div id="container"></div>
+<div id="container" class="card"></div>
 
 <script src="../../../api.js"></script>
 <script>
-fetch(API_BASE_URL + "/tests/hierarchy")
+fetch(API_BASE_URL + "/tests")
   .then(r => r.json())
-  .then(data => render(data));
+  .then(tests => render(Array.isArray(tests) ? tests : []));
 
-function arrow(type,id,dir){
-  fetch(`${API_BASE_URL}/order/${type}/${id}/${dir}`,{
-    method:"PUT"
-  }).then(()=>location.reload());
-}
+function render(list){
+  const c = document.getElementById("container");
+  c.innerHTML = "";
 
-/**
- * @param {{[category: string]: {groups?: Array<{id:number,name:string,tests?: Array<{id:number,name:string}>}>, singleTests?: Array<{id:number,name:string}>}}} data
- */
-function render(data){
-  const c=document.getElementById("container");
-  c.innerHTML="";
+  if (!list.length) {
+    c.innerHTML = `<div class="row">No tests found.</div>`;
+    return;
+  }
 
-  Object.entries(data).forEach(([category,block])=>{
-    const groups = Array.isArray(block.groups) ? block.groups : [];
-    const singleTests = Array.isArray(block.singleTests) ? block.singleTests : [];
-    const card=document.createElement("div");
-    card.className="card";
+  const ordered = [...list].sort((a, b) => {
+    const left = Number(a && a.id) || 0;
+    const right = Number(b && b.id) || 0;
+    return left - right;
+  });
 
-    card.innerHTML=`<h3>${category}</h3>
-                    <div class="indent-1 title">Hemogram</div>`;
-
-    /* GROUPS */
-    groups.forEach(group=>{
-      const gRow=document.createElement("div");
-      gRow.className="row indent-2";
-      gRow.innerHTML=`
-        <button class="arrow" onclick="arrow('group',${group.id},'up')">⬆️</button>
-        <button class="arrow" onclick="arrow('group',${group.id},'down')">⬇️</button>
-        <span class="title">${group.name}</span>
-      `;
-      card.appendChild(gRow);
-
-      const tests = Array.isArray(group.tests) ? group.tests : [];
-      tests.forEach(t=>{
-        const tRow=document.createElement("div");
-        tRow.className="row indent-3";
-        tRow.innerHTML=`
-          <button class="arrow" onclick="arrow('test',${t.id},'up')">⬆️</button>
-          <button class="arrow" onclick="arrow('test',${t.id},'down')">⬇️</button>
-          ${t.name}
-        `;
-        card.appendChild(tRow);
-      });
-    });
-
-    /* SINGLE TESTS */
-    if(singleTests.length){
-      card.innerHTML+=`
-        <div class="row indent-2">
-          <button class="arrow" disabled>⬆️</button>
-          <button class="arrow" disabled>⬇️</button>
-          <b>Single Tests</b>
-        </div>`;
+  ordered.forEach(test => {
+    if (!test || test.id == null) {
+      return;
     }
-
-    singleTests.forEach(t=>{
-      const s=document.createElement("div");
-      s.className="row indent-3";
-      s.innerHTML=`
-        <button class="arrow" onclick="arrow('single',${t.id},'up')">⬆️</button>
-        <button class="arrow" onclick="arrow('single',${t.id},'down')">⬇️</button>
-        ${t.name}
-      `;
-      card.appendChild(s);
-    });
-
-    c.appendChild(card);
+    const row = document.createElement("div");
+    row.className = "row";
+    const shortcut = test.shortcut ? ` (${test.shortcut})` : "";
+    row.innerHTML = `
+      <span class="title">#${test.id}</span>
+      <span>${test.testName || ""}${shortcut}</span>
+    `;
+    c.appendChild(row);
   });
 }
 </script>

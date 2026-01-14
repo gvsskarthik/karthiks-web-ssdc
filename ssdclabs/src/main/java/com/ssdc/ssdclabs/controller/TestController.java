@@ -1,7 +1,6 @@
 package com.ssdc.ssdclabs.controller;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.http.ResponseEntity;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ssdc.ssdclabs.dto.TestPayload;
 import com.ssdc.ssdclabs.dto.TestViewDTO;
 import com.ssdc.ssdclabs.repository.TestRepository;
-import com.ssdc.ssdclabs.service.TestHierarchyService;
 import com.ssdc.ssdclabs.service.TestService;
 
 @RestController
@@ -26,14 +24,11 @@ import com.ssdc.ssdclabs.service.TestService;
 public class TestController {
 
     private final TestRepository repo;
-    private final TestHierarchyService hierarchyService;
     private final TestService testService;
 
     public TestController(TestRepository repo,
-                          TestHierarchyService hierarchyService,
                           TestService testService) {
         this.repo = repo;
-        this.hierarchyService = hierarchyService;
         this.testService = testService;
     }
 
@@ -144,12 +139,6 @@ public class TestController {
 
         testService.deleteTest(id);
         return ResponseEntity.ok().build();
-    }
-
-    /* ================= TEST HIERARCHY ================= */
-    @GetMapping("/hierarchy")
-    public Map<String, Object> getHierarchy() {
-        return hierarchyService.getHierarchy();
     }
 
     private String trimToNull(String value) {

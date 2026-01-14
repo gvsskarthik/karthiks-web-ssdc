@@ -103,114 +103,42 @@ body{
 <script src="../../../api.js"></script>
 <script>
 let selected = new Set();
-const slugify = (value) => String(value)
-  .toLowerCase()
-  .replace(/[^a-z0-9]+/g, "-")
-  .replace(/(^-|-$)/g, "");
-
-/* 🔹 STRUCTURE */
-const STRUCTURE = {
-  "Biochemistry": {
-    "Hemogram": {
-      "Complete Blood Picture": ["HB","TC","DC","ESR","TRBC","PLC"],
-      "Erythrocyte Indices": ["PCV","MCV","MCH","MCHC"]
-    },
-    "Others": ["RBS","RUS","FBS","FUS"]
-  }
-};
+const tree = document.getElementById("tree");
+const searchInput = document.getElementById("search");
+const noResult = document.getElementById("noResult");
 
 /* 🔹 LOAD TESTS */
 fetch(API_BASE_URL + "/tests/active")
 .then(r => r.json())
 .then(tests => {
-  window.ALL_TESTS = tests;
-  buildTree();
+  renderList(Array.isArray(tests) ? tests : []);
 });
 
-/* 🔹 BUILD TREE CORRECTLY */
-function buildTree(){
-  const tree = document.getElementById("tree");
+/* 🔹 RENDER LIST */
+function renderList(list){
   tree.innerHTML = "";
 
-  Object.entries(STRUCTURE).forEach(([category, groups]) => {
-    const categoryKey = slugify(category);
-
-    /* CATEGORY */
-    const catRow = document.createElement("div");
-    catRow.className = "row";
-    catRow.innerHTML = `<b>${category}</b>`;
-    tree.appendChild(catRow);
-
-    Object.entries(groups).forEach(([group, content]) => {
-
-      /* GROUP */
-      const groupWrap = document.createElement("div");
-      groupWrap.className = "level";
-
-      const groupKey = slugify(`${categoryKey}-${group}`);
-      groupWrap.innerHTML = `
-        <div class="row">
-          <input type="checkbox" id="group-${groupKey}" name="group-${groupKey}" onchange="toggleGroup(this)">
-          ${group}
-        </div>
-      `;
-
-      /* SUB-GROUPS OR DIRECT TESTS */
-      if(Array.isArray(content)){
-        content.forEach(sc => addTest(groupWrap, sc));
-      } else {
-        Object.entries(content).forEach(([subGroup, tests]) => {
-
-          const subWrap = document.createElement("div");
-          subWrap.className = "level";
-
-          const subKey = slugify(`${categoryKey}-${group}-${subGroup}`);
-          subWrap.innerHTML = `
-            <div class="row">
-              <input type="checkbox" id="sub-${subKey}" name="sub-${subKey}" onchange="toggleGroup(this)">
-              ${subGroup}
-            </div>
-          `;
-
-          tests.forEach(sc => addTest(subWrap, sc));
-          groupWrap.appendChild(subWrap);
-        });
-      }
-
-      tree.appendChild(groupWrap);
-    });
+  const ordered = [...list].sort((a, b) => {
+    const left = Number(a && a.id) || 0;
+    const right = Number(b && b.id) || 0;
+    return left - right;
   });
-}
 
-/* 🔹 ADD TEST AT CORRECT LEVEL */
-function addTest(parent, shortcut){
-  const test = ALL_TESTS.find(
-    t => t.shortcut.toUpperCase() === shortcut
-  );
-  if(!test) return;
-
-  const row = document.createElement("div");
-  row.className = "level test-row";
-  row.dataset.name = test.testName.toLowerCase();
-  row.dataset.shortcut = test.shortcut.toLowerCase();
-
-  row.innerHTML = `
-    <div class="row">
+  ordered.forEach(test => {
+    if (!test || test.id == null) {
+      return;
+    }
+    const row = document.createElement("div");
+    row.className = "row test-row";
+    row.dataset.name = String(test.testName || "").toLowerCase();
+    row.dataset.shortcut = String(test.shortcut || "").toLowerCase();
+    const shortcut = test.shortcut ? ` (${test.shortcut})` : "";
+    row.innerHTML = `
       <input type="checkbox" id="test-${test.id}" name="test-${test.id}" value="${test.id}"
              onchange="toggleTest(this)">
-      ${test.testName} (${test.shortcut})
-    </div>
-  `;
-
-  parent.appendChild(row);
-}
-
-/* 🔹 PARENT → CHILD TOGGLE */
-function toggleGroup(cb){
-  const wrap = cb.closest(".level");
-  wrap.querySelectorAll("input[type=checkbox]").forEach(c=>{
-    c.checked = cb.checked;
-    toggleTest(c,true);
+      ${test.testName || ""}${shortcut}
+    `;
+    tree.appendChild(row);
   });
 }
 
@@ -223,7 +151,7 @@ function toggleTest(cb){
 
 /* 🔹 SEARCH (NAME + SHORTCUT) */
 function searchTest(){
-  const q = search.value.toLowerCase();
+  const q = searchInput.value.toLowerCase();
   let found = false;
 
   document.querySelectorAll(".test-row").forEach(row=>{

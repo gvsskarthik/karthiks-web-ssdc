@@ -59,6 +59,51 @@ label{font-size:13px;color:#555;margin-bottom:6px;display:block}
   border-radius:14px;
   margin-bottom:20px;
 }
+.search-wrap{position:relative}
+.suggestions{
+  position:absolute;
+  left:0;
+  right:0;
+  top:100%;
+  margin-top:6px;
+  background:#ecf0f3;
+  border-radius:14px;
+  box-shadow:10px 10px 20px #c5c9cc,
+             -10px -10px 20px #ffffff;
+  max-height:240px;
+  overflow-y:auto;
+  z-index:5;
+}
+.suggestion{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 12px;
+  cursor:pointer;
+}
+.suggestion:hover,.suggestion.active{background:#e2e6ea}
+.suggestion-main{display:flex;flex-direction:column;gap:2px}
+.suggestion-name{font-weight:600}
+.suggestion-meta{font-size:12px;color:#666}
+.suggestion-cost{font-weight:600}
+.selected-tests{margin-top:12px}
+.selected-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:#ecf0f3;
+  margin-bottom:8px;
+}
+.selected-item label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1;
+}
+.selected-item input{width:16px;height:16px}
 .visually-hidden{
   position:absolute;
   width:1px;
@@ -143,9 +188,12 @@ label{font-size:13px;color:#555;margin-bottom:6px;display:block}
 <div class="neo-card">
 <h3>Select Tests</h3>
 <label class="visually-hidden" for="search">Search tests</label>
-<input id="search" class="search" placeholder="Search test...">
-<div id="tree"></div>
+<div class="search-wrap">
+  <input id="search" class="search" placeholder="Search test...">
+  <div id="suggestions" class="suggestions hidden"></div>
+</div>
 <div id="noResult" class="no-result hidden">❌ No test available</div>
+<div id="selectedTests" class="selected-tests"></div>
 </div>
 
 <div class="neo-card">
@@ -178,19 +226,17 @@ SAVE PATIENT & ENTER RESULTS
 <script>
 
 /**
- * @typedef {{id:number,name:string,shortcut?:string,cost?:number}} TestItem
- * @typedef {{id:number,name:string,cost?:number,tests?: TestItem[]}} TestGroup
- * @typedef {{groups?: TestGroup[], singleTests?: TestItem[]}} TestHierarchyBlock
- * @typedef {Record<string, TestHierarchyBlock>} TestHierarchy
+ * @typedef {{id:number,testName:string,shortcut?:string,cost?:number}} TestItem
  */
 
 const patientForm = document.getElementById("patientForm");
 const visitDate = document.getElementById("visitDate");
 const doctor = document.getElementById("doctor");
 const existingPatients = document.getElementById("existingPatients");
-const tree = document.getElementById("tree");
+const selectedList = document.getElementById("selectedTests");
 const noResult = document.getElementById("noResult");
 const searchInput = document.getElementById("search");
+const suggestions = document.getElementById("suggestions");
 const savePatientBtn = document.getElementById("savePatientBtn");
 
 visitDate.value = new Date().toISOString().split("T")[0];
@@ -198,8 +244,9 @@ let selected = new Set();
 let testInfoMap = new Map();
 let testOrderMap = new Map();
 let testOrderCounter = 0;
-/** @type {TestHierarchy | null} */
-let hierarchyData = null;
+let allTests = [];
+let suggestionItems = [];
+let activeSuggestionIndex = -1;
 const existingList = [];
 const nameInput = document.getElementById("name");
 const mobileInput = document.getElementById("mobile");
@@ -210,7 +257,10 @@ let lastBillEdited = null;
 let isAutoBillUpdate = false;
 let searchTimer = null;
 
-searchInput.addEventListener("input", searchTest);
+searchInput.addEventListener("input", updateSuggestions);
+searchInput.addEventListener("keydown", handleSuggestionKeys);
+suggestions.addEventListener("click", handleSuggestionClick);
+selectedList.addEventListener("change", handleSelectedChange);
 savePatientBtn.addEventListener("click", () => patientForm.requestSubmit());
 
 nameInput.addEventListener("input", () => {
@@ -319,94 +369,30 @@ function setInputValue(input, value){
   isAutoBillUpdate = false;
 }
 
-function getGroupChecked(groupId){
-  const checkbox = document.getElementById(`group-${groupId}`);
-  return Boolean(checkbox && checkbox.checked);
-}
-
 function buildBillLines(){
   const lines = [];
   let baseTotal = 0;
 
-  if (!hierarchyData) {
-    const rows = [...selected]
-      .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
-      .filter(item => item && item.name)
-      .sort((a, b) => {
-        const orderA = testOrderMap.has(a.id)
-          ? testOrderMap.get(a.id)
-          : Number.MAX_SAFE_INTEGER;
-        const orderB = testOrderMap.has(b.id)
-          ? testOrderMap.get(b.id)
-          : Number.MAX_SAFE_INTEGER;
-        if (orderA !== orderB) {
-          return orderA - orderB;
-        }
-        return a.name.localeCompare(b.name);
-      });
-
-    rows.forEach(item => {
-      const cost = Number(item.cost) || 0;
-      lines.push({ label: item.name, cost });
-      baseTotal += cost;
+  const rows = [...selected]
+    .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
+    .filter(item => item && item.name)
+    .sort((a, b) => {
+      const orderA = testOrderMap.has(a.id)
+        ? testOrderMap.get(a.id)
+        : Number.MAX_SAFE_INTEGER;
+      const orderB = testOrderMap.has(b.id)
+        ? testOrderMap.get(b.id)
+        : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
     });
 
-    return { lines, baseTotal: Math.round(baseTotal * 100) / 100 };
-  }
-
-  Object.entries(hierarchyData).forEach(([category, block]) => {
-    const groups = Array.isArray(block.groups) ? block.groups : [];
-    const singleTests = Array.isArray(block.singleTests)
-      ? block.singleTests
-      : [];
-    let categoryAdded = false;
-    const addCategoryHeader = () => {
-      if (categoryAdded) {
-        return;
-      }
-      lines.push({ label: category, cost: null, isHeader: true });
-      categoryAdded = true;
-    };
-
-    groups.forEach(group => {
-      const groupTests = group.tests || [];
-      const selectedTests = groupTests.filter(t => selected.has(t.id));
-      if (!selectedTests.length) {
-        return;
-      }
-
-      const groupChecked = getGroupChecked(group.id);
-      if (groupChecked) {
-        addCategoryHeader();
-        const groupCost =
-          group.cost === null || group.cost === undefined
-            ? selectedTests.reduce(
-                (sum, t) => sum + (Number(t.cost) || 0),
-                0
-              )
-            : Number(group.cost) || 0;
-        lines.push({ label: group.name, cost: groupCost });
-        baseTotal += groupCost;
-        return;
-      }
-
-      addCategoryHeader();
-      selectedTests.forEach(t => {
-        const cost = Number(t.cost) || 0;
-        lines.push({ label: t.name, cost });
-        baseTotal += cost;
-      });
-    });
-
-    const selectedSingles = singleTests.filter(t => selected.has(t.id));
-    if (selectedSingles.length) {
-      addCategoryHeader();
-      selectedSingles.forEach(t => {
-        const cost = Number(t.cost) || 0;
-        lines.push({ label: t.name, cost });
-        baseTotal += cost;
-      });
-    }
+  rows.forEach(item => {
+    const cost = Number(item.cost) || 0;
+    lines.push({ label: item.name, cost });
+    baseTotal += cost;
   });
 
   return { lines, baseTotal: Math.round(baseTotal * 100) / 100 };
@@ -426,14 +412,6 @@ function renderBillItems(){
   }
 
   lines.forEach(line => {
-    if (line.isHeader) {
-      billItems.innerHTML += `
-        <div class="row" style="margin-top:10px;font-weight:700">
-          <div style="flex:1">${line.label}</div>
-        </div>
-      `;
-      return;
-    }
     billItems.innerHTML += `
       <div class="row" style="justify-content:space-between;align-items:center">
         <div style="flex:1">${line.label}</div>
@@ -487,183 +465,261 @@ function selectPatient(p){
   localStorage.removeItem("selectedTests");
   applyPatientFilter();
 }
-/* TEST TREE */
+/* TEST LIST */
 
-/* ================= TEST TREE (FINAL FIXED LOGIC) ================= */
-
-fetch(API_BASE_URL + "/tests/hierarchy")
+fetch(API_BASE_URL + "/tests/active")
 .then(r => r.json())
-.then(data => buildTree(data));
+.then(list => initTests(list));
 
-let HEMOGRAM_GROUPS = [];   // ONLY CBP + ERYTHROCYTE
+/** @param {TestItem[]} list */
+function initTests(list){
+  const tests = Array.isArray(list) ? list : [];
+  const ordered = [...tests].sort((a, b) => {
+    const left = Number(a && a.id) || 0;
+    const right = Number(b && b.id) || 0;
+    return left - right;
+  });
 
-/** @param {TestHierarchy} data */
-function buildTree(data){
-  tree.innerHTML = "";
-  selected.clear();
-  HEMOGRAM_GROUPS = [];
+  allTests = ordered;
   testInfoMap = new Map();
   testOrderMap = new Map();
   testOrderCounter = 0;
-  hierarchyData = data || null;
 
-  Object.entries(data).forEach(([category, block]) => {
-    const groups = Array.isArray(block.groups) ? block.groups : [];
-    const singleTests = Array.isArray(block.singleTests)
-      ? block.singleTests
-      : [];
-
-    tree.innerHTML += `<h4>${category}</h4>`;
-
-    /* ===== HEMOGRAM (ONLY BIOCHEMISTRY) ===== */
-    if(category === "Biochemistry"){
-      tree.innerHTML += `
-        <div style="margin-left:10px">
-          <label>
-            <input type="checkbox" id="hemogram" onchange="toggleHemogram(this)">
-            <b>Hemogram</b>
-          </label>
-        </div>
-      `;
+  ordered.forEach(test => {
+    if (!test || test.id == null) {
+      return;
     }
-
-    /* ===== GROUPS ===== */
-    groups.forEach(group => {
-
-      /* ONLY THESE BELONG TO HEMOGRAM */
-      if(
-        group.name === "COMPLETE BLOOD PICTURE" ||
-        group.name === "ERYTHROCYTE INDICES"
-      ){
-        HEMOGRAM_GROUPS.push(group.id);
-      }
-
-      tree.innerHTML += `
-        <div style="margin-left:25px">
-          <label>
-            <input type="checkbox"
-                   id="group-${group.id}"
-                   onchange="toggleGroup(${group.id}, this)">
-            <b>${group.name}</b>
-          </label>
-        </div>
-      `;
-
-      group.tests.forEach(t => {
-        testInfoMap.set(t.id, { name: t.name, cost: Number(t.cost) || 0 });
-        if (!testOrderMap.has(t.id)) {
-          testOrderMap.set(t.id, testOrderCounter++);
-        }
-        tree.innerHTML += `
-          <div class="row test-row" style="margin-left:45px">
-            <input type="checkbox"
-                   id="group-test-${group.id}-${t.id}"
-                   name="group-test-${group.id}-${t.id}"
-                   class="g-${group.id}"
-                   value="${t.id}"
-                   onchange="toggleTest(this, ${group.id})">
-            ${t.name} (${t.shortcut})
-          </div>
-        `;
-      });
+    const name = test.testName || "";
+    const shortcut = test.shortcut || "";
+    testInfoMap.set(test.id, {
+      name,
+      shortcut,
+      cost: Number(test.cost) || 0
     });
-
-    /* ===== SINGLE TESTS (NOT IN HEMOGRAM) ===== */
-    singleTests.forEach(t => {
-      testInfoMap.set(t.id, { name: t.name, cost: Number(t.cost) || 0 });
-      if (!testOrderMap.has(t.id)) {
-        testOrderMap.set(t.id, testOrderCounter++);
-      }
-      tree.innerHTML += `
-        <div class="row test-row">
-          <input type="checkbox"
-                 id="single-test-${t.id}"
-                 name="single-test-${t.id}"
-                 value="${t.id}"
-                 onchange="toggleSingle(this)">
-          ${t.name} (${t.shortcut})
-        </div>
-      `;
-    });
+    if (!testOrderMap.has(test.id)) {
+      testOrderMap.set(test.id, testOrderCounter++);
+    }
   });
+
+  renderSelectedList();
   updateBillFromSelection();
+  updateSuggestions();
 }
 
 /* ================= LOGIC ================= */
 
-/* 🔹 HEMOGRAM */
-function toggleHemogram(cb){
-  HEMOGRAM_GROUPS.forEach(gid => {
-    const gcb = document.getElementById(`group-${gid}`);
-    gcb.checked = cb.checked;
-
-    document.querySelectorAll(`.g-${gid}`).forEach(x=>{
-      x.checked = cb.checked;
-      toggleSingle(x);
-    });
-  });
-}
-
-/* 🔹 GROUP */
-function toggleGroup(groupId, cb){
-  document.querySelectorAll(`.g-${groupId}`).forEach(x=>{
-    x.checked = cb.checked;
-    toggleSingle(x);
-  });
-
-  if(!cb.checked){
-    document.getElementById("hemogram").checked = false;
+function addSelectedTest(id){
+  if (!testInfoMap.has(id)) {
+    return;
   }
-
-  syncHemogram();
-}
-
-/* 🔹 TEST */
-function toggleTest(cb, groupId){
-  toggleSingle(cb);
-
-  const tests = [...document.querySelectorAll(`.g-${groupId}`)];
-  document.getElementById(`group-${groupId}`).checked =
-    tests.every(x => x.checked);
-
-  if(!cb.checked){
-    document.getElementById("hemogram").checked = false;
+  if (selected.has(id)) {
+    return;
   }
-
-  syncHemogram();
-}
-
-/* 🔹 SINGLE */
-function toggleSingle(cb){
-  const id = Number(cb.value);
-  cb.checked ? selected.add(id) : selected.delete(id);
+  selected.add(id);
+  renderSelectedList();
   updateBillFromSelection();
 }
 
-/* 🔹 SYNC HEMOGRAM */
-function syncHemogram(){
-  document.getElementById("hemogram").checked =
-    HEMOGRAM_GROUPS.length &&
-    HEMOGRAM_GROUPS.every(
-      gid => document.getElementById(`group-${gid}`).checked
-    );
+function removeSelectedTest(id){
+  if (!selected.has(id)) {
+    return;
+  }
+  selected.delete(id);
+  renderSelectedList();
+  updateBillFromSelection();
+  updateSuggestions();
 }
 
+function renderSelectedList(){
+  selectedList.innerHTML = "";
+  if (!selected.size) {
+    selectedList.innerHTML = `<div class="no-result">No tests selected</div>`;
+    return;
+  }
 
-    
-/* ================= SEARCH ================= */
+  const rows = [...selected]
+    .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
+    .filter(item => item && item.name)
+    .sort((a, b) => {
+      const orderA = testOrderMap.has(a.id)
+        ? testOrderMap.get(a.id)
+        : Number.MAX_SAFE_INTEGER;
+      const orderB = testOrderMap.has(b.id)
+        ? testOrderMap.get(b.id)
+        : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.name.localeCompare(b.name);
+    });
 
-function searchTest(){
-  const q = searchInput.value.toLowerCase();
-  let found = false;
+  rows.forEach(item => {
+    const shortcut = item.shortcut ? ` (${item.shortcut})` : "";
+    selectedList.innerHTML += `
+      <div class="selected-item">
+        <label>
+          <input class="selected-checkbox" type="checkbox" checked value="${item.id}">
+          ${item.name}${shortcut}
+        </label>
+        <div>₹${formatMoney(Number(item.cost) || 0)}</div>
+      </div>
+    `;
+  });
+}
 
-  document.querySelectorAll(".test-row").forEach(r=>{
-    const hit = r.innerText.toLowerCase().includes(q);
-    r.classList.toggle("hidden", q && !hit);
-    if(hit) found = true;
+function handleSelectedChange(event){
+  const target = event.target;
+  if (!target.classList.contains("selected-checkbox")) {
+    return;
+  }
+  if (!target.checked) {
+    removeSelectedTest(Number(target.value));
+  }
+}
+
+function normalizeQuery(value){
+  return String(value || "").trim().toLowerCase();
+}
+
+function rankSuggestion(test, query){
+  const name = normalizeQuery(test.testName);
+  const shortcut = normalizeQuery(test.shortcut);
+  if (shortcut && shortcut.startsWith(query)) {
+    return 0;
+  }
+  if (name.startsWith(query)) {
+    return 1;
+  }
+  if (shortcut && shortcut.includes(query)) {
+    return 2;
+  }
+  return 3;
+}
+
+function updateSuggestions(){
+  const query = normalizeQuery(searchInput.value);
+  if (!query) {
+    suggestionItems = [];
+    activeSuggestionIndex = -1;
+    suggestions.innerHTML = "";
+    suggestions.classList.add("hidden");
+    noResult.classList.add("hidden");
+    return;
+  }
+
+  const matches = allTests.filter(test => {
+    if (!test || test.id == null) {
+      return false;
+    }
+    if (selected.has(test.id)) {
+      return false;
+    }
+    const name = normalizeQuery(test.testName);
+    const shortcut = normalizeQuery(test.shortcut);
+    return name.includes(query) || shortcut.includes(query);
   });
 
-  noResult.classList.toggle("hidden", found);
+  matches.sort((a, b) => {
+    const rankDiff = rankSuggestion(a, query) - rankSuggestion(b, query);
+    if (rankDiff !== 0) {
+      return rankDiff;
+    }
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
+
+  suggestionItems = matches.slice(0, 8);
+  activeSuggestionIndex = suggestionItems.length ? 0 : -1;
+  suggestions.innerHTML = "";
+
+  suggestionItems.forEach((test, index) => {
+    const shortcut = test.shortcut ? test.shortcut : "";
+    const price = formatMoney(Number(test.cost) || 0);
+    const activeClass = index === activeSuggestionIndex ? " active" : "";
+    suggestions.innerHTML += `
+      <div class="suggestion${activeClass}" data-id="${test.id}">
+        <div class="suggestion-main">
+          <div class="suggestion-name">${test.testName || ""}</div>
+          <div class="suggestion-meta">${shortcut}</div>
+        </div>
+        <div class="suggestion-cost">₹${price}</div>
+      </div>
+    `;
+  });
+
+  suggestions.classList.toggle("hidden", !suggestionItems.length);
+  noResult.classList.toggle("hidden", suggestionItems.length > 0);
+}
+
+function setActiveSuggestion(index){
+  if (!suggestionItems.length) {
+    activeSuggestionIndex = -1;
+    return;
+  }
+  if (index < 0) {
+    activeSuggestionIndex = suggestionItems.length - 1;
+  } else if (index >= suggestionItems.length) {
+    activeSuggestionIndex = 0;
+  } else {
+    activeSuggestionIndex = index;
+  }
+
+  const items = suggestions.querySelectorAll(".suggestion");
+  items.forEach((item, idx) => {
+    item.classList.toggle("active", idx === activeSuggestionIndex);
+  });
+}
+
+function chooseSuggestion(id){
+  const numericId = Number(id);
+  if (!numericId) {
+    return;
+  }
+  addSelectedTest(numericId);
+  searchInput.value = "";
+  updateSuggestions();
+  searchInput.focus();
+}
+
+function handleSuggestionClick(event){
+  const item = event.target.closest(".suggestion");
+  if (!item) {
+    return;
+  }
+  chooseSuggestion(item.dataset.id);
+}
+
+function handleSuggestionKeys(event){
+  if (event.key === "ArrowDown") {
+    if (suggestionItems.length) {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex + 1);
+    }
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    if (suggestionItems.length) {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex - 1);
+    }
+    return;
+  }
+
+  if (event.key === "Enter") {
+    if (suggestionItems.length) {
+      event.preventDefault();
+      const active = suggestionItems[activeSuggestionIndex] || suggestionItems[0];
+      if (active) {
+        chooseSuggestion(active.id);
+      }
+    }
+    return;
+  }
+
+  if (event.key === "Escape") {
+    suggestions.classList.add("hidden");
+    noResult.classList.add("hidden");
+  }
 }
 
 /* SUBMIT */
