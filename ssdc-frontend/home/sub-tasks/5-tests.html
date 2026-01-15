@@ -588,6 +588,7 @@ function openGroup(g){
  fetch(API_BASE_URL + "/groups/" + g.id)
  .then(r=>r.json())
  .then(d=>{
+  editGroup = { ...editGroup, ...d };
   groupTests.innerHTML="";
   tests.forEach(t=>{
    groupTests.innerHTML+=`
@@ -609,7 +610,9 @@ function saveGroup(){
    groupName:gName.value,
    shortcut:gShortcut.value,
    cost:+gCost.value,
-   testIds:ids
+   testIds:ids,
+   category: editGroup.category || undefined,
+   active: typeof editGroup.active === "boolean" ? editGroup.active : undefined
   })
  }).then(()=>location.reload());
 }

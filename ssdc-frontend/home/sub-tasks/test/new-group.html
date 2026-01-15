@@ -2,193 +2,230 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>New Group</title>
 
 <style>
-:root {
-  --bg: #ecf0f3;
-  --shadow-dark: #c5c9cc;
-  --shadow-light: #ffffff;
-  --text: #444;
-  --muted: #777;
-  --error: #c0392b;
+:root{
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:10px;
 }
-
-body {
-  font-family: Poppins, Arial, sans-serif;
-  background: var(--bg);
-  padding: 20px;
-  color: var(--text);
+*{
+  box-sizing:border-box;
 }
-
-.neo-card {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 28px;
-  border-radius: 24px;
-  background: var(--bg);
-  box-shadow: 10px 10px 20px var(--shadow-dark),
-              -10px -10px 20px var(--shadow-light);
+body{
+  margin:0;
+  padding:24px;
+  font-family:"Poppins","Lato",sans-serif;
+  color:var(--theme-ink);
+  background:transparent;
+  min-height:100vh;
 }
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
+.neo-card{
+  max-width:1200px;
+  margin:0 auto;
+  padding:26px;
+  border-radius:var(--radius-lg);
+  background:var(--theme-surface);
+  border:1px solid var(--theme-line);
+  box-shadow:var(--theme-shadow);
+  display:grid;
+  gap:18px;
 }
-
-.header h2 {
-  margin: 0;
+.header-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  flex-wrap:wrap;
 }
-
-.header p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
+.header-row h2{
+  margin:0;
+  font-size:24px;
+  letter-spacing:.3px;
 }
-
-.btn {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 16px;
-  background: var(--bg);
-  box-shadow: 6px 6px 12px var(--shadow-dark),
-              -6px -6px 12px var(--shadow-light);
-  font-weight: 600;
-  cursor: pointer;
+.subtitle{
+  margin-top:4px;
+  font-size:13px;
+  color:var(--theme-muted);
 }
-
-.btn.secondary {
-  font-weight: 500;
+label{
+  font-size:12px;
+  text-transform:uppercase;
+  color:var(--theme-muted);
+  font-weight:600;
+  display:block;
+  margin-bottom:6px;
+  letter-spacing:.4px;
 }
-
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 20px;
+input, select{
+  width:100%;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  border:1px solid var(--theme-line);
+  background:#fff;
+  font-size:14px;
+  color:var(--theme-ink);
 }
-
-.panel {
-  padding: 18px;
-  border-radius: 20px;
-  background: var(--bg);
-  box-shadow: 6px 6px 12px var(--shadow-dark),
-              -6px -6px 12px var(--shadow-light);
+input:focus,
+select:focus{
+  outline:none;
+  border-color:var(--theme-accent);
+  box-shadow:0 0 0 3px rgba(15, 118, 110, 0.12);
 }
-
-.panel h3 {
-  margin-top: 0;
+.grid-2{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:16px;
 }
-
-label {
-  display: block;
-  font-size: 12px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
-  font-weight: 600;
+.section-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding-top:6px;
+  border-top:1px dashed var(--theme-line);
 }
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.section-header h3{
+  margin:0;
+  font-size:16px;
 }
-
-input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 14px;
-  border: none;
-  background: var(--bg);
-  box-shadow: inset 5px 5px 8px var(--shadow-dark),
-              inset -5px -5px 8px var(--shadow-light);
+.inline{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:4px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:var(--theme-surface-2);
+  border:1px solid var(--theme-line);
+  width:fit-content;
 }
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+input[type="checkbox"]{
+  width:auto;
+  padding:0;
+  box-shadow:none;
+  accent-color:var(--theme-accent);
 }
-
-.muted {
-  color: var(--muted);
-  font-size: 13px;
+.btn{
+  padding:10px 16px;
+  border-radius:999px;
+  border:none;
+  background:linear-gradient(135deg, var(--theme-accent), #1aa191);
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
 }
-
-.search {
-  margin-top: 10px;
+.btn.small{
+  padding:8px 12px;
+  font-size:12px;
 }
-
-.test-list,
-.selected-list {
-  margin-top: 16px;
-  max-height: 360px;
-  overflow: auto;
-  padding-right: 4px;
+.btn.secondary{
+  background:var(--theme-surface);
+  color:var(--theme-ink);
+  border:1px solid var(--theme-line);
+  box-shadow:none;
 }
-
-/*noinspection CssUnusedSymbol*/
-.test-item,
-.selected-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 14px;
-  background: var(--bg);
-  box-shadow: inset 4px 4px 6px var(--shadow-dark),
-              inset -4px -4px 6px var(--shadow-light);
-  margin-bottom: 10px;
+.btn.link{
+  padding:6px 10px;
+  font-size:12px;
+  color:var(--theme-danger);
+  background:transparent;
+  box-shadow:none;
 }
-
-.test-item input {
-  width: auto;
+.message{
+  margin-top:6px;
+  font-size:13px;
+  color:var(--theme-muted);
 }
-
-.selected-item button {
-  margin-left: auto;
-  border: none;
-  background: transparent;
-  color: var(--error);
-  cursor: pointer;
-  font-size: 12px;
+.message.error{
+  color:var(--theme-danger);
 }
-
-.count {
-  font-size: 12px;
-  color: var(--muted);
+.muted{
+  color:var(--theme-muted);
+  font-size:13px;
 }
-
-.status {
-  margin-top: 16px;
-  font-size: 13px;
+.slot-card{
+  margin-top:12px;
+  padding:16px;
+  border-radius:var(--radius-md);
+  background:var(--theme-surface-2);
+  border:1px solid var(--theme-line);
 }
-
-/*noinspection CssUnusedSymbol*/
-.status.error {
-  color: var(--error);
+.slot-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:10px;
 }
-
-/*noinspection CssUnusedSymbol*/
-.error {
-  box-shadow: inset 5px 5px 8px var(--shadow-dark),
-              inset -5px -5px 8px var(--shadow-light),
-              0 0 0 2px var(--error);
+.slot-title{
+  margin:0;
+  font-size:15px;
 }
-
-@media (max-width: 900px) {
-  .layout {
-    grid-template-columns: 1fr;
+.detail-card{
+  margin-top:12px;
+  padding:14px;
+  border-radius:var(--radius-sm);
+  background:#fff;
+  border:1px solid var(--theme-line);
+}
+.detail-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+  gap:12px;
+}
+.detail-label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  color:var(--theme-muted);
+}
+.detail-value{
+  font-size:14px;
+  font-weight:600;
+  margin-top:4px;
+}
+.param-list{
+  margin-top:12px;
+  display:grid;
+  gap:10px;
+}
+.param-item{
+  padding:10px 12px;
+  border-radius:var(--radius-sm);
+  border:1px dashed var(--theme-line);
+  background:var(--theme-surface);
+}
+.param-title{
+  font-size:13px;
+  font-weight:600;
+  margin:0 0 6px;
+}
+.param-meta{
+  font-size:12px;
+  color:var(--theme-muted);
+}
+.param-normal{
+  margin-top:6px;
+  font-size:12px;
+}
+.hidden{
+  display:none;
+}
+.grid-2 > div,
+.detail-grid > div{
+  min-width:0;
+}
+@media (max-width:980px){
+  .grid-2{
+    grid-template-columns:1fr;
   }
+}
+@media (max-width:640px){
+  body{padding:16px;}
 }
 </style>
   <link rel="stylesheet" href="../theme.css">
@@ -197,51 +234,56 @@ input {
 <body>
 
 <div class="neo-card">
-  <div class="header">
+  <div class="header-row">
     <div>
       <h2 id="title">New Group</h2>
-      <p>Create a panel by combining active tests.</p>
+      <div class="subtitle">Create a package by combining active tests.</div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" id="saveBtn">Save Group</button>
+      <button class="btn secondary" type="button" onclick="location.href='../5-tests.html'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <label for="groupName">Group Name</label>
+      <input id="groupName" placeholder="Group Name">
     </div>
     <div>
-      <button class="btn" id="saveBtn">Save Group</button>
-      <button class="btn secondary" onclick="location.href='../5-tests.html'">Cancel</button>
+      <label for="shortcut">Group Shortcut</label>
+      <input id="shortcut" placeholder="Shortcut">
+    </div>
+    <div>
+      <label for="category">Category</label>
+      <select id="category">
+        <option value="">Select category</option>
+        <option>Biochemistry</option>
+        <option>Hematology</option>
+        <option>Serology</option>
+        <option>Immunology</option>
+        <option>Microbiology</option>
+      </select>
+    </div>
+    <div>
+      <label for="cost">Price</label>
+      <input id="cost" type="number" step="0.01" placeholder="Price">
     </div>
   </div>
 
-  <div class="layout">
-    <div class="panel">
-      <h3>Group Details</h3>
-      <div class="grid-3">
-        <div>
-          <label for="groupName">Group Name</label>
-          <input id="groupName" placeholder="Group Name">
-        </div>
-        <div>
-          <label for="shortcut">Shortcut</label>
-          <input id="shortcut" placeholder="Shortcut">
-        </div>
-        <div>
-          <label for="cost">Price</label>
-          <input id="cost" type="number" step="0.01" placeholder="Price">
-        </div>
-      </div>
-
-      <div class="section">
-        <h3 style="margin-top:20px;">Selected Tests</h3>
-        <div class="count" id="selectedCount">0 selected</div>
-        <div id="selectedList" class="selected-list muted">No tests selected.</div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h3>Select Tests</h3>
-      <label class="visually-hidden" for="search">Search tests</label>
-      <input id="search" class="search" placeholder="Search tests">
-      <div id="testList" class="test-list muted">Loading tests...</div>
-    </div>
+  <div class="inline">
+    <input id="active" type="checkbox" checked>
+    <label for="active" style="margin:0;">Active</label>
   </div>
 
-  <div id="status" class="status"></div>
+  <div class="section-header">
+    <h3>Group Tests</h3>
+    <button class="btn small" type="button" id="addTestBtn">Add Test</button>
+  </div>
+
+  <div id="slotList"></div>
+
+  <div id="status" class="message"></div>
 </div>
 
 <script src="../../../api.js"></script>
@@ -249,11 +291,11 @@ input {
 const title = document.getElementById("title");
 const groupName = document.getElementById("groupName");
 const shortcut = document.getElementById("shortcut");
+const category = document.getElementById("category");
 const cost = document.getElementById("cost");
-const search = document.getElementById("search");
-const testList = document.getElementById("testList");
-const selectedList = document.getElementById("selectedList");
-const selectedCount = document.getElementById("selectedCount");
+const active = document.getElementById("active");
+const slotList = document.getElementById("slotList");
+const addTestBtn = document.getElementById("addTestBtn");
 const status = document.getElementById("status");
 const saveBtn = document.getElementById("saveBtn");
 
@@ -261,167 +303,314 @@ const params = new URLSearchParams(location.search);
 const editId = params.get("edit");
 
 let tests = [];
-let selected = new Set();
+let testMap = new Map();
+let slots = [];
+let slotCounter = 0;
 
-search.addEventListener("input", () => renderTests());
+addTestBtn.addEventListener("click", () => addSlot());
 saveBtn.addEventListener("click", () => saveGroup());
 
-function setStatus(message, type) {
+function setStatus(message, type){
   status.textContent = message || "";
-  status.className = "status" + (type ? " " + type : "");
+  status.className = "message" + (type ? " " + type : "");
 }
 
-function clearErrors() {
-  [groupName, shortcut].forEach(el => el.classList.remove("error"));
+function normalizeId(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
 }
 
-function renderTests() {
-  testList.innerHTML = "";
-  if (!tests.length) {
-    testList.textContent = "No active tests found.";
-    return;
-  }
-
-  const query = search.value.trim().toLowerCase();
-  const filtered = tests.filter(t =>
-    (t.testName + " " + t.shortcut).toLowerCase().includes(query)
+function getSelectedIds(excludeSlotId){
+  return new Set(
+    slots
+      .filter(slot => slot.testId && slot.id !== excludeSlotId)
+      .map(slot => slot.testId)
   );
+}
 
-  if (!filtered.length) {
-    testList.textContent = "No matches for this search.";
-    return;
-  }
+function buildOptions(currentId, excludeSlotId){
+  const selectedElsewhere = getSelectedIds(excludeSlotId);
+  let options = '<option value="">Select test</option>';
 
-  filtered.forEach(t => {
-    const item = document.createElement("label");
-    item.className = "test-item";
+  tests.forEach(test => {
+    const id = Number(test.id);
+    if (!Number.isFinite(id)) {
+      return;
+    }
+    const isSelected = id === currentId;
+    const isDisabled = !isSelected && selectedElsewhere.has(id);
+    const shortcutText = test.shortcut ? ` (${test.shortcut})` : "";
+    options += `<option value="${id}"${isSelected ? " selected" : ""}${isDisabled ? " disabled" : ""}>${test.testName || ""}${shortcutText}</option>`;
+  });
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = selected.has(t.id);
-    checkbox.addEventListener("change", e => {
-      toggleSelection(t.id, e.target.checked);
-    });
+  return options;
+}
 
-    const info = document.createElement("div");
-    info.innerHTML = "<strong>" + t.testName + "</strong> (" + t.shortcut + ")";
-
-    item.appendChild(checkbox);
-    item.appendChild(info);
-    testList.appendChild(item);
+function renderSlotOptions(){
+  slots.forEach(slot => {
+    const select = slot.select;
+    select.innerHTML = buildOptions(slot.testId, slot.id);
   });
 }
 
-function renderSelected() {
-  selectedCount.textContent = selected.size + " selected";
-  selectedList.innerHTML = "";
+function formatValue(value, fallback){
+  if (value === null || value === undefined || value === "") {
+    return fallback || "—";
+  }
+  return String(value);
+}
 
-  if (!selected.size) {
-    selectedList.textContent = "No tests selected.";
-    selectedList.classList.add("muted");
+function formatCost(value){
+  const num = Number(value);
+  return Number.isFinite(num) ? `₹${num}` : "—";
+}
+
+function getParamNormals(param){
+  if (!param) return "";
+  if (Array.isArray(param.normalRanges) && param.normalRanges.length) {
+    return param.normalRanges
+      .map(r => (r && r.textValue ? String(r.textValue) : ""))
+      .filter(Boolean)
+      .join(" | ");
+  }
+  if (param.normalText) {
+    return String(param.normalText);
+  }
+  return "";
+}
+
+function renderParamList(test){
+  const params = Array.isArray(test.parameters) ? test.parameters : [];
+  if (params.length) {
+    return params.map((param, index) => {
+      const name = param.name || `Parameter ${index + 1}`;
+      const unit = param.unit || "—";
+      const type = param.valueType || "—";
+      const normals = getParamNormals(param);
+      const normalText = normals ? `<div class="param-normal">Normal: ${normals}</div>` : "";
+      return `
+        <div class="param-item">
+          <div class="param-title">${name}</div>
+          <div class="param-meta">Unit: ${unit} · Type: ${type}</div>
+          ${normalText}
+        </div>
+      `;
+    }).join("");
+  }
+
+  const normalValues = Array.isArray(test.normalValues) ? test.normalValues : [];
+  const normals = normalValues
+    .map(n => (n && n.normalValue ? String(n.normalValue) : ""))
+    .filter(Boolean)
+    .join(" | ");
+
+  if (!normals) {
+    return '<div class="param-item"><div class="param-title">No parameters</div></div>';
+  }
+
+  return `
+    <div class="param-item">
+      <div class="param-title">Normal Values</div>
+      <div class="param-normal">${normals}</div>
+    </div>
+  `;
+}
+
+function renderDetails(slot){
+  const detail = slot.detail;
+  const test = testMap.get(slot.testId);
+  if (!test) {
+    detail.innerHTML = '<div class="muted">Select a test to see details.</div>';
     return;
   }
 
-  selectedList.classList.remove("muted");
-  tests.filter(t => selected.has(t.id)).forEach(t => {
-    const item = document.createElement("div");
-    item.className = "selected-item";
+  const shortcutText = test.shortcut || "—";
+  const categoryText = test.category || "—";
+  const activeText = test.active ? "Active" : "Inactive";
 
-    const info = document.createElement("div");
-    info.innerHTML = "<strong>" + t.testName + "</strong> (" + t.shortcut + ")";
+  detail.innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="detail-label">Test Name</div>
+        <div class="detail-value">${formatValue(test.testName, "—")}</div>
+      </div>
+      <div>
+        <div class="detail-label">Shortcut</div>
+        <div class="detail-value">${shortcutText}</div>
+      </div>
+      <div>
+        <div class="detail-label">Category</div>
+        <div class="detail-value">${categoryText}</div>
+      </div>
+      <div>
+        <div class="detail-label">Cost</div>
+        <div class="detail-value">${formatCost(test.cost)}</div>
+      </div>
+      <div>
+        <div class="detail-label">Status</div>
+        <div class="detail-value">${activeText}</div>
+      </div>
+    </div>
+    <div class="param-list">
+      ${renderParamList(test)}
+    </div>
+  `;
+}
 
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.textContent = "Remove";
-    removeBtn.addEventListener("click", () => toggleSelection(t.id, false));
+function addSlot(testId){
+  const slotId = `slot-${slotCounter++}`;
+  const wrapper = document.createElement("div");
+  wrapper.className = "slot-card";
 
-    item.appendChild(info);
-    item.appendChild(removeBtn);
-    selectedList.appendChild(item);
+  wrapper.innerHTML = `
+    <div class="slot-header">
+      <h4 class="slot-title"></h4>
+      <button class="btn link" type="button">Remove</button>
+    </div>
+    <div class="grid-2">
+      <div>
+        <label>Select Test</label>
+        <select class="test-select"></select>
+      </div>
+      <div class="inline">
+        <input type="checkbox" disabled>
+        <label style="margin:0;">Details (read-only)</label>
+      </div>
+    </div>
+    <div class="detail-card"></div>
+  `;
+
+  const select = wrapper.querySelector(".test-select");
+  const removeBtn = wrapper.querySelector(".btn.link");
+  const titleEl = wrapper.querySelector(".slot-title");
+  const detail = wrapper.querySelector(".detail-card");
+
+  const slot = { id: slotId, testId: normalizeId(testId), wrapper, select, detail, titleEl };
+  slots.push(slot);
+
+  select.addEventListener("change", () => {
+    slot.testId = normalizeId(select.value);
+    renderSlotOptions();
+    renderDetails(slot);
+  });
+
+  removeBtn.addEventListener("click", () => {
+    slots = slots.filter(item => item.id !== slot.id);
+    wrapper.remove();
+    renderSlotOptions();
+    refreshSlotTitles();
+  });
+
+  slotList.appendChild(wrapper);
+  renderSlotOptions();
+  renderDetails(slot);
+  refreshSlotTitles();
+}
+
+function refreshSlotTitles(){
+  slots.forEach((slot, index) => {
+    slot.titleEl.textContent = `Test ${index + 1}`;
   });
 }
 
-function toggleSelection(id, on) {
-  if (on) {
-    selected.add(id);
-  } else {
-    selected.delete(id);
-  }
-  renderTests();
-  renderSelected();
-}
-
-async function loadData() {
-  let hasError = false;
+async function loadData(){
   setStatus("Loading tests...");
   try {
     const testRes = await fetch(API_BASE_URL + "/tests/active");
     if (!testRes.ok) {
       setStatus("Failed to load tests.", "error");
-      testList.textContent = "Unable to load tests.";
       return;
     }
     tests = await testRes.json();
+    tests = Array.isArray(tests) ? tests : [];
+    testMap = new Map(tests.map(t => [Number(t.id), t]));
 
     if (editId) {
       const groupRes = await fetch(API_BASE_URL + "/groups/" + editId);
-      if (!groupRes.ok) {
-        setStatus("Failed to load group.", "error");
-        hasError = true;
-      } else {
+      if (groupRes.ok) {
         const group = await groupRes.json();
         title.textContent = "Edit Group";
         groupName.value = group.groupName || "";
         shortcut.value = group.shortcut || "";
         cost.value = group.cost == null ? "" : group.cost;
-        selected = new Set(group.testIds || []);
+        if (group.category) {
+          category.value = group.category;
+        }
+        if (typeof group.active === "boolean") {
+          active.checked = group.active;
+        }
+        const ids = Array.isArray(group.testIds) ? group.testIds : [];
+        ids.forEach(id => addSlot(id));
+      } else {
+        setStatus("Failed to load group.", "error");
       }
     }
 
-    renderTests();
-    renderSelected();
-    if (!hasError) {
-      setStatus("");
+    if (!slots.length) {
+      addSlot();
     }
+
+    setStatus("");
   } catch (err) {
     console.error(err);
     setStatus("Failed to load data. Check backend connection.", "error");
-    testList.textContent = "Unable to load tests.";
   }
 }
 
-async function saveGroup() {
-  clearErrors();
-  if (!groupName.value.trim()) {
-    groupName.classList.add("error");
+async function saveGroup(){
+  const nameValue = groupName.value.trim();
+  const shortcutValue = shortcut.value.trim();
+  const categoryValue = category.value.trim();
+  const costValue = cost.value.trim();
+  let costNumber = null;
+
+  if (!nameValue) {
     setStatus("Group name is required.", "error");
+    groupName.focus();
     return;
   }
-  if (!shortcut.value.trim()) {
-    shortcut.classList.add("error");
+  if (!shortcutValue) {
     setStatus("Shortcut is required.", "error");
+    shortcut.focus();
     return;
   }
-  if (!selected.size) {
+  if (costValue !== "") {
+    costNumber = Number(costValue);
+    if (Number.isNaN(costNumber)) {
+      setStatus("Price must be a number.", "error");
+      cost.focus();
+      return;
+    }
+  }
+
+  const testIds = slots
+    .map(slot => slot.testId)
+    .filter(id => Number.isFinite(id));
+
+  const uniqueIds = [...new Set(testIds)];
+  if (!uniqueIds.length) {
     setStatus("Select at least one test.", "error");
     return;
   }
 
+  const payload = {
+    groupName: nameValue,
+    shortcut: shortcutValue,
+    category: categoryValue || null,
+    cost: costNumber,
+    active: active.checked,
+    testIds: uniqueIds
+  };
+
   setStatus("Saving...");
   saveBtn.disabled = true;
-
-  const payload = {
-    groupName: groupName.value.trim(),
-    shortcut: shortcut.value.trim(),
-    cost: cost.value.trim() === "" ? null : Number(cost.value),
-    testIds: Array.from(selected)
-  };
 
   try {
     const url = editId
       ? API_BASE_URL + "/groups/" + editId
       : API_BASE_URL + "/groups";
     const method = editId ? "PUT" : "POST";
+
     const res = await fetch(url, {
       method: method,
       headers: { "Content-Type": "application/json" },

@@ -49,6 +49,8 @@ public class TestGroupService {
             group.getGroupName(),
             group.getShortcut(),
             group.getCost(),
+            group.getCategory(),
+            group.getActive(),
             testIds
         );
     }
@@ -64,6 +66,10 @@ public class TestGroupService {
         group.setGroupName(payload.groupName);
         group.setShortcut(shortcut);
         group.setCost(payload.cost == null ? 0.0 : payload.cost);
+        group.setCategory(payload.category);
+        if (payload.active != null) {
+            group.setActive(payload.active);
+        }
         group = groupRepo.save(group);
 
         saveMappings(group, payload.testIds);
@@ -86,6 +92,10 @@ public class TestGroupService {
         group.setGroupName(payload.groupName);
         group.setShortcut(shortcut);
         group.setCost(payload.cost == null ? 0.0 : payload.cost);
+        group.setCategory(payload.category);
+        if (payload.active != null) {
+            group.setActive(payload.active);
+        }
         groupRepo.save(group);
 
         mapRepo.deleteByGroup_Id(group.getId());
