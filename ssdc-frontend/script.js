@@ -61,16 +61,26 @@ allSideMenu.forEach(li => {
         if (key) {
             setActiveMenu(key);
         }
+        if (window.innerWidth < 768) {
+            sidebar.classList.add('hide');
+        }
     });
 });
 
 /* ================= TOGGLE SIDEBAR ================= */
 const menuBar = document.querySelector('#content nav .bx-menu');
 const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
 
 menuBar.addEventListener('click', () => {
     sidebar.classList.toggle('hide');
 });
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.add('hide');
+    });
+}
 
 /* ================= DARK MODE ================= */
 const switchMode = document.getElementById('switch-mode');
@@ -87,15 +97,48 @@ function loadPage(page, menuKey = null) {
     updateMenuForPage(page, menuKey);
 }
 
+function applyFrameTheme() {
+    if (!pageFrame) return;
+
+    try {
+        const doc = pageFrame.contentDocument || pageFrame.contentWindow?.document;
+        if (!doc) return;
+        const usesTheme = doc.querySelector('link[href*="theme.css"]');
+        if (!usesTheme) return;
+
+        doc.documentElement?.classList.add('in-frame');
+        doc.body?.classList.add('in-frame');
+
+        if (!doc.getElementById('frame-theme-reset')) {
+            const style = doc.createElement('style');
+            style.id = 'frame-theme-reset';
+            style.textContent = `
+html.in-frame,
+body.in-frame {
+    background: transparent !important;
+}
+`;
+            doc.head?.appendChild(style);
+        }
+    } catch (error) {
+        // Ignore access errors if the iframe isn't ready or is cross-origin.
+    }
+}
+
 /* ================= AUTO HIDE SIDEBAR ================= */
-if (window.innerWidth < 768) {
+let isMobile = window.innerWidth < 768;
+if (isMobile) {
     sidebar.classList.add('hide');
 }
 
 window.addEventListener('resize', () => {
-    if (window.innerWidth < 768) {
+    const nowMobile = window.innerWidth < 768;
+    if (nowMobile && !isMobile) {
         sidebar.classList.add('hide');
+    } else if (!nowMobile && isMobile) {
+        sidebar.classList.remove('hide');
     }
+    isMobile = nowMobile;
 });
 
 /* 🔹 Expose to iframe */
@@ -123,7 +166,9 @@ if (pageFrame) {
     pageFrame.addEventListener("load", () => {
         const framePage = getFramePagePath();
         updateMenuForPage(framePage);
+        applyFrameTheme();
     });
+    applyFrameTheme();
 }
 
 /* ================= DASHBOARD DATE/TIME ================= */

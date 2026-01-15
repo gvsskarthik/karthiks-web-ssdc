@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patient Bill</title>
 <link rel="stylesheet" href="print-common.css">
 
@@ -109,6 +110,19 @@ function formatMoneyWithSymbol(value){
   return `₹${formatMoney(value)}`;
 }
 
+function resolveGroupCost(group, testMap){
+  const cost = Number(group.cost);
+  if (Number.isFinite(cost)) {
+    return cost;
+  }
+  let sum = 0;
+  (group.testIds || []).forEach(id => {
+    const test = testMap.get(id);
+    sum += Number(test?.cost) || 0;
+  });
+  return Math.round(sum * 100) / 100;
+}
+
 function hydratePatient(){
   const age = patient.age ? String(patient.age) : "";
   const gender = patient.gender || "";
@@ -167,11 +181,15 @@ function renderBill(){
         return;
       }
 
-      return fetch(`${API_BASE_URL}/tests/active`)
-        .then(res => res.json())
-        .then(tests => {
+      return Promise.all([
+        fetch(`${API_BASE_URL}/tests/active`).then(res => res.json()),
+        fetch(`${API_BASE_URL}/groups`).then(res => res.json()).catch(() => [])
+      ])
+        .then(([tests, groups]) => {
+          const testList = Array.isArray(tests) ? tests : [];
+          const testMap = new Map(testList.map(t => [Number(t.id), t]));
           const selected =
-            (tests || []).filter(t => uniqueIds.includes(t.id));
+            testList.filter(t => uniqueIds.includes(t.id));
 
           if (!selected.length) {
             body.innerHTML = `<tr><td colspan="2">No tests found</td></tr>`;
@@ -180,19 +198,64 @@ function renderBill(){
             return;
           }
 
+          const normalizedGroups = (Array.isArray(groups) ? groups : [])
+            .map(group => {
+              const ids = Array.isArray(group.testIds) ? group.testIds : [];
+              const testIds = ids
+                .map(id => Number(id))
+                .filter(id => Number.isFinite(id) && testMap.has(id));
+              return { ...group, testIds };
+            })
+            .filter(group => group.testIds.length)
+            .sort((a, b) => {
+              const diff = b.testIds.length - a.testIds.length;
+              if (diff !== 0) return diff;
+              return (Number(a.id) || 0) - (Number(b.id) || 0);
+            });
+
+          const selectedSet = new Set(uniqueIds);
+          const selectedGroups = [];
+          const coveredTests = new Set();
+
+          normalizedGroups.forEach(group => {
+            const allSelected = group.testIds.every(id => selectedSet.has(id));
+            if (!allSelected) {
+              return;
+            }
+            const overlaps = group.testIds.some(id => coveredTests.has(id));
+            if (overlaps) {
+              return;
+            }
+            selectedGroups.push(group);
+            group.testIds.forEach(id => coveredTests.add(id));
+          });
+
           let subtotal = 0;
           body.innerHTML = "";
 
-          selected.forEach(test => {
-            const cost = Number(test.cost) || 0;
+          selectedGroups.forEach(group => {
+            const cost = resolveGroupCost(group, testMap);
             subtotal += cost;
             body.innerHTML += `
               <tr>
-                <td>${test.testName || "-"}</td>
+                <td>${group.groupName || "Group"} (Group)</td>
                 <td class="amount">₹${formatMoney(cost)}</td>
               </tr>
             `;
           });
+
+          selected
+            .filter(test => !coveredTests.has(Number(test.id)))
+            .forEach(test => {
+              const cost = Number(test.cost) || 0;
+              subtotal += cost;
+              body.innerHTML += `
+                <tr>
+                  <td>${test.testName || "-"}</td>
+                  <td class="amount">₹${formatMoney(cost)}</td>
+                </tr>
+              `;
+            });
 
           const patientAmount = Number(patient.amount);
           const total = Number.isFinite(patientAmount)

@@ -61,6 +61,7 @@ CREATE TABLE test_groups (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   group_name VARCHAR(255) NOT NULL,
   group_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+  category VARCHAR(255),
   shortcut VARCHAR(100) NOT NULL UNIQUE,
   display_order INT NOT NULL DEFAULT 0,
   active BOOLEAN NOT NULL

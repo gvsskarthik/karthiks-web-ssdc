@@ -22,6 +22,9 @@ public class TestGroup {
     @Column(name = "group_price", nullable = false)
     private Double cost = 0.0;
 
+    @Column
+    private String category;
+
     @Column(nullable = false, unique = true)
     private String shortcut;
 
@@ -39,6 +42,9 @@ public class TestGroup {
 
     public Double getCost() { return cost; }
     public void setCost(Double cost) { this.cost = cost; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
     public String getShortcut() { return shortcut; }
     public void setShortcut(String shortcut) { this.shortcut = shortcut; }

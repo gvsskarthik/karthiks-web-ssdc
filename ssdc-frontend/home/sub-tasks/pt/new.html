@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>New Patient</title>
 
 <style>
@@ -333,6 +334,10 @@ let testInfoMap = new Map();
 let testOrderMap = new Map();
 let testOrderCounter = 0;
 let allTests = [];
+let groups = [];
+let groupMap = new Map();
+let groupOrderMap = new Map();
+let groupOrderCounter = 0;
 let suggestionItems = [];
 let activeSuggestionIndex = -1;
 const existingList = [];
@@ -451,6 +456,50 @@ function formatMoney(value){
   return String(Math.round(value * 100) / 100);
 }
 
+function resolveGroupCost(group){
+  const cost = Number(group.cost);
+  if (Number.isFinite(cost)) {
+    return cost;
+  }
+  let sum = 0;
+  (group.testIds || []).forEach(id => {
+    const testInfo = testInfoMap.get(id);
+    sum += Number(testInfo?.cost) || 0;
+  });
+  return Math.round(sum * 100) / 100;
+}
+
+function deriveGroupSelection(){
+  const ordered = [...groupMap.values()]
+    .filter(group => Array.isArray(group.testIds) && group.testIds.length)
+    .sort((a, b) => {
+      const diff = b.testIds.length - a.testIds.length;
+      if (diff !== 0) return diff;
+      const orderA = groupOrderMap.has(a.id) ? groupOrderMap.get(a.id) : 0;
+      const orderB = groupOrderMap.has(b.id) ? groupOrderMap.get(b.id) : 0;
+      return orderA - orderB;
+    });
+
+  const selectedGroups = [];
+  const coveredTests = new Set();
+
+  ordered.forEach(group => {
+    const ids = group.testIds || [];
+    const allSelected = ids.every(id => selected.has(id));
+    if (!allSelected) {
+      return;
+    }
+    const overlaps = ids.some(id => coveredTests.has(id));
+    if (overlaps) {
+      return;
+    }
+    selectedGroups.push(group);
+    ids.forEach(id => coveredTests.add(id));
+  });
+
+  return { selectedGroups, coveredTests };
+}
+
 function setInputValue(input, value){
   isAutoBillUpdate = true;
   input.value = value;
@@ -461,7 +510,31 @@ function buildBillLines(){
   const lines = [];
   let baseTotal = 0;
 
+  const { selectedGroups, coveredTests } = deriveGroupSelection();
+
+  const groupRows = selectedGroups
+    .slice()
+    .sort((a, b) => {
+      const orderA = groupOrderMap.has(a.id)
+        ? groupOrderMap.get(a.id)
+        : Number.MAX_SAFE_INTEGER;
+      const orderB = groupOrderMap.has(b.id)
+        ? groupOrderMap.get(b.id)
+        : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return String(a.groupName || "").localeCompare(String(b.groupName || ""));
+    });
+
+  groupRows.forEach(group => {
+    const cost = resolveGroupCost(group);
+    lines.push({ label: `${group.groupName || "Group"} (Group)`, cost });
+    baseTotal += cost;
+  });
+
   const rows = [...selected]
+    .filter(id => !coveredTests.has(id))
     .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
     .filter(item => item && item.name)
     .sort((a, b) => {
@@ -555,13 +628,16 @@ function selectPatient(p){
 }
 /* TEST LIST */
 
-fetch(API_BASE_URL + "/tests/active")
-.then(r => r.json())
-.then(list => initTests(list));
+Promise.all([
+  fetch(API_BASE_URL + "/tests/active").then(r => r.json()),
+  fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
+])
+.then(([testList, groupList]) => initTests(testList, groupList));
 
 /** @param {TestItem[]} list */
-function initTests(list){
+function initTests(list, groupList){
   const tests = Array.isArray(list) ? list : [];
+  const incomingGroups = Array.isArray(groupList) ? groupList : [];
   const ordered = [...tests].sort((a, b) => {
     const left = Number(a && a.id) || 0;
     const right = Number(b && b.id) || 0;
@@ -572,6 +648,10 @@ function initTests(list){
   testInfoMap = new Map();
   testOrderMap = new Map();
   testOrderCounter = 0;
+  groups = incomingGroups;
+  groupMap = new Map();
+  groupOrderMap = new Map();
+  groupOrderCounter = 0;
 
   ordered.forEach(test => {
     if (!test || test.id == null) {
@@ -588,6 +668,24 @@ function initTests(list){
       testOrderMap.set(test.id, testOrderCounter++);
     }
   });
+
+  groups
+    .map(group => {
+      const ids = Array.isArray(group.testIds) ? group.testIds : [];
+      const testIds = ids
+        .map(id => Number(id))
+        .filter(id => Number.isFinite(id) && testInfoMap.has(id));
+      return { ...group, testIds };
+    })
+    .forEach(group => {
+      const groupId = Number(group?.id);
+      if (!Number.isFinite(groupId)) {
+        return;
+      }
+      const normalized = { ...group, id: groupId };
+      groupMap.set(groupId, normalized);
+      groupOrderMap.set(groupId, groupOrderCounter++);
+    });
 
   renderSelectedList();
   updateBillFromSelection();
@@ -608,6 +706,21 @@ function addSelectedTest(id){
   updateBillFromSelection();
 }
 
+function addSelectedGroup(groupId){
+  const group = groupMap.get(groupId);
+  if (!group || !Array.isArray(group.testIds)) {
+    return;
+  }
+  group.testIds.forEach(id => {
+    if (testInfoMap.has(id)) {
+      selected.add(id);
+    }
+  });
+  renderSelectedList();
+  updateBillFromSelection();
+  updateSuggestions();
+}
+
 function removeSelectedTest(id){
   if (!selected.has(id)) {
     return;
@@ -625,7 +738,25 @@ function renderSelectedList(){
     return;
   }
 
-  const rows = [...selected]
+  const { selectedGroups, coveredTests } = deriveGroupSelection();
+
+  const groupRows = selectedGroups
+    .slice()
+    .sort((a, b) => {
+      const orderA = groupOrderMap.has(a.id)
+        ? groupOrderMap.get(a.id)
+        : Number.MAX_SAFE_INTEGER;
+      const orderB = groupOrderMap.has(b.id)
+        ? groupOrderMap.get(b.id)
+        : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return String(a.groupName || "").localeCompare(String(b.groupName || ""));
+    });
+
+  const testRows = [...selected]
+    .filter(id => !coveredTests.has(id))
     .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
     .filter(item => item && item.name)
     .sort((a, b) => {
@@ -641,12 +772,31 @@ function renderSelectedList(){
       return a.name.localeCompare(b.name);
     });
 
-  rows.forEach(item => {
+  if (!groupRows.length && !testRows.length) {
+    selectedList.innerHTML = `<div class="no-result">No tests selected</div>`;
+    return;
+  }
+
+  groupRows.forEach(group => {
+    const shortcutText = group.shortcut ? ` (${group.shortcut})` : "";
+    const cost = resolveGroupCost(group);
+    selectedList.innerHTML += `
+      <div class="selected-item">
+        <label>
+          <input class="selected-checkbox" data-type="group" type="checkbox" checked value="${group.id}">
+          ${group.groupName || "Group"}${shortcutText}
+        </label>
+        <div class="selected-cost">₹${formatMoney(cost)}</div>
+      </div>
+    `;
+  });
+
+  testRows.forEach(item => {
     const shortcut = item.shortcut ? ` (${item.shortcut})` : "";
     selectedList.innerHTML += `
       <div class="selected-item">
         <label>
-          <input class="selected-checkbox" type="checkbox" checked value="${item.id}">
+          <input class="selected-checkbox" data-type="test" type="checkbox" checked value="${item.id}">
           ${item.name}${shortcut}
         </label>
         <div class="selected-cost">₹${formatMoney(Number(item.cost) || 0)}</div>
@@ -661,7 +811,19 @@ function handleSelectedChange(event){
     return;
   }
   if (!target.checked) {
-    removeSelectedTest(Number(target.value));
+    const type = target.dataset.type || "test";
+    const id = Number(target.value);
+    if (type === "group") {
+      const group = groupMap.get(id);
+      if (group && Array.isArray(group.testIds)) {
+        group.testIds.forEach(testId => selected.delete(testId));
+      }
+      renderSelectedList();
+      updateBillFromSelection();
+      updateSuggestions();
+      return;
+    }
+    removeSelectedTest(id);
   }
 }
 
@@ -684,6 +846,35 @@ function rankSuggestion(test, query){
   return 3;
 }
 
+function rankGroupSuggestion(group, query){
+  const name = normalizeQuery(group.groupName);
+  const shortcut = normalizeQuery(group.shortcut);
+  if (shortcut && shortcut.startsWith(query)) {
+    return 0;
+  }
+  if (name.startsWith(query)) {
+    return 1;
+  }
+  if (shortcut && shortcut.includes(query)) {
+    return 2;
+  }
+  return 3;
+}
+
+function groupMatchesQuery(group, query){
+  const name = normalizeQuery(group.groupName);
+  const shortcut = normalizeQuery(group.shortcut);
+  if (name.includes(query) || shortcut.includes(query)) {
+    return true;
+  }
+  return (group.testIds || []).some(id => {
+    const test = testInfoMap.get(id);
+    const testName = normalizeQuery(test?.name);
+    const testShortcut = normalizeQuery(test?.shortcut);
+    return testName.includes(query) || testShortcut.includes(query);
+  });
+}
+
 function updateSuggestions(){
   const query = normalizeQuery(searchInput.value);
   if (!query) {
@@ -695,7 +886,20 @@ function updateSuggestions(){
     return;
   }
 
-  const matches = allTests.filter(test => {
+  const { selectedGroups } = deriveGroupSelection();
+  const selectedGroupIds = new Set(selectedGroups.map(group => group.id));
+
+  const groupMatches = [...groupMap.values()].filter(group => {
+    if (selectedGroupIds.has(group.id)) {
+      return false;
+    }
+    if (!Array.isArray(group.testIds) || !group.testIds.length) {
+      return false;
+    }
+    return groupMatchesQuery(group, query);
+  });
+
+  const testMatches = allTests.filter(test => {
     if (!test || test.id == null) {
       return false;
     }
@@ -707,27 +911,49 @@ function updateSuggestions(){
     return name.includes(query) || shortcut.includes(query);
   });
 
-  matches.sort((a, b) => {
-    const rankDiff = rankSuggestion(a, query) - rankSuggestion(b, query);
+  const combined = [
+    ...groupMatches.map(group => ({
+      type: "group",
+      id: group.id,
+      name: group.groupName || "",
+      shortcut: group.shortcut || "",
+      cost: resolveGroupCost(group),
+      rank: rankGroupSuggestion(group, query)
+    })),
+    ...testMatches.map(test => ({
+      type: "test",
+      id: test.id,
+      name: test.testName || "",
+      shortcut: test.shortcut || "",
+      cost: Number(test.cost) || 0,
+      rank: rankSuggestion(test, query)
+    }))
+  ];
+
+  combined.sort((a, b) => {
+    const rankDiff = a.rank - b.rank;
     if (rankDiff !== 0) {
       return rankDiff;
     }
     return (Number(a.id) || 0) - (Number(b.id) || 0);
   });
 
-  suggestionItems = matches.slice(0, 8);
+  suggestionItems = combined.slice(0, 8);
   activeSuggestionIndex = suggestionItems.length ? 0 : -1;
   suggestions.innerHTML = "";
 
-  suggestionItems.forEach((test, index) => {
-    const shortcut = test.shortcut ? test.shortcut : "";
-    const price = formatMoney(Number(test.cost) || 0);
+  suggestionItems.forEach((item, index) => {
+    const shortcut = item.shortcut ? item.shortcut : "";
+    const price = formatMoney(Number(item.cost) || 0);
     const activeClass = index === activeSuggestionIndex ? " active" : "";
+    const meta = item.type === "group"
+      ? `Group${shortcut ? " · " + shortcut : ""}`
+      : shortcut;
     suggestions.innerHTML += `
-      <div class="suggestion${activeClass}" data-id="${test.id}">
+      <div class="suggestion${activeClass}" data-id="${item.id}" data-type="${item.type}">
         <div class="suggestion-main">
-          <div class="suggestion-name">${test.testName || ""}</div>
-          <div class="suggestion-meta">${shortcut}</div>
+          <div class="suggestion-name">${item.name || ""}</div>
+          <div class="suggestion-meta">${meta}</div>
         </div>
         <div class="suggestion-cost">₹${price}</div>
       </div>
@@ -757,12 +983,16 @@ function setActiveSuggestion(index){
   });
 }
 
-function chooseSuggestion(id){
+function chooseSuggestion(type, id){
   const numericId = Number(id);
   if (!numericId) {
     return;
   }
-  addSelectedTest(numericId);
+  if (type === "group") {
+    addSelectedGroup(numericId);
+  } else {
+    addSelectedTest(numericId);
+  }
   searchInput.value = "";
   updateSuggestions();
   searchInput.focus();
@@ -773,7 +1003,8 @@ function handleSuggestionClick(event){
   if (!item) {
     return;
   }
-  chooseSuggestion(item.dataset.id);
+  const type = item.dataset.type || "test";
+  chooseSuggestion(type, item.dataset.id);
 }
 
 function handleSuggestionKeys(event){
@@ -798,7 +1029,7 @@ function handleSuggestionKeys(event){
       event.preventDefault();
       const active = suggestionItems[activeSuggestionIndex] || suggestionItems[0];
       if (active) {
-        chooseSuggestion(active.id);
+        chooseSuggestion(active.type, active.id);
       }
     }
     return;

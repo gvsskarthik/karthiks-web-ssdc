@@ -1,9 +1,9 @@
 -- Sample master data for SSDC Labs (run after schema creation)
 
 INSERT INTO test_groups
-  (id, group_name, group_price, shortcut, display_order, active)
+  (id, group_name, group_price, category, shortcut, display_order, active)
 VALUES
-  (1, 'Hematology', 500.00, 'HEMA', 1, true);
+  (1, 'Hematology', 500.00, 'Hematology', 'HEMA', 1, true);
 
 INSERT INTO tests
   (id, test_name, test_shortcut, test_type, active, display_order, cost, category)

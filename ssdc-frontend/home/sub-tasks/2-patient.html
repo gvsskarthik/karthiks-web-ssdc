@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patients</title>
 <link href="../../vendor/fonts/fonts.css" rel="stylesheet">
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
@@ -86,6 +87,8 @@ body{
   grid-template-columns:220px minmax(0,1fr);
   gap:16px;
   align-items:end;
+  width:100%;
+  max-width:560px;
   animation:fadeUp .5s ease both;
 }
 .filter-group{
@@ -103,7 +106,7 @@ body{
   display:flex;
   align-items:center;
   gap:10px;
-  padding:10px 12px;
+  padding:8px 12px;
   border-radius:var(--radius-md);
   background:var(--bg-soft);
   border:1px solid var(--line);
@@ -113,6 +116,26 @@ body{
   font-size:18px;
   color:var(--muted);
 }
+.icon-btn{
+  border:none;
+  background:transparent;
+  padding:0;
+  margin:0;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  transition:color .15s ease;
+}
+.icon-btn:hover{
+  color:var(--accent);
+}
+.icon-btn:focus-visible{
+  outline:2px solid rgba(15, 118, 110, 0.35);
+  outline-offset:2px;
+  border-radius:8px;
+}
 .neo-input{
   flex:1;
   border:none;
@@ -120,6 +143,7 @@ body{
   outline:none;
   font-size:14px;
   color:var(--ink);
+  min-width:0;
 }
 .bulk-bar{
   display:none;
@@ -146,12 +170,15 @@ body{
   padding:16px;
   animation:fadeUp .55s ease both;
 }
-.table-wrap{overflow-x:visible}
+.page .table-wrap{overflow-x:visible}
 table{
   width:100%;
   border-collapse:separate;
   border-spacing:0 10px;
   table-layout:fixed;
+}
+.page .table-wrap table{
+  min-width:0;
 }
 thead th{
   text-align:left;
@@ -189,6 +216,16 @@ tbody td{
 tbody td:last-child{
   border-right:1px solid var(--line);
   border-radius:0 12px 12px 0;
+}
+.no-data{
+  text-align:center;
+  color:var(--muted);
+  padding:16px 0;
+}
+tbody td.no-data{
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+  border-radius:12px;
 }
 .check-col{
   width:48px;
@@ -293,14 +330,18 @@ tbody td:last-child{
     <div class="filter-group">
       <label for="datePicker">Date</label>
       <div class="input-wrap">
-        <i class="bx bx-calendar"></i>
+        <button class="icon-btn" type="button" id="dateToggle" aria-label="Open date">
+          <i class="bx bx-calendar"></i>
+        </button>
         <input type="date" id="datePicker" class="neo-input">
       </div>
     </div>
     <div class="filter-group">
       <label for="searchBox">Search</label>
       <div class="input-wrap">
-        <i class="bx bx-search"></i>
+        <button class="icon-btn" type="button" id="searchToggle" aria-label="Open search">
+          <i class="bx bx-search"></i>
+        </button>
         <input type="text" id="searchBox" class="neo-input"
                placeholder="Search patient..."
                onkeyup="searchPatient()">
@@ -342,6 +383,8 @@ if(parent?.setActiveMenu){ parent.setActiveMenu("patient"); }
 
 const datePicker = document.getElementById("datePicker");
 const searchBox  = document.getElementById("searchBox");
+const dateToggle = document.getElementById("dateToggle");
+const searchToggle = document.getElementById("searchToggle");
 const tableBody  = document.getElementById("patientTable");
 const bulkBar    = document.getElementById("bulkBar");
 const checkHead  = document.getElementById("checkHead");
@@ -403,6 +446,20 @@ function searchPatient(){
   ));
 }
 
+function openDatePicker(){
+  datePicker.focus();
+  if (typeof datePicker.showPicker === "function") {
+    datePicker.showPicker();
+  }
+}
+
+function focusSearch(){
+  searchBox.focus();
+}
+
+dateToggle.addEventListener("click", openDatePicker);
+searchToggle.addEventListener("click", focusSearch);
+
 function renderTable(data){
   tableBody.innerHTML="";
   if(!data.length){ renderEmpty(); return; }
@@ -443,7 +500,7 @@ function renderTable(data){
 
 function renderEmpty(){
   tableBody.innerHTML=`<tr>
-    <td colspan="7" style="text-align:center;color:#888">
+    <td colspan="7" class="no-data">
       No patients found
     </td></tr>`;
 }
