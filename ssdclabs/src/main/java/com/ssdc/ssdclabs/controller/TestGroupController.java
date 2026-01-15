@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ssdc.ssdclabs.dto.TestGroupDetailDTO;
 import com.ssdc.ssdclabs.dto.TestGroupPayload;
-import com.ssdc.ssdclabs.model.TestGroup;
 import com.ssdc.ssdclabs.service.TestGroupService;
 
 @RestController
@@ -33,7 +32,7 @@ public class TestGroupController {
        GET ALL GROUPS
        =============================== */
     @GetMapping
-    public List<TestGroup> getAllGroups() {
+    public List<TestGroupDetailDTO> getAllGroups() {
         return groupService.getAllGroups();
     }
 
