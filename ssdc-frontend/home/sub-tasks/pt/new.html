@@ -218,6 +218,7 @@ label{
 </head>
 
 <body>
+<script src="../theme-init.js"></script>
 
 <div class="page">
 <div class="wrapper">
@@ -648,7 +649,8 @@ Promise.all([
 
 /** @param {TestItem[]} list */
 function initTests(list, groupList){
-  const tests = Array.isArray(list) ? list : [];
+  const tests = (Array.isArray(list) ? list : [])
+    .filter(test => test && test.active !== false);
   const incomingGroups = Array.isArray(groupList) ? groupList : [];
   const ordered = [...tests].sort((a, b) => {
     const left = Number(a && a.id) || 0;
@@ -682,6 +684,7 @@ function initTests(list, groupList){
   });
 
   groups
+    .filter(group => group && group.active !== false)
     .map(group => {
       const ids = Array.isArray(group.testIds) ? group.testIds : [];
       const testIds = ids

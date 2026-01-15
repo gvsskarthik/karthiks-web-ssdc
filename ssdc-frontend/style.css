@@ -15,18 +15,19 @@ body.dark {
 }
 
 :root {
-	--dash-sidebar-bg: #fffaf2;
-	--dash-frame-bg: #f2eadd;
-	--dash-frame-gradient: radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
-		linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
-	--dash-sidebar-active: var(--dash-frame-bg);
-	--dash-sidebar-hover: #f7efe3;
-	--dash-accent: #0f766e;
-	--dash-accent-strong: #0b5f58;
-	--dash-ink: #1e262d;
-	--dash-muted: #6b737c;
-	--dash-line: #e3d9c9;
-	--dash-shadow: 0 12px 24px rgba(28, 41, 61, 0.12);
+	--dash-sidebar-bg: var(--theme-surface, #fffaf2);
+	--dash-frame-bg: var(--theme-bg, #f2eadd);
+	--dash-frame-gradient: var(--theme-bg-gradient,
+		radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+		linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%));
+	--dash-sidebar-active: var(--theme-surface-2, #f2eadd);
+	--dash-sidebar-hover: var(--theme-surface-2, #f7efe3);
+	--dash-accent: var(--theme-accent, #0f766e);
+	--dash-accent-strong: var(--theme-accent-strong, #0b5f58);
+	--dash-ink: var(--theme-ink, #1e262d);
+	--dash-muted: var(--theme-muted, #6b737c);
+	--dash-line: var(--theme-line, #e3d9c9);
+	--dash-shadow: var(--theme-shadow, 0 12px 24px rgba(28, 41, 61, 0.12));
 }
 
 
@@ -254,20 +255,34 @@ body.dark {
 	background: var(--dash-sidebar-active);
 	cursor: pointer;
 	position: relative;
+	padding: 2px;
 }
-#content nav .switch-mode::before {
-	content: '';
-	position: absolute;
-	top: 2px;
-	left: 2px;
-	bottom: 2px;
+#content nav .switch-mode .switch-knob{
 	width: calc(25px - 4px);
+	height: calc(25px - 4px);
 	background: var(--dash-accent);
 	border-radius: 50%;
-	transition: all .3s ease;
+	display: grid;
+	place-items: center;
+	color: #fff;
+	position: relative;
+	transition: transform .3s ease;
 }
-#content nav #switch-mode:checked + .switch-mode::before {
-	left: calc(100% - (25px - 4px) - 2px);
+#content nav .switch-mode .switch-knob .bx{
+	position: absolute;
+	opacity: 0;
+	transition: opacity .15s ease;
+	font-size: 16px;
+	line-height: 1;
+}
+#content nav #switch-mode:not(:checked) + .switch-mode .switch-knob .bx-sun{
+	opacity: 1;
+}
+#content nav #switch-mode:checked + .switch-mode .switch-knob .bx-moon{
+	opacity: 1;
+}
+#content nav #switch-mode:checked + .switch-mode .switch-knob{
+	transform: translateX(25px);
 }
 /* NAVBAR */
 

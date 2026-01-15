@@ -74,6 +74,41 @@ select:focus{
   border-color:var(--theme-accent);
   box-shadow:0 0 0 3px rgba(15, 118, 110, 0.12);
 }
+.search-wrap{position:relative}
+.suggestions{
+  position:absolute;
+  left:0;
+  right:0;
+  top:100%;
+  margin-top:8px;
+  background:var(--theme-surface);
+  border-radius:var(--radius-md);
+  border:1px solid var(--theme-line);
+  box-shadow:var(--theme-shadow);
+  max-height:260px;
+  overflow-y:auto;
+  z-index:10;
+}
+.suggestion{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  cursor:pointer;
+  border-bottom:1px solid var(--theme-line);
+}
+.suggestion:last-child{border-bottom:none}
+.suggestion:hover,.suggestion.active{background:var(--theme-surface-2)}
+.suggestion-main{display:flex;flex-direction:column;gap:2px}
+.suggestion-name{font-weight:600}
+.suggestion-meta{font-size:12px;color:var(--theme-muted)}
+.suggestion-cost{font-weight:600}
+.hidden{display:none}
+.no-result{
+  text-align:center;
+  color:var(--theme-muted);
+  padding:10px 0;
+}
 .grid-2{
   display:grid;
   grid-template-columns:repeat(2, minmax(0, 1fr));
@@ -232,6 +267,7 @@ input[type="checkbox"]{
 </head>
 
 <body>
+<script src="../theme-init.js"></script>
 
 <div class="neo-card">
   <div class="header-row">
@@ -328,29 +364,11 @@ function getSelectedIds(excludeSlotId){
   );
 }
 
-function buildOptions(currentId, excludeSlotId){
-  const selectedElsewhere = getSelectedIds(excludeSlotId);
-  let options = '<option value="">Select test</option>';
-
-  tests.forEach(test => {
-    const id = Number(test.id);
-    if (!Number.isFinite(id)) {
-      return;
-    }
-    const isSelected = id === currentId;
-    const isDisabled = !isSelected && selectedElsewhere.has(id);
-    const shortcutText = test.shortcut ? ` (${test.shortcut})` : "";
-    options += `<option value="${id}"${isSelected ? " selected" : ""}${isDisabled ? " disabled" : ""}>${test.testName || ""}${shortcutText}</option>`;
-  });
-
-  return options;
-}
-
-function renderSlotOptions(){
-  slots.forEach(slot => {
-    const select = slot.select;
-    select.innerHTML = buildOptions(slot.testId, slot.id);
-  });
+function normalizeQuery(value){
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatValue(value, fallback){
@@ -457,6 +475,185 @@ function renderDetails(slot){
   `;
 }
 
+function setSlotInputFromSelection(slot){
+  const test = testMap.get(slot.testId);
+  if (!test) {
+    slot.searchInput.value = "";
+    return;
+  }
+  const shortcutText = test.shortcut ? ` (${test.shortcut})` : "";
+  slot.searchInput.value = `${test.testName || ""}${shortcutText}`.trim();
+}
+
+function rankSuggestion(test, query){
+  const name = normalizeQuery(test.testName);
+  const shortcut = normalizeQuery(test.shortcut);
+  if (shortcut && shortcut.startsWith(query)) {
+    return 0;
+  }
+  if (name.startsWith(query)) {
+    return 1;
+  }
+  if (shortcut && shortcut.includes(query)) {
+    return 2;
+  }
+  return 3;
+}
+
+function setActiveSuggestion(slot, index){
+  if (!slot.suggestionItems.length) {
+    slot.activeSuggestionIndex = -1;
+    return;
+  }
+
+  if (index < 0) {
+    slot.activeSuggestionIndex = slot.suggestionItems.length - 1;
+  } else if (index >= slot.suggestionItems.length) {
+    slot.activeSuggestionIndex = 0;
+  } else {
+    slot.activeSuggestionIndex = index;
+  }
+
+  const items = slot.suggestions.querySelectorAll(".suggestion");
+  items.forEach((item, idx) => {
+    item.classList.toggle("active", idx === slot.activeSuggestionIndex);
+  });
+}
+
+function updateSlotSuggestions(slot){
+  const query = normalizeQuery(slot.searchInput.value);
+
+  if (!query) {
+    slot.suggestionItems = [];
+    slot.activeSuggestionIndex = -1;
+    slot.suggestions.innerHTML = "";
+    slot.suggestions.classList.add("hidden");
+    slot.noResult.classList.add("hidden");
+    return;
+  }
+
+  const selectedElsewhere = getSelectedIds(slot.id);
+
+  const matches = tests
+    .filter(test => {
+      const id = Number(test?.id);
+      if (!Number.isFinite(id)) {
+        return false;
+      }
+      if (selectedElsewhere.has(id)) {
+        return false;
+      }
+      const name = normalizeQuery(test.testName);
+      const shortcut = normalizeQuery(test.shortcut);
+      return name.includes(query) || shortcut.includes(query);
+    })
+    .map(test => ({
+      id: Number(test.id),
+      name: test.testName || "",
+      shortcut: test.shortcut || "",
+      cost: Number(test.cost) || 0,
+      rank: rankSuggestion(test, query)
+    }))
+    .sort((a, b) => {
+      const rankDiff = a.rank - b.rank;
+      if (rankDiff !== 0) {
+        return rankDiff;
+      }
+      return (a.id || 0) - (b.id || 0);
+    })
+    .slice(0, 8);
+
+  slot.suggestionItems = matches;
+  slot.activeSuggestionIndex = matches.length ? 0 : -1;
+  slot.suggestions.innerHTML = "";
+
+  matches.forEach((item, index) => {
+    const shortcut = item.shortcut ? item.shortcut : "";
+    const activeClass = index === slot.activeSuggestionIndex ? " active" : "";
+    const meta = shortcut ? shortcut : " ";
+    slot.suggestions.innerHTML += `
+      <div class="suggestion${activeClass}" data-id="${item.id}">
+        <div class="suggestion-main">
+          <div class="suggestion-name">${item.name || ""}</div>
+          <div class="suggestion-meta">${meta}</div>
+        </div>
+        <div class="suggestion-cost">₹${item.cost}</div>
+      </div>
+    `;
+  });
+
+  slot.suggestions.classList.toggle("hidden", !matches.length);
+  slot.noResult.classList.toggle("hidden", matches.length > 0);
+}
+
+function chooseSlotTest(slot, testId){
+  const id = Number(testId);
+  if (!Number.isFinite(id)) {
+    return;
+  }
+
+  const selectedElsewhere = getSelectedIds(slot.id);
+  if (selectedElsewhere.has(id)) {
+    setStatus("This test is already selected in another slot.", "error");
+    return;
+  }
+
+  slot.testId = id;
+  setSlotInputFromSelection(slot);
+  renderDetails(slot);
+  slots.forEach(other => {
+    if (other.suggestions && !other.suggestions.classList.contains("hidden")) {
+      updateSlotSuggestions(other);
+    }
+  });
+}
+
+function handleSlotSuggestionClick(slot, event){
+  const item = event.target.closest(".suggestion");
+  if (!item) {
+    return;
+  }
+  chooseSlotTest(slot, item.dataset.id);
+  slot.suggestions.classList.add("hidden");
+  slot.noResult.classList.add("hidden");
+}
+
+function handleSlotSuggestionKeys(slot, event){
+  if (event.key === "ArrowDown") {
+    if (slot.suggestionItems.length) {
+      event.preventDefault();
+      setActiveSuggestion(slot, slot.activeSuggestionIndex + 1);
+    }
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    if (slot.suggestionItems.length) {
+      event.preventDefault();
+      setActiveSuggestion(slot, slot.activeSuggestionIndex - 1);
+    }
+    return;
+  }
+
+  if (event.key === "Enter") {
+    if (slot.suggestionItems.length) {
+      event.preventDefault();
+      const active = slot.suggestionItems[slot.activeSuggestionIndex] || slot.suggestionItems[0];
+      if (active) {
+        chooseSlotTest(slot, active.id);
+      }
+      slot.suggestions.classList.add("hidden");
+      slot.noResult.classList.add("hidden");
+    }
+    return;
+  }
+
+  if (event.key === "Escape") {
+    slot.suggestions.classList.add("hidden");
+    slot.noResult.classList.add("hidden");
+  }
+}
+
 function addSlot(testId){
   const slotId = `slot-${slotCounter++}`;
   const wrapper = document.createElement("div");
@@ -470,7 +667,11 @@ function addSlot(testId){
     <div class="grid-2">
       <div>
         <label>Select Test</label>
-        <select class="test-select"></select>
+        <div class="search-wrap">
+          <input class="test-search" placeholder="Search test..." autocomplete="off">
+          <div class="suggestions hidden"></div>
+        </div>
+        <div class="no-result hidden">❌ No test available</div>
       </div>
       <div class="inline">
         <input type="checkbox" disabled>
@@ -480,29 +681,48 @@ function addSlot(testId){
     <div class="detail-card"></div>
   `;
 
-  const select = wrapper.querySelector(".test-select");
+  const searchInput = wrapper.querySelector(".test-search");
+  const suggestions = wrapper.querySelector(".suggestions");
+  const noResult = wrapper.querySelector(".no-result");
   const removeBtn = wrapper.querySelector(".btn.link");
   const titleEl = wrapper.querySelector(".slot-title");
   const detail = wrapper.querySelector(".detail-card");
 
-  const slot = { id: slotId, testId: normalizeId(testId), wrapper, select, detail, titleEl };
+  const slot = {
+    id: slotId,
+    testId: normalizeId(testId),
+    wrapper,
+    searchInput,
+    suggestions,
+    noResult,
+    suggestionItems: [],
+    activeSuggestionIndex: -1,
+    detail,
+    titleEl
+  };
   slots.push(slot);
 
-  select.addEventListener("change", () => {
-    slot.testId = normalizeId(select.value);
-    renderSlotOptions();
-    renderDetails(slot);
+  searchInput.addEventListener("input", () => updateSlotSuggestions(slot));
+  searchInput.addEventListener("keydown", event => handleSlotSuggestionKeys(slot, event));
+  suggestions.addEventListener("click", event => handleSlotSuggestionClick(slot, event));
+  searchInput.addEventListener("focus", () => updateSlotSuggestions(slot));
+  searchInput.addEventListener("blur", () => {
+    setTimeout(() => {
+      slot.suggestions.classList.add("hidden");
+      slot.noResult.classList.add("hidden");
+      setSlotInputFromSelection(slot);
+    }, 120);
   });
 
   removeBtn.addEventListener("click", () => {
     slots = slots.filter(item => item.id !== slot.id);
     wrapper.remove();
-    renderSlotOptions();
+    slots.forEach(other => updateSlotSuggestions(other));
     refreshSlotTitles();
   });
 
   slotList.appendChild(wrapper);
-  renderSlotOptions();
+  setSlotInputFromSelection(slot);
   renderDetails(slot);
   refreshSlotTitles();
 }

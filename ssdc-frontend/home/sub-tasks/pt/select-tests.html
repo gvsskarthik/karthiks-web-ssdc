@@ -126,6 +126,7 @@ body{
 </head>
 
 <body>
+<script src="../theme-init.js"></script>
 
 <div class="neo-card">
   <h2>Select Tests</h2>
@@ -175,7 +176,8 @@ Promise.all([
   fetch(API_BASE_URL + "/tests/active").then(r => r.json()),
   fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
 ]).then(([testListData, groupListData]) => {
-  tests = Array.isArray(testListData) ? testListData : [];
+  tests = (Array.isArray(testListData) ? testListData : [])
+    .filter(test => test && test.active !== false);
   groups = Array.isArray(groupListData) ? groupListData : [];
   testMap = new Map(tests.map(t => [Number(t.id), t]));
   render();
@@ -192,7 +194,7 @@ function normalizeGroup(group){
 function deriveGroups(){
   const ordered = groups
     .map(normalizeGroup)
-    .filter(group => group.testIds.length)
+    .filter(group => group.active !== false && group.testIds.length)
     .sort((a, b) => {
       const diff = b.testIds.length - a.testIds.length;
       if (diff !== 0) return diff;
@@ -282,7 +284,11 @@ function render(){
 
   const normalizedGroups = groups
     .map(normalizeGroup)
-    .filter(group => group.testIds.length && groupMatchesQuery(group, query));
+    .filter(group =>
+      group.active !== false
+      && group.testIds.length
+      && groupMatchesQuery(group, query)
+    );
 
   normalizedGroups.forEach(group => {
     const isSelected = group.testIds.every(id => selected.has(id));

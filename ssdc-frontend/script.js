@@ -84,10 +84,55 @@ if (sidebarOverlay) {
 
 /* ================= DARK MODE ================= */
 const switchMode = document.getElementById('switch-mode');
+const THEME_STORAGE_KEY = "ssdc-theme";
 
-switchMode.addEventListener('change', function () {
-    document.body.classList.toggle('dark', this.checked);
-});
+function isDarkModeEnabled() {
+    return document.body.classList.contains("dark");
+}
+
+function syncFrameDarkMode(enabled) {
+    if (!pageFrame) return;
+
+    try {
+        const doc = pageFrame.contentDocument || pageFrame.contentWindow?.document;
+        if (!doc) return;
+        doc.documentElement?.classList.toggle("dark", enabled);
+        doc.body?.classList.toggle("dark", enabled);
+    } catch (error) {
+        // Ignore access errors if the iframe isn't ready or is cross-origin.
+    }
+}
+
+function setDarkMode(enabled) {
+    document.body.classList.toggle("dark", enabled);
+    if (switchMode) {
+        switchMode.checked = enabled;
+    }
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, enabled ? "dark" : "light");
+    } catch (error) {
+        // Ignore storage errors.
+    }
+    syncFrameDarkMode(enabled);
+}
+
+function loadSavedTheme() {
+    try {
+        const saved = localStorage.getItem(THEME_STORAGE_KEY);
+        if (saved === "dark") return true;
+        if (saved === "light") return false;
+    } catch (error) {
+        // Ignore storage errors.
+    }
+    return false;
+}
+
+if (switchMode) {
+    setDarkMode(loadSavedTheme());
+    switchMode.addEventListener('change', function () {
+        setDarkMode(this.checked);
+    });
+}
 
 /* ================= LOAD PAGE INTO IFRAME ================= */
 function loadPage(page, menuKey = null) {
@@ -167,8 +212,10 @@ if (pageFrame) {
         const framePage = getFramePagePath();
         updateMenuForPage(framePage);
         applyFrameTheme();
+        syncFrameDarkMode(isDarkModeEnabled());
     });
     applyFrameTheme();
+    syncFrameDarkMode(isDarkModeEnabled());
 }
 
 /* ================= DASHBOARD DATE/TIME ================= */

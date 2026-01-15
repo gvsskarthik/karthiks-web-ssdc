@@ -98,6 +98,7 @@ th{font-size:13px;color:#555}
 </head>
 
 <body>
+<script src="../theme-init.js"></script>
 
 <div class="neo-card">
 
@@ -247,8 +248,10 @@ loadSavedResults()
     return fetch(API_BASE_URL + "/tests/active")
       .then(res => res.json())
       .then(allTests => {
+        const activeTests = (allTests || [])
+          .filter(t => t && t.active !== false);
         const selectedTests =
-          allTests.filter(t => ids.includes(t.id));
+          activeTests.filter(t => ids.includes(t.id));
         renderTests(selectedTests);
       });
   });
