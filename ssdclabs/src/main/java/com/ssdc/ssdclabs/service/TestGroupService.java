@@ -1,6 +1,10 @@
 package com.ssdc.ssdclabs.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -32,9 +36,51 @@ public class TestGroupService {
         this.testRepo = testRepo;
     }
 
-    public List<TestGroup> getAllGroups() {
+    public List<TestGroupDetailDTO> getAllGroups() {
         // Ordered by displayOrder, then groupName for stability.
-        return groupRepo.findAllByOrderByDisplayOrderAscGroupNameAsc();
+        List<TestGroup> groups =
+            groupRepo.findAllByOrderByDisplayOrderAscGroupNameAsc();
+        if (groups.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> groupIds = groups.stream()
+            .map(TestGroup::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        Map<Long, List<Long>> testIdsByGroup = new HashMap<>();
+        if (!groupIds.isEmpty()) {
+            List<TestGroupMapping> mappings =
+                mapRepo.findByGroup_IdInOrderByGroup_IdAscDisplayOrderAsc(groupIds);
+            for (TestGroupMapping mapping : mappings) {
+                TestGroup group = mapping.getGroup();
+                Test test = mapping.getTest();
+                Long groupId = group == null ? null : group.getId();
+                Long testId = test == null ? null : test.getId();
+                if (groupId == null || testId == null) {
+                    continue;
+                }
+                testIdsByGroup
+                    .computeIfAbsent(groupId, id -> new ArrayList<>())
+                    .add(testId);
+            }
+        }
+
+        return groups.stream()
+            .map(group -> new TestGroupDetailDTO(
+                group.getId(),
+                group.getGroupName(),
+                group.getShortcut(),
+                group.getCost(),
+                group.getCategory(),
+                group.getActive(),
+                testIdsByGroup.getOrDefault(
+                    group.getId(),
+                    Collections.emptyList()
+                )
+            ))
+            .collect(Collectors.toList());
     }
 
     public TestGroupDetailDTO getGroup(@NonNull Long id) {

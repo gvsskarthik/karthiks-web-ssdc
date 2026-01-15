@@ -9,6 +9,9 @@ import com.ssdc.ssdclabs.model.TestGroupMapping;
 public interface TestGroupMappingRepository
         extends JpaRepository<TestGroupMapping, Long> {
     List<TestGroupMapping> findByGroup_Id(Long groupId);
+    List<TestGroupMapping> findByGroup_IdInOrderByGroup_IdAscDisplayOrderAsc(
+        List<Long> groupIds
+    );
 
     void deleteByGroup_Id(Long groupId);
 }
