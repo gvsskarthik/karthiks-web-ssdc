@@ -102,6 +102,14 @@ public class TestGroupService {
     }
 
     @Transactional
+    public void updateActive(@NonNull Long id, boolean active) {
+        TestGroup group = groupRepo.findById(Objects.requireNonNull(id, "id"))
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+        group.setActive(active);
+        groupRepo.save(group);
+    }
+
+    @Transactional
     public String saveGroup(@NonNull TestGroupPayload payload) {
         String shortcut = Objects.requireNonNull(payload.shortcut, "shortcut");
         if (groupRepo.existsByShortcut(shortcut)) {

@@ -1,8 +1,11 @@
 package com.ssdc.ssdclabs.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.lang.NonNull;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,6 +63,20 @@ public class TestGroupController {
             @PathVariable @NonNull Long id,
             @RequestBody @NonNull TestGroupPayload payload) {
         return groupService.updateGroup(id, payload);
+    }
+
+    /* ===============================
+       TOGGLE ACTIVE (ADMIN APPROVAL)
+       =============================== */
+    @PutMapping("/{id}/active")
+    public ResponseEntity<?> updateActive(
+            @PathVariable @NonNull Long id,
+            @RequestBody @NonNull Map<String, Boolean> body) {
+
+        Boolean active = Objects.requireNonNull(body.get("active"), "active");
+        groupService.updateActive(id, active);
+
+        return ResponseEntity.ok().build();
     }
 
     /* ===============================

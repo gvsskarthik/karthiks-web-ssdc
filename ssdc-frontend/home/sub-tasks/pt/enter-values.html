@@ -133,7 +133,6 @@ th{font-size:13px;color:#555}
 
 <div class="actions">
   <button class="neo-btn" onclick="saveOnly()">SAVE</button>
-  <button class="neo-btn" onclick="saveAndPrint()">SAVE & PRINT</button>
 </div>
 
 </div>
@@ -447,11 +446,6 @@ function saveOnly() {
     });
 }
 
-/* ================= SAVE & PRINT ================= */
-function saveAndPrint() {
-  saveOnly();
-  setTimeout(() => window.print(), 300);
-}
 </script>
 
 </body>

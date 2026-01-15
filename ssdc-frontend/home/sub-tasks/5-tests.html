@@ -528,7 +528,16 @@ function render(){
     <td class="normal">—</td>
     <td class="cost">${formatCost(g.cost)}</td>
 
-    <td class="active-col">—</td>
+    <td class="active-col">
+      <label class="switch">
+        <input type="checkbox"
+          id="active-group-${g.id}"
+          name="active-group-${g.id}"
+          ${(g.active === false) ? "" : "checked"}
+          onchange="toggleGroupActive(${g.id}, this.checked)">
+        <span class="slider"></span>
+      </label>
+    </td>
 
     <td class="options">
      <div class="menu">
@@ -650,6 +659,24 @@ function toggleActive(id, state){
   .then(res=>{
     if(!res.ok){
       alert("Failed to update test status");
+      location.reload(); // revert UI
+    }
+  })
+  .catch(()=>{
+    alert("Server error");
+    location.reload();
+  });
+}
+
+function toggleGroupActive(id, state){
+  fetch(`${API_BASE_URL}/groups/${id}/active`,{
+    method:"PUT",
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ active: state })
+  })
+  .then(res=>{
+    if(!res.ok){
+      alert("Failed to update group status");
       location.reload(); // revert UI
     }
   })
