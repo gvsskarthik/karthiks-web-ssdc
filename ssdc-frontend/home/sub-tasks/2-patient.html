@@ -3,127 +3,337 @@
 <head>
 <meta charset="UTF-8">
 <title>Patients</title>
+<link href="../../vendor/fonts/fonts.css" rel="stylesheet">
+<link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
 <style>
+:root{
+  --bg:#f6f1e7;
+  --bg-soft:#fffaf2;
+  --ink:#1e262d;
+  --muted:#6b737c;
+  --accent:#0f766e;
+  --accent-strong:#0b5f58;
+  --warm:#e08f2f;
+  --danger:#c0392b;
+  --line:#e3d9c9;
+  --shadow:0 18px 40px rgba(28, 41, 61, 0.12);
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:10px;
+}
+*{box-sizing:border-box}
 body{
   margin:0;
-  padding:20px;
-  font-family:Arial,sans-serif;
-  background:#ecf0f3;
+  padding:24px;
+  font-family:"Poppins","Lato",sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color:var(--ink);
+  min-height:100vh;
 }
-.header{
+.page{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
+}
+.head-title{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:12px;
+  gap:18px;
+  animation:fadeUp .45s ease both;
 }
-.header h1{
-  font-size:36px;
-  font-weight:600;
+.head-title h1{
+  font-size:32px;
+  font-weight:700;
   margin:0;
+  letter-spacing:.3px;
 }
-.top-bar{
-  display:flex;
-  gap:12px;
-  margin-bottom:12px;
-  flex-wrap:wrap;
-}
-.neo-input{
-  padding:8px 12px;
-  border-radius:12px;
-  border:none;
-  background:#ecf0f3;
-  box-shadow:inset 4px 4px 8px #c5c9cc,
-             inset -4px -4px 8px #ffffff;
+.subtitle{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
 }
 .neo-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
   padding:10px 18px;
-  border-radius:14px;
-  background:#ecf0f3;
-  box-shadow:6px 6px 10px #c5c9cc,
-             -6px -6px 10px #ffffff;
+  border-radius:999px;
+  background:linear-gradient(135deg, var(--accent), #1aa191);
+  color:#fff;
+  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
   border:none;
-  cursor:pointer;
   font-weight:600;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.neo-btn:hover{transform:translateY(-1px)}
+.neo-btn:active{transform:translateY(1px)}
+.neo-btn.secondary{
+  background:var(--bg-soft);
+  color:var(--ink);
+  border:1px solid var(--line);
+  box-shadow:none;
+}
+.filters{
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  gap:16px;
+  align-items:end;
+  animation:fadeUp .5s ease both;
+}
+.filter-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.filter-group label{
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.input-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+}
+.input-wrap i{
+  font-size:18px;
+  color:var(--muted);
+}
+.neo-input{
+  flex:1;
+  border:none;
+  background:transparent;
+  outline:none;
+  font-size:14px;
+  color:var(--ink);
 }
 .bulk-bar{
   display:none;
   justify-content:space-between;
   align-items:center;
-  padding:12px;
-  margin-bottom:12px;
-  border-radius:14px;
-  background:#fff3cd;
+  gap:12px;
+  padding:12px 16px;
+  border-radius:var(--radius-md);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  animation:fadeUp .45s ease both;
+}
+.bulk-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
 }
 .table-box{
-  background:#ecf0f3;
-  border-radius:20px;
-  padding:20px;
-  box-shadow:10px 10px 20px #c5c9cc,
-             -10px -10px 20px #ffffff;
+  border-radius:var(--radius-lg);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  padding:16px;
+  animation:fadeUp .55s ease both;
 }
-table{ width:100%; border-collapse:collapse; }
-th,td{ padding:12px; font-size:14px; }
-tr{ border-bottom:1px solid #ddd; }
-.status{ font-weight:600; color:#e67e22; }
-.menu{ position:relative; cursor:pointer; font-size:20px; }
-.menu-box{
+.table-wrap{overflow-x:visible}
+table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 10px;
+  table-layout:fixed;
+}
+thead th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  color:var(--muted);
+  padding:0 12px 6px;
+}
+tbody tr{
+  background:#fff;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+tbody tr:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
+}
+body.menu-open tbody tr:hover{
+  transform:none;
+  box-shadow:none;
+}
+tbody tr.menu-open{
+  position:relative;
+  z-index:2;
+}
+tbody td{
+  padding:12px;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.round-left{
+  border-left:1px solid var(--line);
+  border-radius:12px 0 0 12px;
+}
+tbody td:last-child{
+  border-right:1px solid var(--line);
+  border-radius:0 12px 12px 0;
+}
+.check-col{
+  width:48px;
+  text-align:center;
+}
+.sno{width:60px}
+.name{
+  width:220px;
+  overflow-wrap:anywhere;
+}
+.doctor{
+  width:200px;
+  overflow-wrap:anywhere;
+}
+.amount{
+  width:120px;
+  text-align:right;
+  font-weight:600;
+  white-space:nowrap;
+}
+.status-col{
+  width:140px;
+  white-space:nowrap;
+}
+.status{
+  font-weight:600;
+  color:var(--warm);
+}
+.options{width:90px}
+.menu{
+  position:relative;
+  display:inline-flex;
+  justify-content:center;
+  width:100%;
+}
+.menu-btn{
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  padding:6px 10px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
+}
+.menu-list{
   display:none;
   position:absolute;
   right:0;
-  top:22px;
+  top:32px;
   background:#fff;
-  border-radius:8px;
-  box-shadow:0 4px 10px rgba(0,0,0,.15);
-  z-index:10;
+  border-radius:14px;
+  border:1px solid var(--line);
+  box-shadow:0 12px 24px rgba(20, 30, 45, 0.12);
+  z-index:30;
+  min-width:140px;
+  overflow:hidden;
 }
-.menu-box div{
-  padding:8px 14px;
-  font-size:13px;
+.menu-list div{
+  padding:10px 16px;
   cursor:pointer;
+  font-size:13px;
 }
-.menu-box div:hover{ background:#f2f2f2; }
+.menu-list div:hover{background:#f6f1e7}
+.menu-list .danger{color:var(--danger)}
+.row-check{
+  width:16px;
+  height:16px;
+  accent-color:var(--accent);
+}
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@media (max-width:900px){
+  body{padding:16px}
+  .head-title{flex-direction:column; align-items:flex-start}
+  .neo-btn{width:100%; justify-content:center}
+  .filters{grid-template-columns:1fr}
+}
+@media (max-width:600px){
+  .head-title h1{font-size:28px}
+  .input-wrap{padding:10px}
+}
 </style>
   <link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
 
-<div class="header">
-  <h1>Patient</h1>
-  <button class="neo-btn" onclick="location.href='pt/new.html'">NEW</button>
-</div>
-
-<div class="top-bar">
-  <input type="date" id="datePicker" class="neo-input">
-  <input type="text" id="searchBox" class="neo-input"
-         placeholder="Search patient..."
-         onkeyup="searchPatient()">
-</div>
-
-<div class="bulk-bar" id="bulkBar">
-  <div id="selectedCount">0 items selected</div>
-  <div>
-    <button class="neo-btn" onclick="deleteSelected()">Delete Selected</button>
-    <button class="neo-btn" onclick="exitSelectMode()">Cancel</button>
+<div class="page">
+  <div class="head-title">
+    <div>
+      <h1>Patients</h1>
+      <div class="subtitle">Daily registrations and billing</div>
+    </div>
+    <button class="neo-btn" onclick="location.href='pt/new.html'">
+      <i class="bx bx-plus"></i> New Patient
+    </button>
   </div>
-</div>
 
-<div class="table-box">
-<table>
-<thead>
-<tr>
-  <th id="checkHead" style="display:none"></th>
-  <th>S.No</th>
-  <th>Name</th>
-  <th>Doctor</th>
-  <th>Amount</th>
-  <th>Status</th>
-  <th>Options</th>
-</tr>
-</thead>
-<tbody id="patientTable"></tbody>
-</table>
+  <div class="filters">
+    <div class="filter-group">
+      <label for="datePicker">Date</label>
+      <div class="input-wrap">
+        <i class="bx bx-calendar"></i>
+        <input type="date" id="datePicker" class="neo-input">
+      </div>
+    </div>
+    <div class="filter-group">
+      <label for="searchBox">Search</label>
+      <div class="input-wrap">
+        <i class="bx bx-search"></i>
+        <input type="text" id="searchBox" class="neo-input"
+               placeholder="Search patient..."
+               onkeyup="searchPatient()">
+      </div>
+    </div>
+  </div>
+
+  <div class="bulk-bar" id="bulkBar">
+    <div id="selectedCount">0 items selected</div>
+    <div class="bulk-actions">
+      <button class="neo-btn" onclick="deleteSelected()">Delete Selected</button>
+      <button class="neo-btn secondary" onclick="exitSelectMode()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="table-box">
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th id="checkHead" class="check-col" style="display:none"></th>
+          <th class="sno">S.No</th>
+          <th class="name">Name</th>
+          <th class="doctor">Doctor</th>
+          <th class="amount">Amount</th>
+          <th class="status-col">Status</th>
+          <th class="options">Options</th>
+        </tr>
+        </thead>
+        <tbody id="patientTable"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script src="../../api.js"></script>
@@ -197,10 +407,13 @@ function renderTable(data){
   tableBody.innerHTML="";
   if(!data.length){ renderEmpty(); return; }
 
+  const checkClass = selectMode ? "check-col round-left" : "check-col";
+  const snoClass = selectMode ? "sno" : "sno round-left";
+
   data.forEach((p,i)=>{
     tableBody.innerHTML+=`
     <tr>
-      <td style="display:${selectMode?'table-cell':'none'}">
+      <td class="${checkClass}" style="display:${selectMode?'table-cell':'none'}">
         <input type="checkbox"
                id="patient-${p.id}"
                name="patient-${p.id}"
@@ -208,18 +421,20 @@ function renderTable(data){
                data-id="${p.id}"
                onchange="updateCount()">
       </td>
-      <td>${i+1}</td>
-      <td>${p.name}</td>
-      <td>${p.doctor||'-'}</td>
-      <td>₹${p.amount}</td>
-      <td class="status">${p.status}</td>
-      <td class="menu">
-        <span onclick="toggleMenu(${p.id})">⋮</span>
-        <div class="menu-box" id="menu-${p.id}">
-          <div onclick="enterSelectMode()">Select</div>
-          <div onclick="editPatient(${p.id})">Edit</div>
-          <div onclick='openBill(${JSON.stringify(p)})'>Bill</div>
-          <div onclick="deleteOne(${p.id})" style="color:red">Delete</div>
+      <td class="${snoClass}">${i+1}</td>
+      <td class="name">${p.name || "-"}</td>
+      <td class="doctor">${p.doctor||'-'}</td>
+      <td class="amount">₹${p.amount}</td>
+      <td class="status-col"><span class="status">${p.status}</span></td>
+      <td class="options">
+        <div class="menu">
+          <button class="menu-btn" type="button" onclick="toggleMenu(${p.id})">⋮</button>
+          <div class="menu-list" id="menu-${p.id}">
+            <div onclick="enterSelectMode()">Select</div>
+            <div onclick="editPatient(${p.id})">Edit</div>
+            <div onclick='openBill(${JSON.stringify(p)})'>Bill</div>
+            <div class="danger" onclick="deleteOne(${p.id})">Delete</div>
+          </div>
         </div>
       </td>
     </tr>`;
@@ -233,17 +448,41 @@ function renderEmpty(){
     </td></tr>`;
 }
 
-function toggleMenu(id){
-  document.querySelectorAll(".menu-box")
+function closeMenus(){
+  document.querySelectorAll(".menu-list")
     .forEach(m=>m.style.display="none");
-  const m=document.getElementById(`menu-${id}`);
-  m.style.display=m.style.display==="block"?"none":"block";
+  document.querySelectorAll("#patientTable tr.menu-open")
+    .forEach(row => row.classList.remove("menu-open"));
+  document.body.classList.remove("menu-open");
 }
+
+function toggleMenu(id){
+  const m=document.getElementById(`menu-${id}`);
+  const isOpen = m && m.style.display === "block";
+  closeMenus();
+  if (m) {
+    m.style.display=isOpen?"none":"block";
+    if (!isOpen) {
+      const row = m.closest("tr");
+      if (row) {
+        row.classList.add("menu-open");
+      }
+      document.body.classList.add("menu-open");
+    }
+  }
+}
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".menu")) {
+    closeMenus();
+  }
+});
 
 function enterSelectMode(){
   selectMode=true;
   bulkBar.style.display="flex";
   checkHead.style.display="table-cell";
+  closeMenus();
   renderTable(allPatients);
 }
 
@@ -251,6 +490,7 @@ function exitSelectMode(){
   selectMode=false;
   bulkBar.style.display="none";
   checkHead.style.display="none";
+  closeMenus();
   renderTable(allPatients);
 }
 

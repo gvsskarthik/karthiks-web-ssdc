@@ -2,111 +2,221 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tests</title>
+<link href="../../vendor/fonts/fonts.css" rel="stylesheet">
+<link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
 <style>
+:root{
+  --bg:#f6f1e7;
+  --bg-soft:#fffaf2;
+  --ink:#1e262d;
+  --muted:#6b737c;
+  --accent:#0f766e;
+  --accent-strong:#0b5f58;
+  --warm:#e08f2f;
+  --danger:#c0392b;
+  --line:#e3d9c9;
+  --shadow:0 18px 40px rgba(28, 41, 61, 0.12);
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:10px;
+}
+*{box-sizing:border-box}
 body{
-  font-family:Poppins,Arial,sans-serif;
-  background:#ecf0f3;
-  padding:20px;
+  margin:0;
+  padding:24px;
+  font-family:"Poppins","Lato",sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color:var(--ink);
+  min-height:100vh;
 }
-
-/* ===== NEOMORPHIC ===== */
-.neo{
-  background:#ecf0f3;
-  border-radius:16px;
-  box-shadow:8px 8px 16px #c5c9cc,
-             -8px -8px 16px #ffffff;
+.page{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
 }
-.neo-btn{
-  padding:10px 18px;
-  border:none;
-  border-radius:14px;
-  font-weight:600;
-  cursor:pointer;
-}
-.neo-btn:active{
-  box-shadow:inset 4px 4px 6px #c5c9cc,
-             inset -4px -4px 6px #ffffff;
-}
-
-/* HEADER */
-.header{
+.head-title{
   display:flex;
   justify-content:space-between;
-  margin-bottom:20px;
+  align-items:center;
+  gap:18px;
+  animation:fadeUp .45s ease both;
 }
-.header h1{
-  font-size:36px;
-  font-weight:600;
+.head-title h1{
+  font-size:32px;
+  font-weight:700;
   margin:0;
+  letter-spacing:.3px;
 }
-
-/* TABS */
+.subtitle{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.header-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:flex-end;
+}
+.neo-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 18px;
+  border-radius:999px;
+  background:linear-gradient(135deg, var(--accent), #1aa191);
+  color:#fff;
+  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
+  border:none;
+  font-weight:600;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.neo-btn:hover{transform:translateY(-1px)}
+.neo-btn:active{transform:translateY(1px)}
+.neo-btn.secondary{
+  background:var(--bg-soft);
+  color:var(--ink);
+  border:1px solid var(--line);
+  box-shadow:none;
+}
 .tabs{
   display:flex;
   gap:12px;
-  margin-bottom:20px;
+  flex-wrap:wrap;
+  animation:fadeUp .5s ease both;
 }
 .tabs button{
   padding:8px 18px;
-  border:none;
-  border-radius:20px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
+  color:var(--muted);
+  font-weight:600;
   cursor:pointer;
 }
 .tabs .active{
-  color:#3C91E6;
-  box-shadow:inset 4px 4px 6px #c5c9cc,
-             inset -4px -4px 6px #ffffff;
+  color:#fff;
+  background:linear-gradient(135deg, var(--accent), #1aa191);
+  border-color:transparent;
+  box-shadow:0 10px 22px rgba(15, 118, 110, 0.2);
 }
-
-/* TABLE */
-.table-wrap{
-  padding:20px;
-  max-height:calc(100vh - 220px);
-  overflow:auto;
+.neo{
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow);
 }
+.table-box{
+  border-radius:var(--radius-lg);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  padding:16px;
+  animation:fadeUp .55s ease both;
+}
+.table-wrap{overflow-x:auto}
 table{
   width:100%;
-  border-collapse:collapse;
+  border-collapse:separate;
+  border-spacing:0 10px;
+  table-layout:fixed;
+  min-width:980px;
 }
-th,td{
-  padding:14px;
-  border-bottom:1px solid #ddd;
+thead th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  color:var(--muted);
+  padding:0 12px 6px;
 }
-.normal{
-  font-size:13px;
-  white-space:pre-line;
+tbody tr{
+  background:#fff;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
-
-/* MENU */
-.menu{position:relative}
-.menu-btn{cursor:pointer;font-size:20px}
+tbody tr:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
+}
+body.menu-open tbody tr:hover{
+  transform:none;
+  box-shadow:none;
+}
+tbody tr.menu-open{
+  position:relative;
+  z-index:2;
+}
+tbody td{
+  padding:12px;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+tbody td:first-child{
+  border-left:1px solid var(--line);
+  border-radius:12px 0 0 12px;
+}
+tbody td:last-child{
+  border-right:1px solid var(--line);
+  border-radius:0 12px 12px 0;
+}
+.sno{width:60px}
+.name{width:220px; overflow-wrap:anywhere}
+.category{width:140px; text-transform:uppercase; font-size:12px; color:var(--muted)}
+.shortcut{width:110px; white-space:nowrap}
+.normal{width:260px; font-size:12px; white-space:pre-line; color:var(--muted)}
+.cost{width:110px; text-align:right; font-weight:600; white-space:nowrap}
+.active-col{width:110px}
+.options{width:90px}
+.menu{position:relative; display:inline-flex; justify-content:center; width:100%}
+.menu-btn{
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
+  padding:6px 10px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
+}
 .menu-list{
   display:none;
   position:absolute;
   right:0;
-  background:#ecf0f3;
+  top:32px;
+  background:#fff;
   border-radius:14px;
-  box-shadow:6px 6px 12px #c5c9cc,
-             -6px -6px 12px #ffffff;
-  z-index:10;
+  border:1px solid var(--line);
+  box-shadow:0 12px 24px rgba(20, 30, 45, 0.12);
+  z-index:30;
+  min-width:140px;
+  overflow:hidden;
 }
 .menu-list div{
   padding:10px 16px;
   cursor:pointer;
+  font-size:13px;
 }
-.menu-list div:hover{background:#dde1e4}
+.menu-list div:hover{background:#f6f1e7}
+.menu-list .danger{color:var(--danger)}
 
-
-/* MODAL */
 .modal{
   display:none;
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.35);
+  background:rgba(26, 26, 26, 0.4);
   justify-content:center;
   align-items:center;
+  padding:20px;
+  z-index:20;
+  backdrop-filter:blur(4px);
 }
 .modal-card{
   width:560px;
@@ -114,34 +224,37 @@ th,td{
   overflow:auto;
   padding:22px;
   border-radius:22px;
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
 }
+.modal-card h3{margin:0 0 12px}
+.modal-card h4{margin:16px 0 8px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
 .modal-card input,
 .modal-card textarea{
   width:100%;
-  padding:10px;
+  padding:10px 12px;
   margin-bottom:10px;
-  border:none;
-  border-radius:12px;
-  background:#ecf0f3;
-  box-shadow:inset 5px 5px 8px #c5c9cc,
-             inset -5px -5px 8px #ffffff;
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  background:#fff;
+  font-size:14px;
 }
+.modal-card textarea{min-height:80px; resize:vertical}
 .inline{display:flex;gap:8px;align-items:center}
-.actions{display:flex;gap:10px}
-/* ===== TOGGLE SWITCH ===== */
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+
 .switch {
   position: relative;
   display: inline-block;
   width: 46px;
   height: 24px;
 }
-
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
-
 .slider {
   position: absolute;
   cursor: pointer;
@@ -149,11 +262,10 @@ th,td{
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
+  background-color: #d4c9b7;
   transition: 0.3s;
   border-radius: 24px;
 }
-
 .slider:before {
   position: absolute;
   content: "";
@@ -165,13 +277,24 @@ th,td{
   transition: 0.3s;
   border-radius: 50%;
 }
-
 input:checked + .slider {
-  background-color: #3C91E6;
+  background-color: var(--accent);
 }
-
 input:checked + .slider:before {
   transform: translateX(22px);
+}
+
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@media (max-width:900px){
+  body{padding:16px}
+  .head-title{flex-direction:column; align-items:flex-start}
+  .header-actions{width:100%; justify-content:flex-start}
+}
+@media (max-width:600px){
+  .head-title h1{font-size:28px}
 }
 </style>
   <link rel="stylesheet" href="theme.css">
@@ -179,44 +302,55 @@ input:checked + .slider:before {
 
 <body>
 
-<div class="header">
-  <h1>Tests</h1>
-  <div>
-    <button class="neo neo-btn" onclick="location.href='test/new-tests.html'">➕ New Test</button>
-    <button class="neo neo-btn" onclick="location.href='test/new-group.html'">➕ New Group</button>
-    <button class="neo neo-btn" onclick="location.href='test/arrange-tests.html'">
-      🧩 Arrange Tests
-    </button>
+<div class="page">
+  <div class="head-title">
+    <div>
+      <h1>Tests</h1>
+      <div class="subtitle">Create tests, groups, and manage availability</div>
+    </div>
+    <div class="header-actions">
+      <button class="neo-btn secondary" onclick="location.href='test/arrange-tests.html'">
+        <i class="bx bx-grid-alt"></i> Arrange Tests
+      </button>
+      <button class="neo-btn secondary" onclick="location.href='test/new-group.html'">
+        <i class="bx bx-layer-plus"></i> New Group
+      </button>
+      <button class="neo-btn" onclick="location.href='test/new-tests.html'">
+        <i class="bx bx-plus"></i> New Test
+      </button>
+    </div>
   </div>
-</div>
 
-<div class="tabs">
-  <button class="neo active" onclick="setMode('all',this)">ALL</button>
-  <button class="neo" onclick="setMode('single',this)">SINGLE</button>
-  <button class="neo" onclick="setMode('group',this)">GROUP</button>
-</div>
+  <div class="tabs">
+    <button class="active" onclick="setMode('all',this)">All</button>
+    <button onclick="setMode('single',this)">Single</button>
+    <button onclick="setMode('group',this)">Group</button>
+  </div>
 
-<div class="neo table-wrap">
-<table>
-<thead>
-<tr>
-  <th>SNO</th>
-  <th>NAME</th>
-  <th>CATEGORY</th>
-  <th>SHORTCUT</th>
-  <th>NORMAL VALUES</th>
-  <th>COST</th>
-  <th>ACTIVE</th>
-  <th>OPTION</th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
+  <div class="table-box">
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th class="sno">S.No</th>
+          <th class="name">Name</th>
+          <th class="category">Category</th>
+          <th class="shortcut">Shortcut</th>
+          <th class="normal">Normal Values</th>
+          <th class="cost">Cost</th>
+          <th class="active-col">Active</th>
+          <th class="options">Option</th>
+        </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- ===== SINGLE TEST EDIT MODAL ===== -->
 <div class="modal" id="testModal">
-  <div class="neo modal-card">
+  <div class="modal-card">
     <h3>Edit Test</h3>
 
     <input id="tName" placeholder="Test Name">
@@ -226,18 +360,18 @@ input:checked + .slider:before {
 
     <h4>Normal Values</h4>
     <div id="nBox"></div>
-    <button class="neo neo-btn" onclick="addNormal()">+ Normal</button>
+    <button class="neo-btn secondary" onclick="addNormal()">+ Normal</button>
 
     <div class="actions">
-      <button class="neo neo-btn" onclick="saveTest()">Save</button>
-      <button class="neo neo-btn" onclick="closeTest()">Cancel</button>
+      <button class="neo-btn" onclick="saveTest()">Save</button>
+      <button class="neo-btn secondary" onclick="closeTest()">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- ===== GROUP EDIT MODAL (NEW, FIXED) ===== -->
+<!-- ===== GROUP EDIT MODAL ===== -->
 <div class="modal" id="groupModal">
-  <div class="neo modal-card">
+  <div class="modal-card">
     <h3>Edit Group</h3>
 
     <input id="gName" placeholder="Group Name">
@@ -248,8 +382,8 @@ input:checked + .slider:before {
     <div id="groupTests"></div>
 
     <div class="actions">
-      <button class="neo neo-btn" onclick="saveGroup()">Save</button>
-      <button class="neo neo-btn" onclick="closeGroup()">Cancel</button>
+      <button class="neo-btn" onclick="saveGroup()">Save</button>
+      <button class="neo-btn secondary" onclick="closeGroup()">Cancel</button>
     </div>
   </div>
 </div>
@@ -279,10 +413,33 @@ function setMode(m,b){
 }
 
 /* MENU */
-function toggleMenu(btn){
+function closeMenus(){
  document.querySelectorAll(".menu-list").forEach(m=>m.style.display="none");
- btn.nextElementSibling.style.display="block";
+ document.querySelectorAll("#tbody tr.menu-open").forEach(row => row.classList.remove("menu-open"));
+ document.body.classList.remove("menu-open");
 }
+
+function toggleMenu(btn){
+ const menu = btn.nextElementSibling;
+ const isOpen = menu && menu.style.display === "block";
+ closeMenus();
+ if (menu) {
+  menu.style.display = isOpen ? "none" : "block";
+  if (!isOpen) {
+   const row = btn.closest("tr");
+   if (row) {
+     row.classList.add("menu-open");
+   }
+   document.body.classList.add("menu-open");
+  }
+ }
+}
+
+document.addEventListener("click", (event) => {
+ if (!event.target.closest(".menu")) {
+  closeMenus();
+ }
+});
 
 function normalizeText(value){
   if (value === null || value === undefined) {
@@ -332,13 +489,13 @@ function render(){
   tests.forEach(t=>{
    tbody.innerHTML+=`
    <tr>
-    <td>${i++}</td>
-    <td>${t.testName}</td>
-    <td>${t.category || "—"}</td>
-    <td>${t.shortcut}</td>
-    <td class="normal">${renderNormalValues(t)}</td>
-    <td>${formatCost(t.cost)}</td>
-      <td>
+    <td class="sno">${i++}</td>
+    <td class="name">${t.testName || "-"}</td>
+    <td class="category">${t.category || "—"}</td>
+    <td class="shortcut">${t.shortcut || "—"}</td>
+    <td class="normal">${renderNormalValues(t) || "—"}</td>
+    <td class="cost">${formatCost(t.cost)}</td>
+      <td class="active-col">
          <label class="switch">
            <input type="checkbox"
            id="active-test-${t.id}"
@@ -348,9 +505,9 @@ function render(){
             <span class="slider"></span>
          </label>
       </td>
-      <td>
+      <td class="options">
      <div class="menu">
-      <span class="menu-btn" onclick="toggleMenu(this)">⋮</span>
+      <button class="menu-btn" type="button" onclick="toggleMenu(this)">⋮</button>
       <div class="menu-list">
        <div onclick='openTest(${JSON.stringify(t)})'>Edit</div>
       ${t.used ? "" : `<div onclick='deleteTest(${t.id})'>Delete</div>`}      </div>
@@ -364,19 +521,18 @@ function render(){
   groups.forEach(g=>{
    tbody.innerHTML+=`
    <tr>
-    <td>${i++}</td>
-    <td>${g.groupName}</td>
-    <td>GROUP</td>
-    <td>${g.shortcut}</td>
-    <td>—</td>
-    <td>${formatCost(g.cost)}</td>
+    <td class="sno">${i++}</td>
+    <td class="name">${g.groupName || "-"}</td>
+    <td class="category">Group</td>
+    <td class="shortcut">${g.shortcut || "—"}</td>
+    <td class="normal">—</td>
+    <td class="cost">${formatCost(g.cost)}</td>
 
-    <!-- ✅ ACTIVE COLUMN (groups don't have active toggle) -->
-    <td>—</td>
+    <td class="active-col">—</td>
 
-    <td>
+    <td class="options">
      <div class="menu">
-      <span class="menu-btn" onclick="toggleMenu(this)">⋮</span>
+      <button class="menu-btn" type="button" onclick="toggleMenu(this)">⋮</button>
       <div class="menu-list">
        <div onclick='openGroup(${JSON.stringify(g)})'>Edit</div>
        <div onclick='deleteGroup(${g.id})'>Delete</div>
@@ -500,7 +656,6 @@ function toggleActive(id, state){
   });
 }
 </script>
-
 
 </body>
 </html>

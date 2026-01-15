@@ -16,7 +16,8 @@ body.dark {
 
 :root {
 	--dash-sidebar-bg: #fffaf2;
-	--dash-sidebar-active: #f2eadd;
+	--dash-frame-bg: #f2eadd;
+	--dash-sidebar-active: var(--dash-frame-bg);
 	--dash-sidebar-hover: #f7efe3;
 	--dash-accent: #0f766e;
 	--dash-accent-strong: #0b5f58;
@@ -39,7 +40,7 @@ body.dark {
 	width: 280px;
 	height: 100%;
 	background: var(--dash-sidebar-bg);
-	border-right: 1px solid var(--dash-line);
+	border-right: none;
 	z-index: 2000;
 	font-family: var(--lato), sans-serif;
 	transition: .3s ease;
@@ -85,7 +86,6 @@ body.dark {
 #sidebar .side-menu li.active {
 	background: var(--dash-sidebar-active);
 	position: relative;
-	
 }
 #sidebar .side-menu li.active::before {
 	content: '';
@@ -97,7 +97,6 @@ body.dark {
 	right: 0;
 	box-shadow: 20px 20px 0 var(--dash-sidebar-active);
 	z-index: -1;
-	
 }
 #sidebar .side-menu li.active::after {
 	content: '';
@@ -125,10 +124,12 @@ body.dark {
 }
 #sidebar .side-menu.top li.active a {
 	color: var(--dash-accent);
-	background: #ffffff;
-	border: 1px solid var(--dash-line);
-	box-shadow: var(--dash-shadow);
-
+	background: var(--dash-frame-bg);
+	border: none;
+	box-shadow: 0 10px 18px rgba(22, 33, 44, 0.16);
+	font-weight: 600;
+	position: relative;
+	z-index: 1;
 }
 #sidebar.hide .side-menu li a {
 	width: calc(48px - (4px * 2));
@@ -216,6 +217,7 @@ body.dark {
 	color: var(--light);
 	font-size: 18px;
 	border: none;
+    background: var(--dash-sidebar-active);
 	outline: none;
 	border-radius: 0 36px 36px 0;
 	cursor: pointer;
@@ -258,12 +260,14 @@ body.dark {
 #main-content {
     height: calc(100vh - 56px);
     overflow: hidden; /* iframe handles scroll */
+    background: var(--dash-frame-bg);
 }
 
 #page-frame {
     width: 100%;
     height: 100%;
     border: none;
+    background: var(--dash-frame-bg);
     overflow-y: auto; /* ✅ SCROLL ENABLED */
     overflow-x: hidden;
 }

@@ -5,71 +5,184 @@
 <title>Reports</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link href="../../vendor/fonts/fonts.css" rel="stylesheet">
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
 <style>
+:root{
+  --bg:#f6f1e7;
+  --bg-soft:#fffaf2;
+  --ink:#1e262d;
+  --muted:#6b737c;
+  --accent:#0f766e;
+  --accent-strong:#0b5f58;
+  --warm:#e08f2f;
+  --danger:#c0392b;
+  --line:#e3d9c9;
+  --shadow:0 18px 40px rgba(28, 41, 61, 0.12);
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:10px;
+}
+*{box-sizing:border-box}
 body{
   margin:0;
-  padding:20px;
-  font-family:Poppins,Arial,sans-serif;
-  background:#ecf0f3;
+  padding:24px;
+  font-family:"Poppins","Lato",sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color:var(--ink);
+  min-height:100vh;
 }
-.head{
+.page{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
+}
+.head-title{
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px;
+  align-items:flex-end;
+  gap:18px;
+  animation:fadeUp .45s ease both;
 }
-.head h1{
+.head-title h1{
+  font-size:32px;
+  font-weight:700;
   margin:0;
-  font-size:36px;
-  font-weight:600;
+  letter-spacing:.3px;
 }
-.date-box{
+.subtitle{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.date-filter{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.date-filter label{
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.input-wrap{
   display:flex;
   align-items:center;
   gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
 }
-.date-box input{
-  padding:8px 12px;
-  border-radius:10px;
+.input-wrap i{
+  font-size:18px;
+  color:var(--muted);
+}
+.neo-input{
+  flex:1;
   border:none;
-  background:#ecf0f3;
-  box-shadow:inset 4px 4px 8px #c5c9cc,
-             inset -4px -4px 8px #ffffff;
+  background:transparent;
+  outline:none;
+  font-size:14px;
+  color:var(--ink);
 }
-.table-card{
-  background:#ffffff;
-  border-radius:20px;
-  padding:20px;
-  box-shadow:10px 10px 20px #c5c9cc,
-             -5px -5px 20px #ffffff;
+.table-box{
+  border-radius:var(--radius-lg);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  padding:16px;
+  animation:fadeUp .55s ease both;
 }
+.table-wrap{overflow-x:visible}
 table{
   width:100%;
-  border-collapse:collapse;
-  font-size:14px;
+  border-collapse:separate;
+  border-spacing:0 10px;
+  table-layout:fixed;
 }
-th,td{
+thead th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  color:var(--muted);
+  padding:0 12px 6px;
+}
+tbody tr{
+  background:#fff;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+tbody tr:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
+}
+tbody td{
   padding:12px;
-  border-bottom:1px solid #dcdde1;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
 }
-th{text-align:left;color:#555}
-.status{font-weight:600;color:#e67e22}
+tbody td:first-child{
+  border-left:1px solid var(--line);
+  border-radius:12px 0 0 12px;
+}
+tbody td:last-child{
+  border-right:1px solid var(--line);
+  border-radius:0 12px 12px 0;
+}
+.sno{width:60px}
+.name{
+  width:260px;
+  overflow-wrap:anywhere;
+}
+.doctor{
+  width:220px;
+  overflow-wrap:anywhere;
+}
+.status-col{
+  width:140px;
+  white-space:nowrap;
+}
+.action-col{
+  width:90px;
+}
+.status{font-weight:600;color:var(--warm)}
+.patient-link{
+  color:var(--accent);
+  font-weight:600;
+  text-decoration:none;
+}
+.patient-link:hover{text-decoration:underline}
 .action-btn{
   cursor:pointer;
-  color:#2980b9;
+  color:var(--accent);
   font-weight:600;
 }
 .no-data{
   text-align:center;
-  color:#777;
-  padding:20px;
+  color:var(--muted);
+  padding:16px 0;
 }
-a{
-  text-decoration:none;
-  color:#2980b9;
-  font-weight:600;
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@media (max-width:900px){
+  body{padding:16px}
+  .head-title{flex-direction:column; align-items:flex-start}
+  .date-filter{width:100%}
+}
+@media (max-width:600px){
+  .head-title h1{font-size:28px}
+  .input-wrap{padding:10px}
 }
 </style>
   <link rel="stylesheet" href="theme.css">
@@ -77,27 +190,37 @@ a{
 
 <body>
 
-<div class="head">
-  <h1>Reports</h1>
-  <div class="date-box">
-    <i class='bx bx-calendar'></i>
-    <input type="date" id="reportDate">
+<div class="page">
+  <div class="head-title">
+    <div>
+      <h1>Reports</h1>
+      <div class="subtitle">Daily results and report access</div>
+    </div>
+    <div class="date-filter">
+      <label for="reportDate">Date</label>
+      <div class="input-wrap">
+        <i class='bx bx-calendar'></i>
+        <input type="date" id="reportDate" class="neo-input">
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="table-card">
-  <table>
-    <thead>
-      <tr>
-        <th>S.No</th>
-        <th>Patient Name</th>
-        <th>Doctor</th>
-        <th>Status</th>
-        <th>Report</th>
-      </tr>
-    </thead>
-    <tbody id="reportTable"></tbody>
-  </table>
+  <div class="table-box">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="sno">S.No</th>
+            <th class="name">Patient Name</th>
+            <th class="doctor">Doctor</th>
+            <th class="status-col">Status</th>
+            <th class="action-col">Report</th>
+          </tr>
+        </thead>
+        <tbody id="reportTable"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script src="../../api.js"></script>
@@ -166,21 +289,21 @@ function renderTable(data){
   data.forEach((p,i)=>{
     table.innerHTML += `
       <tr>
-        <td>${i+1}</td>
+        <td class="sno">${i+1}</td>
 
         <!-- ENTER VALUES -->
-        <td>
-          <a href="#"
+        <td class="name">
+          <a class="patient-link" href="#"
              onclick='openPatient(${JSON.stringify(p)})'>
             ${p.name || "-"}
           </a>
         </td>
 
-        <td>${p.doctor || "SELF"}</td>
-        <td class="status">${p.status}</td>
+        <td class="doctor">${p.doctor || "SELF"}</td>
+        <td class="status-col"><span class="status">${p.status}</span></td>
 
         <!-- VIEW FINAL REPORT -->
-        <td>
+        <td class="action-col">
           <span class="action-btn"
             onclick='openReport(${JSON.stringify(p)})'>
             View
