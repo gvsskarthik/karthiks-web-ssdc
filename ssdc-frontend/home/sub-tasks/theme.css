@@ -12,12 +12,46 @@
   --theme-warm:#d0812a;
   --theme-danger:#c0392b;
   --theme-shadow:0 18px 40px rgba(28, 41, 61, 0.12);
+  --theme-field-bg:#ffffff;
+  --theme-field-bg-2:#ffffff;
+  --theme-bg-gradient:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+
+  /* Alias tokens used in some pages (kept in sync with theme). */
+  --bg: var(--theme-bg);
+  --bg-soft: var(--theme-surface);
+  --surface: var(--theme-surface);
+  --ink: var(--theme-ink);
+  --muted: var(--theme-muted);
+  --accent: var(--theme-accent);
+  --accent-strong: var(--theme-accent-strong);
+  --warm: var(--theme-warm);
+  --danger: var(--theme-danger);
+  --line: var(--theme-line);
+  --shadow: var(--theme-shadow);
+}
+
+body.dark{
+  --theme-bg:#060714;
+  --theme-surface:#0c0c1e;
+  --theme-surface-2:#12142b;
+  --theme-ink:#fbfbfb;
+  --theme-muted:#b3b7c2;
+  --theme-line:#2a2d4a;
+  --theme-accent:#1aa191;
+  --theme-accent-strong:#0f766e;
+  --theme-shadow:0 18px 40px rgba(0, 0, 0, 0.35);
+  --theme-field-bg:var(--theme-surface);
+  --theme-field-bg-2:var(--theme-surface-2);
+  --theme-bg-gradient:
+    radial-gradient(circle at 12% 8%, #0f1022 0%, #080916 40%, #060714 100%),
+    linear-gradient(135deg, #060714 0%, #0b0c1a 100%);
+  color-scheme: dark;
 }
 
 html, body{
-  background:
-    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
-    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  background: var(--theme-bg-gradient);
   color: var(--theme-ink);
   font-family:"Poppins","Lato",sans-serif;
   overflow-x: auto;
@@ -57,13 +91,13 @@ html, body{
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 select,
 textarea{
-  background: #fff;
+  background: var(--theme-field-bg);
   color: var(--theme-ink);
   border-color: var(--theme-line);
 }
 
 .menu-list{
-  background: #fff;
+  background: var(--theme-field-bg-2);
   border-color: var(--theme-line);
 }
 .menu-list div:hover{
@@ -75,6 +109,64 @@ textarea{
 
 *{
   box-sizing: border-box;
+}
+
+.neo-input::placeholder,
+.search::placeholder,
+.search-input::placeholder,
+textarea::placeholder{
+  color: var(--theme-muted);
+}
+
+table th{
+  background: var(--theme-surface-2);
+  color: var(--theme-ink);
+}
+
+table td{
+  color: var(--theme-ink);
+}
+
+.patient-box{
+  border-color: var(--theme-line) !important;
+}
+
+body.dark .neo-card,
+body.dark .group-card,
+body.dark .test-chip{
+  background: var(--theme-surface) !important;
+  border: 1px solid var(--theme-line) !important;
+  box-shadow: var(--theme-shadow) !important;
+}
+
+body.dark .search,
+body.dark .result-input,
+body.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.dark select,
+body.dark textarea{
+  background: var(--theme-field-bg-2) !important;
+  border: 1px solid var(--theme-line) !important;
+  box-shadow: none !important;
+}
+
+body.dark .section h3,
+body.dark .group-meta,
+body.dark .no-result{
+  color: var(--theme-muted) !important;
+}
+
+body.dark .neo-btn:active,
+body.dark .btn:active,
+body.dark .small-btn:active{
+  box-shadow: none !important;
+}
+
+body.dark table tbody tr{
+  background: var(--theme-surface) !important;
+}
+
+body.dark table tbody tr:hover{
+  box-shadow: var(--theme-shadow) !important;
 }
 
 .table-wrap{
