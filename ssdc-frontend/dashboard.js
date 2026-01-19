@@ -1,3 +1,17 @@
+/* === THEME INIT (inlined) === */
+(function () {
+  try {
+    const stored = localStorage.getItem("darkMode");
+    const prefersDark =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = stored === "enabled" ? true : stored === "disabled" ? false : prefersDark;
+    document.body.classList.toggle("dark", isDark);
+  } catch {
+    /* noop */
+  }
+})();
 /* ================= SIDEBAR ACTIVE ================= */
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
 const pageFrame = document.getElementById('page-frame');
@@ -69,7 +83,54 @@ if (sidebarOverlay) {
     });
 }
 /* ================= DARK MODE ================= */
-// Dark mode removed.
+
+(function () {
+    const switchMode = document.getElementById('switch-mode');
+    const body = document.body;
+    if (!switchMode || !body) {
+        return;
+    }
+
+    const stored = localStorage.getItem('darkMode');
+    const prefersDark =
+        typeof window !== 'undefined' &&
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    let isDarkModeEnabled = stored
+        ? stored === 'enabled'
+        : prefersDark;
+
+    body.classList.toggle('dark', isDarkModeEnabled);
+    switchMode.checked = isDarkModeEnabled;
+
+    function applyToFrame(isDark) {
+        try {
+            const doc = pageFrame && (pageFrame.contentDocument || pageFrame.contentWindow?.document);
+            if (doc && doc.body) {
+                doc.body.classList.toggle('dark', isDark);
+            }
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    applyToFrame(isDarkModeEnabled);
+
+    switchMode.addEventListener('change', function () {
+        isDarkModeEnabled = Boolean(switchMode.checked);
+        body.classList.toggle('dark', isDarkModeEnabled);
+        localStorage.setItem('darkMode', isDarkModeEnabled ? 'enabled' : 'disabled');
+        applyToFrame(isDarkModeEnabled);
+    });
+
+    if (pageFrame) {
+        pageFrame.addEventListener('load', function () {
+            applyToFrame(isDarkModeEnabled);
+        });
+    }
+})();
+
 /* ================= LOAD PAGE INTO IFRAME ================= */
 function loadPage(page, menuKey = null) {
     if (pageFrame) {

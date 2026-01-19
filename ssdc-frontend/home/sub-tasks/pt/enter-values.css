@@ -1,0 +1,275 @@
+/* === SSDC BASE THEME === */
+@import url("../../../vendor/fonts/fonts.css");
+
+:root{
+  /* Typography (local fonts, no network import) */
+  --poppins: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --lato: "Lato", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Palette (matches your snippet) */
+  --light: #F9F9F9;
+  --blue: #3C91E6;
+  --light-blue: #CFE8FF;
+  --grey: #eee;
+  --dark-grey: #AAAAAA;
+  --dark: #342E37;
+  --red: #DB504A;
+  --yellow: #FFCE26;
+  --light-yellow: #FFF2C6;
+  --orange: #FD7238;
+  --light-orange: #FFE0D3;
+
+  --black: #111827;
+
+  /* Neomorphic shadows (matches your snippet) */
+  --theme-shadow: 2px 2px 6px #b6a9a9, -1px -1px 6px #ffffff;
+  --theme-shadow-sm: 1px 1px 4px rgba(182, 169, 169, 0.9), -1px -1px 4px #ffffff;
+  --theme-inset: inset 2px 2px 6px rgba(182, 169, 169, 0.45), inset -2px -2px 6px rgba(255, 255, 255, 0.95);
+
+  /* Used by the dashboard iframe wrapper */
+  --theme-bg-gradient: var(--grey);
+  --dash-sidebar-active: var(--grey);
+  --dash-sidebar-hover: var(--grey);
+
+  --focus-ring: 0 0 0 4px rgba(60, 145, 230, 0.22);
+}
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body{
+  overflow-x: hidden;
+}
+
+body{
+  background: var(--grey);
+  color: var(--dark);
+  font-family: var(--poppins);
+}
+
+a{ color: inherit; text-decoration: none; }
+li{ list-style: none; }
+
+/* Dashboard shell (keeps layout; only soft UI surfaces) */
+#sidebar{
+  background: var(--light);
+}
+#sidebar .brand{
+  background: var(--light);
+  color: var(--blue);
+}
+#sidebar .side-menu li a{
+  color: var(--dark);
+}
+#sidebar .side-menu li a.logout{
+  color: var(--red);
+}
+#content nav{
+  background: var(--light);
+}
+
+/* Soft surfaces */
+.neo-card,
+.neo,
+.table-box,
+.modal-card,
+.param-card,
+.slot-card,
+.detail-card,
+.input-wrap,
+.search-wrap .suggestions,
+.suggestions,
+.menu-list{
+  background: var(--light);
+  box-shadow: var(--theme-shadow);
+}
+
+/* Table rows in some pages render as separate "chips" */
+tbody td,
+.patient-row,
+.param-item{
+  background: var(--light);
+}
+
+/* Inputs: neomorphic inset */
+input,
+select,
+textarea,
+.neo-input,
+.neo-select,
+.search,
+.input-box{
+  background: var(--light);
+  border: 1px solid rgba(52, 46, 55, 0.10);
+  box-shadow: var(--theme-inset);
+  color: var(--dark);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.neo-input:focus,
+.neo-select:focus,
+.search:focus,
+.input-box:focus{
+  box-shadow: var(--theme-inset), var(--focus-ring);
+}
+
+/* Buttons: raised, then pressed on active */
+button,
+.btn,
+.neo-btn,
+.small-btn,
+.tabs button,
+.icon-btn,
+.menu-btn,
+.toggle-btn{
+  color: var(--dark);
+}
+
+.btn,
+.neo-btn,
+.small-btn,
+.tabs button,
+.icon-btn,
+.menu-btn{
+  background: var(--light);
+  border: 1px solid rgba(52, 46, 55, 0.10);
+  box-shadow: var(--theme-shadow-sm);
+}
+
+.btn:hover,
+.neo-btn:hover,
+.small-btn:hover,
+.tabs button:hover,
+.icon-btn:hover,
+.menu-btn:hover{
+  filter: brightness(0.99);
+}
+
+.btn:active,
+.neo-btn:active,
+.small-btn:active,
+.tabs button:active,
+.icon-btn:active,
+.menu-btn:active{
+  box-shadow: var(--theme-inset);
+  transform: translateY(1px);
+}
+
+.neo-btn.secondary,
+.btn.secondary{
+  background: var(--light);
+  color: var(--dark);
+}
+
+.btn.link{
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.tabs .active{
+  background: var(--grey);
+  box-shadow: var(--theme-inset);
+}
+
+/* A11y + form affordances */
+::placeholder{ color: rgba(91, 103, 122, 0.75); }
+label{ color: var(--dark); }
+
+input[type="checkbox"]{ accent-color: var(--blue); }
+
+/* Dark mode hook (only if pages toggle `.dark`) */
+body.dark{
+  --light: #0C0C1E;
+  --grey: #060714;
+  --dark: #FBFBFB;
+  --dark-grey: rgba(251, 251, 251, 0.60);
+  --theme-bg-gradient: var(--grey);
+  --theme-shadow: 8px 8px 18px rgba(0, 0, 0, 0.55), -8px -8px 18px rgba(255, 255, 255, 0.06);
+  --theme-shadow-sm: 6px 6px 14px rgba(0, 0, 0, 0.55), -6px -6px 14px rgba(255, 255, 255, 0.06);
+  --theme-inset: inset 4px 4px 10px rgba(0, 0, 0, 0.60), inset -4px -4px 10px rgba(255, 255, 255, 0.06);
+  --focus-ring: 0 0 0 4px rgba(60, 145, 230, 0.30);
+}
+
+
+/* === THEME SCOPE === */
+html, body{
+  background: var(--theme-bg-gradient);
+  color: var(--dark);
+}
+
+.neo-card,
+.table-box{
+  border-radius: 22px;
+}
+
+body{
+  margin:0;
+  padding:24px;
+  min-height:100vh;
+}
+.neo-card{
+  max-width:1100px;
+  margin:auto;
+  padding:25px;
+  border-radius:24px;
+}
+.patient-box{
+  border: 1px solid rgba(52, 46, 55, 0.10);
+  padding:14px 18px;
+  margin-bottom:25px;
+  font-size:14px;
+}
+.p-row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.p-row.single{justify-content:flex-start}
+.label{font-weight:700}
+.value{margin-left:6px}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+}
+th,td{
+  padding:10px;
+  border-bottom: 1px solid rgba(52, 46, 55, 0.10);
+}
+th{
+  font-size:13px;
+}
+.result-input{
+  width:100%;
+  padding:8px 10px;
+  border: 1px solid rgba(52, 46, 55, 0.10);
+  border-radius:10px;
+}
+.normal{
+  font-size:12px;
+  white-space:pre-line;
+}
+.section-header td{
+  padding-top:12px;
+  font-size:12px;
+  font-weight:600;
+}
+.actions{
+  display:flex;
+  gap:12px;
+  margin-top:25px;
+}
+.neo-btn{
+  flex:1;
+  padding:14px;
+  border:none;
+  border-radius:18px;
+  font-weight:600;
+  cursor:pointer;
+}
