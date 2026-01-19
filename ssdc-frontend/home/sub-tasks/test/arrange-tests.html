@@ -5,30 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tests</title>
 
-<style>
-body{
-  font-family: Arial, sans-serif;
-  background:#ecf0f3;
-  padding:20px;
-}
-/*noinspection CssUnusedSymbol*/
-.card{
-  background:#ecf0f3;
-  padding:20px;
-  border-radius:18px;
-  box-shadow:8px 8px 16px #c5c9cc,
-             -8px -8px 16px #ffffff;
-  margin-bottom:20px;
-}
-h2{margin:10px 0}
-.row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin:6px 0;
-}
-.title{font-weight:600}
-</style>
+<link rel="stylesheet" href="arrange-tests.css">
   <link rel="stylesheet" href="../theme.css">
 </head>
 
@@ -41,41 +18,7 @@ h2{margin:10px 0}
 <div id="container" class="card"></div>
 
 <script src="../../../api.js"></script>
-<script>
-fetch(API_BASE_URL + "/tests")
-  .then(r => r.json())
-  .then(tests => render(Array.isArray(tests) ? tests : []));
-
-function render(list){
-  const c = document.getElementById("container");
-  c.innerHTML = "";
-
-  if (!list.length) {
-    c.innerHTML = `<div class="row">No tests found.</div>`;
-    return;
-  }
-
-  const ordered = [...list].sort((a, b) => {
-    const left = Number(a && a.id) || 0;
-    const right = Number(b && b.id) || 0;
-    return left - right;
-  });
-
-  ordered.forEach(test => {
-    if (!test || test.id == null) {
-      return;
-    }
-    const row = document.createElement("div");
-    row.className = "row";
-    const shortcut = test.shortcut ? ` (${test.shortcut})` : "";
-    row.innerHTML = `
-      <span class="title">#${test.id}</span>
-      <span>${test.testName || ""}${shortcut}</span>
-    `;
-    c.appendChild(row);
-  });
-}
-</script>
+<script src="arrange-tests.js"></script>
 
 </body>
 </html>

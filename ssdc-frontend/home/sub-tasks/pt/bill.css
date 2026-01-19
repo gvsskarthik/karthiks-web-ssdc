@@ -1,0 +1,29 @@
+table{
+  font-size:12px;
+}
+th,td{
+  padding:6px;
+}
+td.amount{text-align:right;width:140px}
+
+/* TOTALS */
+.totals{
+  margin-top:16px;
+  margin-left:auto;
+  max-width:260px;
+  font-size:13px;
+}
+.total-row{
+  display:flex;
+  justify-content:space-between;
+  padding:4px 0;
+}
+.total-row.grand{
+  border-top:1px solid #000;
+  font-weight:700;
+  margin-top:6px;
+  padding-top:8px;
+}
+
+/* BUTTONS */
+.back{background:#7f8c8d;color:#fff}
