@@ -1,0 +1,21 @@
+/* TABLE */
+table{
+  font-size:10px;
+}
+th,td{
+  padding:4px;
+}
+.save{background:#27ae60;color:#fff}
+.download{background:#8e44ad;color:#fff}
+.whatsapp{background:#25d366;color:#fff}
+
+.legend{
+  margin-top:10px;
+  font-size:11px;
+}
+
+.section-header td{
+  padding-top:8px;
+  font-size:11px;
+  font-weight:bold;
+}

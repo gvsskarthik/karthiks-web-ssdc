@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #ecf0f3;
+}
+.neo-card {
+  max-width: 520px;
+  margin: auto;
+  padding: 30px;
+  border-radius: 24px;
+  background: #ecf0f3;
+  box-shadow: 10px 10px 20px #c5c9cc,
+              -10px -10px 20px #ffffff;
+}
+.neo-card h2 {
+  margin-bottom: 25px;
+  text-align: center;
+}
+.form-group {
+  margin-bottom: 18px;
+}
+.form-group label {
+  font-size: 14px;
+  color: #555;
+}
+.neo-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #ecf0f3;
+  box-shadow: inset 6px 6px 10px #c5c9cc,
+              inset -6px -6px 10px #ffffff;
+  border: none;
+  outline: none;
+}
+.neo-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 18px;
+  background: #ecf0f3;
+  box-shadow: 6px 6px 12px #c5c9cc,
+              -6px -6px 12px #ffffff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
