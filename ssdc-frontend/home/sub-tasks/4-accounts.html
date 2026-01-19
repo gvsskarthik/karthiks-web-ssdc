@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Accounts</title>
-
 <style>
 :root{
   --radius-lg:22px;
@@ -21,19 +20,13 @@ body{
   display:grid;
   gap:20px;
 }
-
 .neo{
-  background:var(--bg-soft);
   border-radius:var(--radius-lg);
-  border:1px solid var(--line);
-  box-shadow:var(--shadow);
+  border:1px solid ;
 }
 .neo-pressed{
-  background:var(--theme-field-bg);
-  border:1px solid var(--line);
-  box-shadow:inset 0 1px 2px rgba(20, 30, 45, 0.12);
+  border:1px solid ;
 }
-
 .header{
   display:flex;
   justify-content:space-between;
@@ -49,7 +42,6 @@ body{
 }
 .subtitle{
   font-size:12px;
-  color:var(--muted);
   margin-top:4px;
   letter-spacing:.4px;
   text-transform:uppercase;
@@ -59,7 +51,6 @@ body{
   gap:12px;
   flex-wrap:wrap;
 }
-
 .btn{
   display:inline-flex;
   align-items:center;
@@ -74,9 +65,8 @@ body{
 .btn:hover{transform:translateY(-1px)}
 .btn:active{transform:translateY(1px)}
 .btn.secondary{
-  border:1px solid var(--line);
+  border:1px solid ;
 }
-
 .summary{
   display:grid;
   grid-template-columns:repeat(4, minmax(0, 1fr));
@@ -95,22 +85,17 @@ body{
   content:"";
   position:absolute;
   inset:0;
-  background:linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 60%);
   pointer-events:none;
 }
 .summary-card:nth-child(2)::after{
-  background:linear-gradient(135deg, rgba(192, 57, 43, 0.12), transparent 60%);
 }
 .summary-card:nth-child(3)::after{
-  background:linear-gradient(135deg, rgba(208, 129, 42, 0.12), transparent 60%);
 }
 .summary-card:nth-child(4)::after{
-  background:linear-gradient(135deg, rgba(27, 122, 63, 0.12), transparent 60%);
 }
 .summary h4{
   font-size:11px;
   text-transform:uppercase;
-  color:var(--muted);
   letter-spacing:.6px;
 }
 .summary p{
@@ -118,7 +103,6 @@ body{
   font-weight:800;
   margin:6px 0 0;
 }
-
 .layout{
   display:grid;
   grid-template-columns:1fr;
@@ -160,17 +144,15 @@ body{
   padding:0 12px;
   border:none;
   border-radius:12px;
-  background:var(--theme-field-bg);
   font-size:13px;
-  color:var(--ink);
   outline:none;
-  border:1px solid var(--line);
+  border:1px solid ;
 }
 .neo-select{
   appearance:none;
   background-image:
-    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%,  50%),
+    linear-gradient(135deg,  50%, transparent 50%);
   background-position:
     calc(100% - 18px) 50%,
     calc(100% - 12px) 50%;
@@ -184,28 +166,22 @@ body{
   padding:0 12px;
   border:none;
   border-radius:12px;
-  background:var(--theme-field-bg);
   font-size:13px;
-  color:var(--ink);
   outline:none;
-  border:1px solid var(--line);
+  border:1px solid ;
 }
-
 .small{
   font-size:11px;
-  color:var(--muted);
   font-weight:600;
   text-transform:uppercase;
   letter-spacing:.4px;
 }
-.muted{color:var(--muted)}
-
+.muted{}
 .table-wrap{
   max-height:520px;
   overflow:auto;
   border-radius:12px;
-  background:var(--bg-soft);
-  border:1px solid var(--line);
+  border:1px solid ;
 }
 table{
   width:100%;
@@ -214,7 +190,7 @@ table{
 }
 th,td{
   padding:10px 12px;
-  border:1px solid var(--line);
+  border:1px solid ;
   font-size:13px;
 }
 thead th{
@@ -222,12 +198,9 @@ thead th{
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.6px;
-  color:var(--muted);
-  background:var(--theme-surface-2);
 }
 .total-row td{
   font-weight:700;
-  background:var(--theme-surface-2);
 }
 .total-row td:first-child{
   text-align:left;
@@ -237,8 +210,7 @@ thead th{
   font-variant-numeric:tabular-nums;
   font-weight:600;
 }
-.commission{color:var(--warm)}
-
+.commission{}
 .modal{
   position:fixed;
   inset:0;
@@ -246,7 +218,6 @@ thead th{
   align-items:center;
   justify-content:center;
   padding:16px;
-  background:rgba(26, 26, 26, 0.4);
   backdrop-filter:blur(4px);
   z-index:999;
 }
@@ -273,8 +244,7 @@ thead th{
   height:32px;
   border:none;
   border-radius:10px;
-  background:var(--bg-soft);
-  border:1px solid var(--line);
+  border:1px solid ;
   cursor:pointer;
 }
 .modal-body{
@@ -283,7 +253,6 @@ thead th{
 }
 .modal-body label{
   font-size:11px;
-  color:var(--muted);
   font-weight:600;
   text-transform:uppercase;
   letter-spacing:.4px;
@@ -294,12 +263,10 @@ thead th{
   margin-top:14px;
 }
 .modal-actions .btn{flex:1}
-
 @keyframes fadeUp{
   from{opacity:0; transform:translateY(8px);}
   to{opacity:1; transform:translateY(0);}
 }
-
 @media (max-width:980px){
   body{padding:16px;}
   .header{flex-direction:column; align-items:flex-start;}
@@ -315,10 +282,8 @@ thead th{
 </style>
   <link rel="stylesheet" href="theme.css">
 </head>
-
 <body>
 <script src="theme-init.js"></script>
-
 <div class="page">
   <div class="header">
     <div>
@@ -330,7 +295,6 @@ thead th{
     <button class="btn" id="exportExcel">⬇ Export Excel</button>
     </div>
   </div>
-
 <!-- SUMMARY -->
 <div class="summary">
   <div class="neo summary-card" id="sumRevenue"></div>
@@ -338,9 +302,7 @@ thead th{
   <div class="neo summary-card" id="sumCommission"></div>
   <div class="neo summary-card" id="sumProfit"></div>
 </div>
-
 <div class="layout">
-
   <!-- LEFT -->
   <div class="neo card filter-card">
     <div class="card-head filter-head">
@@ -350,7 +312,6 @@ thead th{
       </select>
     </div>
   </div>
-
   <!-- RIGHT -->
   <div class="neo card">
     <div class="card-head">
@@ -370,7 +331,7 @@ thead th{
         </thead>
         <tbody id="detailsBody">
           <tr>
-            <td colspan="6" class="muted" style="text-align:center">
+            <td colspan="6" class="muted" style="text-align: center">
               All accounts will appear here
             </td>
           </tr>
@@ -378,11 +339,8 @@ thead th{
       </table>
     </div>
   </div>
-
 </div>
-
 </div>
-
 <div class="modal" id="dateRangeModal" aria-hidden="true">
   <div class="modal-card">
     <div class="modal-head">
@@ -401,13 +359,11 @@ thead th{
     </div>
   </div>
 </div>
-
 <script src="../../api.js"></script>
 <script>
 const apiPath = window.apiUrl || function (path) {
   return path.charAt(0) === "/" ? "/api" + path : "/api/" + path;
 };
-
 const sumRevenue = document.getElementById("sumRevenue");
 const sumDiscount = document.getElementById("sumDiscount");
 const sumCommission = document.getElementById("sumCommission");
@@ -423,60 +379,47 @@ const applyDateRange = document.getElementById("applyDateRange");
 const clearDateRange = document.getElementById("clearDateRange");
 const detailTitle = document.getElementById("detailTitle");
 const detailsBody = document.getElementById("detailsBody");
-
 let doctors = [];
 let selectedDoctor = null;
 let currentRows = [];
 let currentDoctorFallback = "";
 let dateRange = { from: null, to: null };
-
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");
   const num = Number(cleaned);
   return Number.isFinite(num) ? num : 0;
 }
-
 function formatNumber(value){
   return String(Math.round(parseNumber(value)));
 }
-
 function setSummaryMessage(message){
   sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p style="color:#0f766e">${message}</p>`;
-  sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p style="color:#c0392b">${message}</p>`;
+    `<h4>Total Revenue</h4><p style="sumDiscount.innerHTML =
+    `<h4>Discounts Given</h4><p style="
   sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p style="color:#d0812a">${message}</p>`;
-  sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p style="color:#1b7a3f">${message}</p>`;
+    `<h4>Total Commission</h4><p style="sumProfit.innerHTML =
+    `<h4>Net Profit</h4><p style="
 }
-
 function setSummaryValues(data){
   sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p style="color:#0f766e">₹${formatNumber(data?.totalRevenue)}</p>`;
-  sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p style="color:#c0392b">₹${formatNumber(data?.totalDiscount)}</p>`;
+    `<h4>Total Revenue</h4><p style="sumDiscount.innerHTML =
+    `<h4>Discounts Given</h4><p style="
   sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p style="color:#d0812a">₹${formatNumber(data?.totalCommission)}</p>`;
-  sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p style="color:#1b7a3f">₹${formatNumber(data?.netProfit)}</p>`;
+    `<h4>Total Commission</h4><p style="sumProfit.innerHTML =
+    `<h4>Net Profit</h4><p style="
 }
-
 function setDetailsMessage(message){
   detailsBody.innerHTML =
-    `<tr><td colspan="6" class="muted" style="text-align:center">${message}</td></tr>`;
+    `<tr><td colspan="6" class="muted" style="text-align: center">${message}</td></tr>`;
 }
-
 function renderDetails(rows, doctorNameFallback){
   if (!Array.isArray(rows) || rows.length === 0) {
     setDetailsMessage("No records found");
     return;
   }
-
   let totalBill = 0;
   let totalCommission = 0;
   let html = "";
-
   rows.forEach(r => {
     const doctorName = r.doctorName || doctorNameFallback || "-";
     const bill = parseNumber(r.billAmount);
@@ -494,7 +437,6 @@ function renderDetails(rows, doctorNameFallback){
       </tr>
     `;
   });
-
   html += `
     <tr class="total-row">
       <td colspan="4">Total</td>
@@ -502,10 +444,8 @@ function renderDetails(rows, doctorNameFallback){
       <td class="num commission">₹${formatNumber(totalCommission)}</td>
     </tr>
   `;
-
   detailsBody.innerHTML = html;
 }
-
 function parseDateValue(value){
   const raw = String(value || "").trim();
   if (!raw) {
@@ -546,7 +486,6 @@ function parseDateValue(value){
     parsed.getDate()
   ));
 }
-
 function applyDateFilter(rows){
   if (!dateRange.from && !dateRange.to) {
     return rows;
@@ -565,12 +504,10 @@ function applyDateFilter(rows){
     return true;
   });
 }
-
 function renderCurrentRows(rows, doctorNameFallback){
   const filtered = applyDateFilter(rows || []);
   renderDetails(filtered, doctorNameFallback);
 }
-
 async function fetchJson(url){
   const response = await fetch(url);
   if (!response.ok) {
@@ -578,7 +515,6 @@ async function fetchJson(url){
   }
   return response.json();
 }
-
 async function loadSummary(){
   setSummaryMessage("Loading...");
   try{
@@ -594,7 +530,6 @@ async function loadSummary(){
     });
   }
 }
-
 async function loadAllDetails(){
   detailTitle.innerText = "All Accounts";
   setDetailsMessage("Loading...");
@@ -608,7 +543,6 @@ async function loadAllDetails(){
     setDetailsMessage("Failed to load");
   }
 }
-
 async function loadDoctors(){
   doctorSelect.innerHTML = `<option value="">All</option>`;
   try{
@@ -623,7 +557,6 @@ async function loadDoctors(){
     console.error("Failed to load doctors", err);
   }
 }
-
 function renderDoctorOptions(){
   const fragment = document.createDocumentFragment();
   doctors.forEach(d => {
@@ -637,7 +570,6 @@ function renderDoctorOptions(){
   });
   doctorSelect.appendChild(fragment);
 }
-
 function getExportState(){
   const selectedId = doctorSelect.value;
   if (!selectedId) {
@@ -649,7 +581,6 @@ function getExportState(){
     doctorName: (doc && doc.doctorName) ? doc.doctorName : "Doctor"
   };
 }
-
 async function selectDoctor(id){
   selectedDoctor = id;
   const doc = doctors.find(d => String(d.doctorId) === String(id));
@@ -658,16 +589,13 @@ async function selectDoctor(id){
     setDetailsMessage("No records found");
     return;
   }
-
   detailTitle.innerText =
     `Billing Details: ${doc.doctorName || "Doctor"} (${formatNumber(doc.commissionRate)}%)`;
   setDetailsMessage("Loading...");
-
   try{
     const rows = await fetchJson(
       apiPath(`/accounts/doctor/${encodeURIComponent(id)}/details`)
     );
-
     currentRows = Array.isArray(rows) ? rows : [];
     currentDoctorFallback = doc.doctorName || "Doctor";
     renderCurrentRows(currentRows, currentDoctorFallback);
@@ -676,12 +604,10 @@ async function selectDoctor(id){
     setDetailsMessage("Failed to load");
   }
 }
-
 function init(){
   loadSummary();
   loadDoctors();
   loadAllDetails();
-
   doctorSelect.addEventListener("change", () => {
     const value = doctorSelect.value;
     if (!value) {
@@ -691,30 +617,25 @@ function init(){
     }
     selectDoctor(value);
   });
-
   exportExcel.addEventListener("click", () => {
     const state = getExportState();
     localStorage.setItem("accountsExportFilter", JSON.stringify(state));
     window.open("export.html", "_blank");
   });
-
   dateRangeBtn.addEventListener("click", () => {
     dateRangeModal.classList.add("is-open");
     dateRangeModal.setAttribute("aria-hidden", "false");
   });
-
   closeDateRange.addEventListener("click", () => {
     dateRangeModal.classList.remove("is-open");
     dateRangeModal.setAttribute("aria-hidden", "true");
   });
-
   dateRangeModal.addEventListener("click", (event) => {
     if (event.target === dateRangeModal) {
       dateRangeModal.classList.remove("is-open");
       dateRangeModal.setAttribute("aria-hidden", "true");
     }
   });
-
   applyDateRange.addEventListener("click", () => {
     const fromDate = parseDateValue(dateFromInput.value);
     const toDate = parseDateValue(dateToInput.value);
@@ -727,7 +648,6 @@ function init(){
     dateRangeModal.classList.remove("is-open");
     dateRangeModal.setAttribute("aria-hidden", "true");
   });
-
   clearDateRange.addEventListener("click", () => {
     dateFromInput.value = "";
     dateToInput.value = "";
@@ -737,9 +657,7 @@ function init(){
     dateRangeModal.setAttribute("aria-hidden", "true");
   });
 }
-
 init();
 </script>
-
 </body>
 </html>

@@ -4,38 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enter Test Results</title>
-
 <style>
 body{
   margin:0;
   padding:24px;
   min-height:100vh;
 }
-
 .neo-card{
   max-width:1100px;
   margin:auto;
   padding:25px;
   border-radius:24px;
 }
-
 .patient-box{
-  border:1px solid var(--theme-line);
+  border:1px solid ;
   padding:14px 18px;
   margin-bottom:25px;
   font-size:14px;
 }
-
 .p-row{
   display:flex;
   justify-content:space-between;
   margin-bottom:8px;
 }
 .p-row.single{justify-content:flex-start}
-
 .label{font-weight:700}
 .value{margin-left:6px}
-
 table{
   width:100%;
   border-collapse:collapse;
@@ -43,34 +37,26 @@ table{
 }
 th,td{
   padding:10px;
-  border-bottom:1px solid var(--theme-line);
+  border-bottom:1px solid ;
 }
 th{
   font-size:13px;
-  color:var(--theme-muted);
 }
-
 .result-input{
   width:100%;
   padding:8px 10px;
-  border:1px solid var(--theme-line);
+  border:1px solid ;
   border-radius:10px;
-  background:var(--theme-field-bg);
 }
-
 .normal{
   font-size:12px;
   white-space:pre-line;
-  color:var(--theme-muted);
 }
-
 .section-header td{
   padding-top:12px;
   font-size:12px;
   font-weight:600;
-  color:var(--theme-muted);
 }
-
 .actions{
   display:flex;
   gap:12px;
@@ -87,14 +73,10 @@ th{
 </style>
   <link rel="stylesheet" href="../theme.css">
 </head>
-
 <body>
 <script src="../theme-init.js"></script>
-
 <div class="neo-card">
-
 <h2>Enter Test Results</h2>
-
 <!-- ================= PATIENT ================= -->
 <div class="patient-box">
   <div class="p-row">
@@ -109,7 +91,6 @@ th{
     <div><span class="label">REF BY Dr.</span> : <span id="pDoctor"></span></div>
   </div>
 </div>
-
 <!-- ================= TABLE ================= -->
 <table>
 <thead>
@@ -122,27 +103,21 @@ th{
 </thead>
 <tbody id="resultBody"></tbody>
 </table>
-
 <div class="actions">
   <button class="neo-btn" onclick="saveOnly()">SAVE</button>
 </div>
-
 </div>
-
 <script src="../../../api.js"></script>
 <script>
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
-
 /* ================= LOAD PATIENT ================= */
 const patient =
   JSON.parse(localStorage.getItem("currentPatient") || "{}");
-
 if (!patient || !patient.id) {
   alert("Patient ID missing. Please open patient from Patient / Reports page.");
   throw new Error("Patient ID missing");
 }
-
 /* ================= SHOW PATIENT ================= */
 document.getElementById("pName").innerText = patient.name || "";
 document.getElementById("pAddress").innerText = patient.address || "";
@@ -151,7 +126,6 @@ document.getElementById("pAgeSex").innerText =
 document.getElementById("pDoctor").innerText = patient.doctor || "";
 document.getElementById("pDate").innerText =
   patient.visitDate || new Date().toLocaleDateString();
-
 /* ================= LOAD SELECTED TEST IDS ================= */
 function loadSelectedIds(){
   const local =
@@ -160,7 +134,6 @@ function loadSelectedIds(){
     saveSelectedTestsToDb(local);
     return Promise.resolve(local);
   }
-
   return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
     .then(res => res.json())
     .then(list => {
@@ -169,7 +142,6 @@ function loadSelectedIds(){
       return ids;
     });
 }
-
 /* ================= LOAD SAVED RESULTS (DB) ================= */
 function loadSavedResults(){
   return fetch(`${API_BASE_URL}/patient-tests/results/${patient.id}`)
@@ -189,29 +161,24 @@ function loadSavedResults(){
       return savedResults;
     });
 }
-
 function saveSelectedTestsToDb(selectedIds){
   if (!selectedIds.length) {
     return Promise.resolve();
   }
-
   const payload = selectedIds.map(id => ({
     patientId: patient.id,
     testId: Number(id)
   }));
-
   return fetch(API_BASE_URL + "/patient-tests/select", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   }).catch(() => {});
 }
-
 function deriveSelectedFromResults(){
   const ids = new Set(savedResults.map(r => r.testId));
   return [...ids];
 }
-
 function normalizeResults(list){
   const ordered = [...(list || [])].sort((a, b) => (a.id || 0) - (b.id || 0));
   const map = {};
@@ -221,7 +188,6 @@ function normalizeResults(list){
   });
   return Object.values(map);
 }
-
 loadSavedResults()
   .then(() => loadSelectedIds())
   .then(selectedIds => {
@@ -234,7 +200,6 @@ loadSavedResults()
       alert("No tests selected");
       return;
     }
-
     /* ================= LOAD TEST MASTER ================= */
     return fetch(API_BASE_URL + "/tests/active")
       .then(res => res.json())
@@ -246,11 +211,9 @@ loadSavedResults()
         renderTests(selectedTests);
       });
   });
-
 function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
-
 function resolveUnit(param){
   const unit = (param.unit || "").trim();
   if (unit) {
@@ -265,12 +228,10 @@ function resolveUnit(param){
   }
   return "%";
 }
-
 function renderResultControl(testId, inputId, subTest, param, savedValue){
   const valueType = (param.valueType || "").toUpperCase();
   const subAttr = subTest ? ` data-sub="${subTest}"` : "";
   const safeValue = savedValue || "";
-
   return `
     <input class="result-input"
            id="${inputId}"
@@ -279,25 +240,20 @@ function renderResultControl(testId, inputId, subTest, param, savedValue){
            value="${safeValue}">
   `;
 }
-
 /* ================= RENDER TESTS ================= */
 function renderTests(tests) {
   const body = document.getElementById("resultBody");
   body.innerHTML = "";
-
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
     const hasParams = params.length > 0;
     const isMulti = (hasParams && params.length > 1)
       || (!hasParams && (test.units || []).length > 1);
-
     /* ===== SINGLE VALUE TEST ===== */
     if (!isMulti) {
-
       const saved = savedResults.find(
         r => r.testId == test.id && !r.subTest
       );
-
       const singleParam = params[0] || {};
       const unit =
         (singleParam.unit || "").trim()
@@ -315,7 +271,6 @@ function renderTests(tests) {
         singleParam,
         saved?.resultValue || saved?.value || ""
       );
-
       body.innerHTML += `
         <tr>
           <td><b>${test.testName}</b></td>
@@ -329,18 +284,15 @@ function renderTests(tests) {
         </tr>`;
       return;
     }
-
     /* ===== MULTI VALUE TEST ===== */
     body.innerHTML +=
       `<tr><td colspan="4"><b>${test.testName}</b></td></tr>`;
-
     const savedBySub = {};
     savedResults.forEach(r => {
       if (r.testId == test.id) {
         savedBySub[normalizeKey(r.subTest)] = r;
       }
     });
-
     const rows = hasParams && params.length > 1
       ? params.map(p => ({
         name: p.name || "",
@@ -356,7 +308,6 @@ function renderTests(tests) {
         normalText: test.normalValues?.[i]?.normalValue || "",
         sectionName: ""
       }));
-
     let currentSection = null;
     rows.forEach((param, i) => {
       const saved = savedBySub[normalizeKey(param.name)];
@@ -372,7 +323,6 @@ function renderTests(tests) {
       } else {
         currentSection = null;
       }
-
       const inputHtml = renderResultControl(
         test.id,
         `result-${test.id}-${i}`,
@@ -380,10 +330,9 @@ function renderTests(tests) {
         param,
         saved?.resultValue || saved?.value || ""
       );
-
       body.innerHTML += `
         <tr>
-          <td style="padding-left:25px">${param.name}</td>
+          <td style="padding-left: 25px">${param.name}</td>
           <td>
             ${inputHtml}
           </td>
@@ -395,7 +344,6 @@ function renderTests(tests) {
     });
   });
 }
-
 /* ================= COLLECT RESULTS ================= */
 function collectResults() {
   return [...document.querySelectorAll(".result-input")]
@@ -407,22 +355,17 @@ function collectResults() {
       resultValue: i.value
     }));
 }
-
 /* ================= SAVE ONLY ================= */
 function saveOnly() {
-
   const results = collectResults();
-
   const finishSave = () => {
     localStorage.setItem("patientResults", JSON.stringify(results));
     location.href = "reports.html";
   };
-
   if (results.length === 0) {
     finishSave();
     return;
   }
-
   const requests = [];
   if (results.length) {
     requests.push(fetch(API_BASE_URL + "/patient-tests/results", {
@@ -431,7 +374,6 @@ function saveOnly() {
       body: JSON.stringify(results)
     }));
   }
-
   Promise.all(requests)
     .then(() => finishSave())
     .catch(err => {
@@ -439,8 +381,6 @@ function saveOnly() {
       alert("Failed to save results");
     });
 }
-
 </script>
-
 </body>
 </html>

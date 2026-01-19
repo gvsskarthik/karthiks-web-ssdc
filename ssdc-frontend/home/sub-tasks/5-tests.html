@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tests</title>
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
-
 <style>
 :root{
   --radius-lg:22px;
@@ -37,7 +36,6 @@ body{
 }
 .subtitle{
   font-size:12px;
-  color:var(--muted);
   margin-top:4px;
   letter-spacing:.4px;
   text-transform:uppercase;
@@ -62,7 +60,7 @@ body{
 .neo-btn:hover{transform:translateY(-1px)}
 .neo-btn:active{transform:translateY(1px)}
 .neo-btn.secondary{
-  border:1px solid var(--line);
+  border:1px solid ;
 }
 .tabs{
   display:flex;
@@ -73,23 +71,15 @@ body{
 .tabs button{
   padding:8px 18px;
   border-radius:999px;
-  border:1px solid var(--line);
-  background:var(--bg-soft);
-  color:var(--muted);
+  border:1px solid ;
   font-weight:600;
   cursor:pointer;
 }
 .tabs .active{
-  color:#fff;
-  background:linear-gradient(135deg, var(--accent), #1aa191);
-  border-color:transparent;
-  box-shadow:0 10px 22px rgba(15, 118, 110, 0.2);
 }
 .neo{
-  background:var(--bg-soft);
-  border:1px solid var(--line);
+  border:1px solid ;
   border-radius:var(--radius-md);
-  box-shadow:var(--shadow);
 }
 .table-box{
   border-radius:var(--radius-lg);
@@ -109,16 +99,13 @@ thead th{
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.6px;
-  color:var(--muted);
   padding:0 12px 6px;
 }
 tbody tr{
-  background:var(--bg-soft);
   transition:transform .15s ease, box-shadow .15s ease;
 }
 tbody tr:hover{
   transform:translateY(-1px);
-  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
 }
 body.menu-open tbody tr:hover{
   transform:none;
@@ -130,22 +117,22 @@ tbody tr.menu-open{
 }
 tbody td{
   padding:12px;
-  border-top:1px solid var(--line);
-  border-bottom:1px solid var(--line);
+  border-top:1px solid ;
+  border-bottom:1px solid ;
 }
 tbody td:first-child{
-  border-left:1px solid var(--line);
+  border-left:1px solid ;
   border-radius:12px 0 0 12px;
 }
 tbody td:last-child{
-  border-right:1px solid var(--line);
+  border-right:1px solid ;
   border-radius:0 12px 12px 0;
 }
 .sno{width:60px}
 .name{width:220px; overflow-wrap:anywhere}
-.category{width:140px; text-transform:uppercase; font-size:12px; color:var(--muted)}
+.category{width:140px; text-transform:uppercase; font-size:12px; }
 .shortcut{width:110px; white-space:nowrap}
-.normal{width:260px; font-size:12px; white-space:pre-line; color:var(--muted)}
+.normal{width:260px; font-size:12px; white-space:pre-line; }
 .cost{width:110px; text-align:right; font-weight:600; white-space:nowrap}
 .active-col{width:110px}
 .options{width:90px}
@@ -156,18 +143,15 @@ tbody td:last-child{
   line-height:1;
   padding:6px 10px;
   border-radius:10px;
-  border:1px solid var(--line);
-  background:var(--bg-soft);
+  border:1px solid ;
 }
 .menu-list{
   display:none;
   position:absolute;
   right:0;
   top:32px;
-  background:var(--bg-soft);
   border-radius:14px;
-  border:1px solid var(--line);
-  box-shadow:0 12px 24px rgba(20, 30, 45, 0.12);
+  border:1px solid ;
   z-index:30;
   min-width:140px;
   overflow:hidden;
@@ -177,14 +161,12 @@ tbody td:last-child{
   cursor:pointer;
   font-size:13px;
 }
-.menu-list div:hover{background:var(--theme-surface-2)}
-.menu-list .danger{color:var(--danger)}
-
+.menu-list div:hover{}
+.menu-list .danger{}
 .modal{
   display:none;
   position:fixed;
   inset:0;
-  background:rgba(26, 26, 26, 0.4);
   justify-content:center;
   align-items:center;
   padding:20px;
@@ -199,21 +181,19 @@ tbody td:last-child{
   border-radius:22px;
 }
 .modal-card h3{margin:0 0 12px}
-.modal-card h4{margin:16px 0 8px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
+.modal-card h4{margin:16px 0 8px; font-size:13px;  text-transform:uppercase; letter-spacing:.4px}
 .modal-card input,
 .modal-card textarea{
   width:100%;
   padding:10px 12px;
   margin-bottom:10px;
-  border:1px solid var(--line);
+  border:1px solid ;
   border-radius:var(--radius-md);
-  background:var(--theme-field-bg);
   font-size:14px;
 }
 .modal-card textarea{min-height:80px; resize:vertical}
 .inline{display:flex;gap:8px;align-items:center}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
-
 .switch {
   position: relative;
   display: inline-block;
@@ -232,7 +212,6 @@ tbody td:last-child{
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--theme-line);
   transition: 0.3s;
   border-radius: 24px;
 }
@@ -243,17 +222,14 @@ tbody td:last-child{
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: var(--theme-surface);
   transition: 0.3s;
   border-radius: 50%;
 }
 input:checked + .slider {
-  background-color: var(--accent);
 }
 input:checked + .slider:before {
   transform: translateX(22px);
 }
-
 @keyframes fadeUp{
   from{opacity:0; transform:translateY(8px)}
   to{opacity:1; transform:translateY(0)}
@@ -269,10 +245,8 @@ input:checked + .slider:before {
 </style>
   <link rel="stylesheet" href="theme.css">
 </head>
-
 <body>
 <script src="theme-init.js"></script>
-
 <div class="page">
   <div class="head-title">
     <div>
@@ -280,7 +254,10 @@ input:checked + .slider:before {
       <div class="subtitle">Create tests, groups, and manage availability</div>
     </div>
     <div class="header-actions">
-      <button class="neo-btn" onclick="location.href='test/new-group.html'">
+      <button class="neo-btn secondary" onclick="location.href='test/arrange-tests.html'">
+        <i class="bx bx-grid-alt"></i> Arrange Tests
+      </button>
+      <button class="neo-btn secondary" onclick="location.href='test/new-group.html'">
         <i class="bx bx-layer-plus"></i> New Group
       </button>
       <button class="neo-btn" onclick="location.href='test/new-tests.html'">
@@ -288,13 +265,11 @@ input:checked + .slider:before {
       </button>
     </div>
   </div>
-
   <div class="tabs">
     <button class="active" onclick="setMode('all',this)">All</button>
     <button onclick="setMode('single',this)">Single</button>
     <button onclick="setMode('group',this)">Group</button>
   </div>
-
   <div class="table-box">
     <div class="table-wrap">
       <table>
@@ -315,53 +290,43 @@ input:checked + .slider:before {
     </div>
   </div>
 </div>
-
 <!-- ===== SINGLE TEST EDIT MODAL ===== -->
 <div class="modal" id="testModal">
   <div class="modal-card">
     <h3>Edit Test</h3>
-
     <input id="tName" placeholder="Test Name">
     <input id="tShortcut" placeholder="Shortcut">
     <input id="tCategory" placeholder="Category">
     <input id="tCost" type="number" placeholder="Cost">
-
     <h4>Normal Values</h4>
     <div id="nBox"></div>
     <button class="neo-btn secondary" onclick="addNormal()">+ Normal</button>
-
     <div class="actions">
       <button class="neo-btn" onclick="saveTest()">Save</button>
       <button class="neo-btn secondary" onclick="closeTest()">Cancel</button>
     </div>
   </div>
 </div>
-
 <!-- ===== GROUP EDIT MODAL ===== -->
 <div class="modal" id="groupModal">
   <div class="modal-card">
     <h3>Edit Group</h3>
-
     <input id="gName" placeholder="Group Name">
     <input id="gShortcut" placeholder="Shortcut">
     <input id="gCost" type="number" placeholder="Cost">
-
     <h4>Select Tests</h4>
     <div id="groupTests"></div>
-
     <div class="actions">
       <button class="neo-btn" onclick="saveGroup()">Save</button>
       <button class="neo-btn secondary" onclick="closeGroup()">Cancel</button>
     </div>
   </div>
 </div>
-
 <script src="../../api.js"></script>
 <script>
 let tests=[], groups=[], mode="all";
 let normalIdCounter = 0;
 let editTest=null, editGroup=null;
-
 /* LOAD */
 Promise.all([
 fetch(API_BASE_URL + "/tests").then(r=>r.json()),
@@ -371,7 +336,6 @@ fetch(API_BASE_URL + "/tests").then(r=>r.json()),
  groups=g;
  render();
 });
-
 /* TABS */
 function setMode(m,b){
  mode=m;
@@ -379,14 +343,12 @@ function setMode(m,b){
  b.classList.add("active");
  render();
 }
-
 /* MENU */
 function closeMenus(){
  document.querySelectorAll(".menu-list").forEach(m=>m.style.display="none");
  document.querySelectorAll("#tbody tr.menu-open").forEach(row => row.classList.remove("menu-open"));
  document.body.classList.remove("menu-open");
 }
-
 function toggleMenu(btn){
  const menu = btn.nextElementSibling;
  const isOpen = menu && menu.style.display === "block";
@@ -402,20 +364,17 @@ function toggleMenu(btn){
   }
  }
 }
-
 document.addEventListener("click", (event) => {
  if (!event.target.closest(".menu")) {
   closeMenus();
  }
 });
-
 function normalizeText(value){
   if (value === null || value === undefined) {
     return "";
   }
   return String(value).trim();
 }
-
 function formatCost(value){
   if (value === null || value === undefined || value === "") {
     return "—";
@@ -423,7 +382,6 @@ function formatCost(value){
   const numeric = Number(value);
   return Number.isFinite(numeric) ? `₹${numeric}` : "—";
 }
-
 function renderNormalValues(test){
  const params = Array.isArray(test.parameters) ? test.parameters : [];
  const hasMultiple = params.length > 1;
@@ -437,22 +395,18 @@ function renderNormalValues(test){
     return name ? `${name}: ${normalText}` : normalText;
   })
   .filter(Boolean);
-
  if (paramLines.length) {
   return paramLines.join("\n");
  }
-
  return (test.normalValues || [])
   .map(n => normalizeText(n.normalValue))
   .filter(Boolean)
   .join("\n");
 }
-
 /* RENDER */
 function render(){
  tbody.innerHTML="";
  let i=1;
-
  if(mode!=="group"){
   tests.forEach(t=>{
    tbody.innerHTML+=`
@@ -484,7 +438,6 @@ function render(){
    </tr>`;
   });
  }
-
  if(mode!=="single"){
   groups.forEach(g=>{
    tbody.innerHTML+=`
@@ -495,7 +448,6 @@ function render(){
     <td class="shortcut">${g.shortcut || "—"}</td>
     <td class="normal">—</td>
     <td class="cost">${formatCost(g.cost)}</td>
-
     <td class="active-col">
       <label class="switch">
         <input type="checkbox"
@@ -506,7 +458,6 @@ function render(){
         <span class="slider"></span>
       </label>
     </td>
-
     <td class="options">
      <div class="menu">
       <button class="menu-btn" type="button" onclick="toggleMenu(this)">⋮</button>
@@ -520,7 +471,6 @@ function render(){
   });
 }
 }
-
 /* ===== SINGLE TEST ===== */
 function openTest(t){
  editTest=t;
@@ -554,14 +504,12 @@ function saveTest(){
  }).then(()=>location.reload());
 }
 function closeTest(){testModal.style.display="none"}
-
 /* ===== GROUP EDIT (MODAL, NO REDIRECT) ===== */
 function openGroup(g){
  editGroup=g;
  gName.value=g.groupName;
  gShortcut.value=g.shortcut;
  gCost.value=g.cost;
-
  fetch(API_BASE_URL + "/groups/" + g.id)
  .then(r=>r.json())
  .then(d=>{
@@ -569,7 +517,7 @@ function openGroup(g){
   groupTests.innerHTML="";
   tests.forEach(t=>{
    groupTests.innerHTML+=`
-    <div class="inline neo" style="padding:8px">
+    <div class="inline neo" style="padding: 8px">
       <input type="checkbox" id="group-test-${g.id}-${t.id}" name="group-test-${g.id}-${t.id}" value="${t.id}"
         ${(d.testIds||[]).includes(t.id)?"checked":""}>
       ${t.testName} (${t.shortcut})
@@ -594,11 +542,9 @@ function saveGroup(){
  }).then(()=>location.reload());
 }
 function closeGroup(){groupModal.style.display="none"}
-
 /* DELETE */
 function deleteTest(id){
   if(!confirm("Delete test?")) return;
-
   fetch(API_BASE_URL + "/tests/" + id,{
     method:"DELETE"
   })
@@ -635,7 +581,6 @@ function toggleActive(id, state){
     location.reload();
   });
 }
-
 function toggleGroupActive(id, state){
   fetch(`${API_BASE_URL}/groups/${id}/active`,{
     method:"PUT",
@@ -654,6 +599,5 @@ function toggleGroupActive(id, state){
   });
 }
 </script>
-
 </body>
 </html>
