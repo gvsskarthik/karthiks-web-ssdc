@@ -90,19 +90,6 @@ function isDarkModeEnabled() {
     return document.body.classList.contains("dark");
 }
 
-function syncFrameDarkMode(enabled) {
-    if (!pageFrame) return;
-
-    try {
-        const doc = pageFrame.contentDocument || pageFrame.contentWindow?.document;
-        if (!doc) return;
-        doc.documentElement?.classList.toggle("dark", enabled);
-        doc.body?.classList.toggle("dark", enabled);
-    } catch (error) {
-        // Ignore access errors if the iframe isn't ready or is cross-origin.
-    }
-}
-
 function setDarkMode(enabled) {
     document.body.classList.toggle("dark", enabled);
     if (switchMode) {
@@ -113,7 +100,6 @@ function setDarkMode(enabled) {
     } catch (error) {
         // Ignore storage errors.
     }
-    syncFrameDarkMode(enabled);
 }
 
 function loadSavedTheme() {
@@ -212,10 +198,8 @@ if (pageFrame) {
         const framePage = getFramePagePath();
         updateMenuForPage(framePage);
         applyFrameTheme();
-        syncFrameDarkMode(isDarkModeEnabled());
     });
     applyFrameTheme();
-    syncFrameDarkMode(isDarkModeEnabled());
 }
 
 /* ================= DASHBOARD DATE/TIME ================= */

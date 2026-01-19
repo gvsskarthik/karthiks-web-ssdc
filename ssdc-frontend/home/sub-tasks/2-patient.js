@@ -6,7 +6,6 @@ const dateToggle = document.getElementById("dateToggle");
 const searchToggle = document.getElementById("searchToggle");
 const tableBody  = document.getElementById("patientTable");
 const bulkBar    = document.getElementById("bulkBar");
-const checkHead  = document.getElementById("checkHead");
 const selectedCount = document.getElementById("selectedCount");
 
 let allPatients = [];
@@ -89,7 +88,7 @@ function renderTable(data){
   data.forEach((p,i)=>{
     tableBody.innerHTML+=`
     <tr>
-      <td class="${checkClass}" style="display:${selectMode?'table-cell':'none'}">
+      <td class="${checkClass}">
         <input type="checkbox"
                id="patient-${p.id}"
                name="patient-${p.id}"
@@ -156,16 +155,16 @@ document.addEventListener("click", (event) => {
 
 function enterSelectMode(){
   selectMode=true;
+  document.body.classList.add("select-mode");
   bulkBar.style.display="flex";
-  checkHead.style.display="table-cell";
   closeMenus();
   renderTable(allPatients);
 }
 
 function exitSelectMode(){
   selectMode=false;
+  document.body.classList.remove("select-mode");
   bulkBar.style.display="none";
-  checkHead.style.display="none";
   closeMenus();
   renderTable(allPatients);
 }

@@ -15,10 +15,19 @@
     document.body.classList.toggle("dark", isDark);
   }
 
-  if (document.body) {
+  function applySavedTheme() {
     applyTheme(readTheme());
-  } else {
-    document.addEventListener("DOMContentLoaded", () => applyTheme(readTheme()), { once: true });
   }
-})();
 
+  if (document.body) {
+    applySavedTheme();
+  } else {
+    document.addEventListener("DOMContentLoaded", applySavedTheme, { once: true });
+  }
+
+  window.addEventListener("storage", (event) => {
+    if (event.storageArea !== localStorage) return;
+    if (event.key !== THEME_STORAGE_KEY) return;
+    applyTheme(event.newValue);
+  });
+})();

@@ -208,8 +208,8 @@ function openGroup(g){
   editGroup = { ...editGroup, ...d };
   groupTests.innerHTML="";
   tests.forEach(t=>{
-   groupTests.innerHTML+=`
-    <div class="inline neo" style="padding:8px">
+  groupTests.innerHTML+=`
+    <div class="inline neo pad-8">
       <input type="checkbox" id="group-test-${g.id}-${t.id}" name="group-test-${g.id}-${t.id}" value="${t.id}"
         ${(d.testIds||[]).includes(t.id)?"checked":""}>
       ${t.testName} (${t.shortcut})

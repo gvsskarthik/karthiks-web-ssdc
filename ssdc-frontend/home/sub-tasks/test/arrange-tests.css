@@ -1,22 +1,24 @@
-body{
-  font-family: Arial, sans-serif;
-  background:#ecf0f3;
-  padding:20px;
+body {
+  padding: 20px;
 }
-/*noinspection CssUnusedSymbol*/
-.card{
-  background:#ecf0f3;
-  padding:20px;
-  border-radius:18px;
-  box-shadow:8px 8px 16px #c5c9cc,
-             -8px -8px 16px #ffffff;
-  margin-bottom:20px;
+
+.card {
+  padding: 20px;
+  border-radius: 18px;
+  margin-bottom: 20px;
 }
-h2{margin:10px 0}
-.row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin:6px 0;
+
+h2 {
+  margin: 10px 0;
 }
-.title{font-weight:600}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.title {
+  font-weight: 600;
+}
