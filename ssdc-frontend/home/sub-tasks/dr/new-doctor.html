@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>New Doctor</title>
 <link href="../../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+
 <style>
 body{
   margin:0;
@@ -26,15 +27,19 @@ body{
 }
 .form-group label {
   font-size: 14px;
+  color: var(--theme-muted);
 }
 .neo-input {
   width: 100%;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid ;
+  background: var(--theme-field-bg);
+  border: 1px solid var(--theme-line);
   outline: none;
 }
 .neo-input:focus{
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 .neo-btn {
   width: 100%;
@@ -47,43 +52,56 @@ body{
 </style>
   <link rel="stylesheet" href="../theme.css">
 </head>
+
 <body>
 <script src="../theme-init.js"></script>
+
 <div class="neo-card">
   <h2>New Doctor</h2>
+
   <form id="doctorForm">
+
     <div class="form-group">
       <label for="name">Doctor Name</label>
       <input type="text" id="name" class="neo-input" autocomplete="name" required>
     </div>
+
     <div class="form-group">
       <label for="specialization">Specialization</label>
       <input type="text" id="specialization" class="neo-input" autocomplete="off" required>
     </div>
+
     <div class="form-group">
       <label for="phone">Phone Number</label>
       <input type="tel" id="phone" class="neo-input" autocomplete="tel" required>
     </div>
+
     <div class="form-group">
       <label for="hospital">Hospital Name</label>
       <input type="text" id="hospital" class="neo-input" autocomplete="organization" required>
     </div>
+
     <div class="form-group">
       <label for="commissionRate">Share %</label>
       <input type="number" id="commissionRate" class="neo-input" min="0" max="100" step="0.01" inputmode="decimal" autocomplete="off">
     </div>
+
     <button type="submit" class="neo-btn">
       <i class="bx bx-save"></i> Save Doctor
     </button>
+
   </form>
 </div>
+
 <script src="../../../api.js"></script>
 <script>
 document.getElementById("doctorForm").addEventListener("submit", function(e) {
   e.preventDefault();
+
   const commissionRateRaw = document.getElementById("commissionRate").value.trim();
   const commissionRate =
     commissionRateRaw === "" ? null : Number(commissionRateRaw);
+
   const doctor = {
     name: document.getElementById("name").value,
     specialization: document.getElementById("specialization").value,
@@ -93,6 +111,7 @@ document.getElementById("doctorForm").addEventListener("submit", function(e) {
   if (commissionRate !== null && Number.isFinite(commissionRate)) {
     doctor.commissionRate = commissionRate;
   }
+
   fetch(API_BASE_URL + "/doctors", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -108,5 +127,6 @@ document.getElementById("doctorForm").addEventListener("submit", function(e) {
   });
 });
 </script>
+
 </body>
 </html>

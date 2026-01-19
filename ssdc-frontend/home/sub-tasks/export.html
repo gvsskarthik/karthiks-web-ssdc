@@ -5,20 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Accounts Export</title>
 <link rel="stylesheet" href="pt/print-common.css">
+
 <style>
 table{font-size:11px}
 th,td{padding:6px}
-.download{
 </style>
   <link rel="stylesheet" href="theme.css">
 </head>
+
 <body>
 <script src="theme-init.js"></script>
+
 <div class="neo-card" id="exportCard">
+
   <div class="header">
     <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
     <p><b>ACCOUNTS EXPORT</b></p>
   </div>
+
   <div class="patient-box">
     <div class="row">
       <span class="label">Doctor</span>
@@ -29,6 +33,7 @@ th,td{padding:6px}
       <span id="generatedAt"></span>
     </div>
   </div>
+
   <table>
     <thead>
       <tr>
@@ -46,47 +51,60 @@ th,td{padding:6px}
       </tr>
     </tbody>
   </table>
+
   <div class="actions">
     <button class="btn download" onclick="downloadExcel()">DOWNLOAD EXCEL</button>
     <button class="btn print" onclick="window.print()">PRINT</button>
   </div>
+
 </div>
+
 <script src="../../api.js"></script>
 <script>
 const apiPath = window.apiUrl || function (path) {
   return path.charAt(0) === "/" ? "/api" + path : "/api/" + path;
 };
+
 const exportBody = document.getElementById("exportBody");
 const doctorNameEl = document.getElementById("doctorName");
 const generatedAtEl = document.getElementById("generatedAt");
+
 const exportState = JSON.parse(
   localStorage.getItem("accountsExportFilter") || "{}"
 );
 const exportDoctorId = exportState.doctorId || "";
 const exportDoctorName = exportState.doctorName || "All";
+
 doctorNameEl.textContent = exportDoctorName;
 generatedAtEl.textContent = new Date().toLocaleString();
+
 let exportRows = [];
+
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");
   const num = Number(cleaned);
   return Number.isFinite(num) ? num : 0;
 }
+
 function formatNumber(value){
   return String(Math.round(parseNumber(value)));
 }
+
 function formatCurrency(value){
   return "Rs " + formatNumber(value);
 }
+
 function setBodyMessage(message){
   exportBody.innerHTML =
     `<tr><td colspan="6">${message}</td></tr>`;
 }
+
 function renderRows(rows){
   if (!Array.isArray(rows) || rows.length === 0) {
     setBodyMessage("No records found");
     return;
   }
+
   exportBody.innerHTML = "";
   rows.forEach(row => {
     const doctorLabel = row.doctorName
@@ -103,6 +121,7 @@ function renderRows(rows){
     `;
   });
 }
+
 async function fetchJson(url){
   const response = await fetch(url);
   if (!response.ok) {
@@ -110,11 +129,13 @@ async function fetchJson(url){
   }
   return response.json();
 }
+
 async function loadRows(){
   setBodyMessage("Loading...");
   const endpoint = exportDoctorId
     ? `/accounts/doctor/${encodeURIComponent(exportDoctorId)}/details`
     : "/accounts/details";
+
   try{
     const rows = await fetchJson(apiPath(endpoint));
     exportRows = Array.isArray(rows) ? rows : [];
@@ -125,11 +146,13 @@ async function loadRows(){
     setBodyMessage("Failed to load");
   }
 }
+
 function toCsvValue(value){
   const text = String(value ?? "");
   const escaped = text.replace(/"/g, '""');
   return `"${escaped}"`;
 }
+
 function buildCsv(rows){
   const header = [
     "Date",
@@ -155,6 +178,7 @@ function buildCsv(rows){
   });
   return lines.join("\n");
 }
+
 function sanitizeFileName(value){
   return String(value || "")
     .trim()
@@ -162,14 +186,17 @@ function sanitizeFileName(value){
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
 function downloadExcel(){
   if (!exportRows.length) {
     alert("No records to export");
     return;
   }
+
   const csv = buildCsv(exportRows);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   const dateStamp = new Date().toISOString().slice(0, 10);
   const name = sanitizeFileName(exportDoctorName) || "all";
@@ -180,7 +207,9 @@ function downloadExcel(){
   a.remove();
   URL.revokeObjectURL(url);
 }
+
 loadRows();
 </script>
+
 </body>
 </html>

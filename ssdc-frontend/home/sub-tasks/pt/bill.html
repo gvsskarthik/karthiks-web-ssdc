@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patient Bill</title>
 <link rel="stylesheet" href="print-common.css">
+<link rel="stylesheet" href="../theme.css">
+
 <style>
 table{
   font-size:12px;
@@ -14,6 +16,7 @@ th,td{
   padding:6px;
 }
 td.amount{text-align:right;width:140px}
+
 /* TOTALS */
 .totals{
   margin-top:16px;
@@ -32,28 +35,33 @@ td.amount{text-align:right;width:140px}
   margin-top:6px;
   padding-top:8px;
 }
-/* BUTTONS */
-.back{
 </style>
 </head>
+
 <body>
+<script src="../theme-init.js"></script>
+
 <div class="neo-card" id="bill">
+
   <div class="header">
     <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
     <p><b>BILL / RECEIPT</b></p>
   </div>
+
   <!-- PATIENT -->
   <div id="patient-info"></div>
+
   <!-- TABLE -->
   <table>
     <thead>
       <tr>
         <th>TEST NAME</th>
-        <th style="width: 140px">PRICE</th>
+        <th style="width:140px">PRICE</th>
       </tr>
     </thead>
     <tbody id="billBody"></tbody>
   </table>
+
   <!-- TOTALS -->
   <div class="totals">
     <div class="total-row">
@@ -69,31 +77,38 @@ td.amount{text-align:right;width:140px}
       <div id="total">₹0</div>
     </div>
   </div>
+
   <!-- ACTIONS -->
   <div class="actions">
-    <button class="btn back" onclick="goPatients()">BACK</button>
+    <button class="btn" onclick="goPatients()">BACK</button>
     <button class="btn print" onclick="window.print()">PRINT</button>
   </div>
+
 </div>
+
 <script src="patient-info.js"></script>
 <script src="../../../api.js"></script>
 <script>
 const patient =
   JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
 function setText(id, value){
   const el = document.getElementById(id);
   if (el) {
     el.innerText = value;
   }
 }
+
 function formatMoney(value){
   const num = Number(value);
   if (!Number.isFinite(num)) return "0";
   return String(Math.round(num * 100) / 100);
 }
+
 function formatMoneyWithSymbol(value){
   return `₹${formatMoney(value)}`;
 }
+
 function resolveGroupCost(group, testMap){
   const cost = Number(group.cost);
   if (Number.isFinite(cost)) {
@@ -106,11 +121,13 @@ function resolveGroupCost(group, testMap){
   });
   return Math.round(sum * 100) / 100;
 }
+
 function hydratePatient(){
   const age = patient.age ? String(patient.age) : "";
   const gender = patient.gender || "";
   const ageSex =
     age && gender ? `${age} / ${gender}` : `${age}${gender}`;
+
   setText("pName", patient.name || "");
   setText("pDate", patient.visitDate || new Date().toLocaleDateString());
   setText("pAddress", patient.address || "");
@@ -118,10 +135,12 @@ function hydratePatient(){
   setText("pDoctor", patient.doctor || "SELF");
   setText("pMobile", patient.mobile || "");
 }
+
 function loadSelectedTests(){
   if (!patient || !patient.id) {
     return Promise.resolve([]);
   }
+
   return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
     .then(res => res.json())
     .then(list => (list || [])
@@ -135,18 +154,22 @@ function loadSelectedTests(){
         .filter(id => !Number.isNaN(id));
     });
 }
+
 function setTotals(subtotalValue, discountValue, totalValue){
   setText("subtotal", formatMoneyWithSymbol(subtotalValue));
   setText("discount", formatMoneyWithSymbol(discountValue));
   setText("total", formatMoneyWithSymbol(totalValue));
 }
+
 function renderBill(){
   const body = document.getElementById("billBody");
+
   if (!patient || !patient.id) {
     body.innerHTML = `<tr><td colspan="2">No patient selected</td></tr>`;
     setTotals(0, 0, 0);
     return;
   }
+
   loadSelectedTests()
     .then(ids => {
       const uniqueIds = [...new Set(ids)];
@@ -156,6 +179,7 @@ function renderBill(){
         setTotals(0, 0, amount);
         return;
       }
+
       return Promise.all([
         fetch(`${API_BASE_URL}/tests/active`).then(res => res.json()),
         fetch(`${API_BASE_URL}/groups`).then(res => res.json()).catch(() => [])
@@ -165,12 +189,14 @@ function renderBill(){
           const testMap = new Map(testList.map(t => [Number(t.id), t]));
           const selected =
             testList.filter(t => uniqueIds.includes(t.id));
+
           if (!selected.length) {
             body.innerHTML = `<tr><td colspan="2">No tests found</td></tr>`;
             const amount = Number(patient.amount) || 0;
             setTotals(0, 0, amount);
             return;
           }
+
           const normalizedGroups = (Array.isArray(groups) ? groups : [])
             .map(group => {
               const ids = Array.isArray(group.testIds) ? group.testIds : [];
@@ -185,9 +211,11 @@ function renderBill(){
               if (diff !== 0) return diff;
               return (Number(a.id) || 0) - (Number(b.id) || 0);
             });
+
           const selectedSet = new Set(uniqueIds);
           const selectedGroups = [];
           const coveredTests = new Set();
+
           normalizedGroups.forEach(group => {
             const allSelected = group.testIds.every(id => selectedSet.has(id));
             if (!allSelected) {
@@ -200,8 +228,10 @@ function renderBill(){
             selectedGroups.push(group);
             group.testIds.forEach(id => coveredTests.add(id));
           });
+
           let subtotal = 0;
           body.innerHTML = "";
+
           selectedGroups.forEach(group => {
             const cost = resolveGroupCost(group, testMap);
             subtotal += cost;
@@ -212,6 +242,7 @@ function renderBill(){
               </tr>
             `;
           });
+
           selected
             .filter(test => !coveredTests.has(Number(test.id)))
             .forEach(test => {
@@ -224,11 +255,13 @@ function renderBill(){
                 </tr>
               `;
             });
+
           const patientAmount = Number(patient.amount);
           const total = Number.isFinite(patientAmount)
             ? patientAmount
             : subtotal;
           const discount = Math.max(0, subtotal - total);
+
           setTotals(subtotal, discount, total);
         })
         .catch(() => {
@@ -243,6 +276,7 @@ function renderBill(){
       setTotals(0, 0, amount);
     });
 }
+
 function goPatients(){
   if (parent?.loadPage) {
     parent.loadPage("home/sub-tasks/2-patient.html", "patient");
@@ -250,6 +284,7 @@ function goPatients(){
     location.href = "../2-patient.html";
   }
 }
+
 hydratePatient();
 renderBill();
 </script>

@@ -1,0 +1,31 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+a {
+	text-decoration: none;
+}
+
+li {
+	list-style: none;
+}
+
+:root {
+	--poppins: 'Poppins';
+	--lato: 'Lato';
+
+	--light: #fffaf2;
+	--blue: #0f766e;
+	--light-blue: #d8f1ec;
+	--grey: #f6f1e7;
+	--dark-grey: #6b737c;
+	--dark: #1e262d;
+	--red: #c0392b;
+	--yellow: #d0812a;
+	--light-yellow: #f6e2c7;
+	--orange: #c0762d;
+	--light-orange: #f3d7bc;
+	--black: #1e262d;
+}
