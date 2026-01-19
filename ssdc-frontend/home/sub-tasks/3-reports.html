@@ -5,10 +5,159 @@
 <title>Reports</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="3-reports.css">
-
+<style>
+:root{
+  --radius-lg:22px;
+  --radius-md:14px;
+}
+body{
+  margin:0;
+  padding:24px;
+  min-height:100vh;
+}
+.page{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
+}
+.head-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:18px;
+  animation:fadeUp .45s ease both;
+}
+.head-title h1{
+  font-size:32px;
+  font-weight:700;
+  margin:0;
+  letter-spacing:.3px;
+}
+.subtitle{
+  font-size:12px;
+  margin-top:4px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.date-filter{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.date-filter label{
+  font-size:12px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+.input-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  border:1px solid ;
+}
+.input-wrap i{
+  font-size:18px;
+}
+.neo-input{
+  flex:1;
+  border:none;
+  outline:none;
+  font-size:14px;
+}
+.table-box{
+  border-radius:var(--radius-lg);
+  padding:16px;
+  animation:fadeUp .55s ease both;
+}
+.table-wrap{overflow-x:visible}
+table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 10px;
+  table-layout:fixed;
+}
+thead th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  padding:0 12px 6px;
+}
+tbody tr{
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+tbody tr:hover{
+  transform:translateY(-1px);
+}
+tbody td{
+  padding:12px;
+  border-top:1px solid ;
+  border-bottom:1px solid ;
+}
+tbody td:first-child{
+  border-left:1px solid ;
+  border-radius:12px 0 0 12px;
+}
+tbody td:last-child{
+  border-right:1px solid ;
+  border-radius:0 12px 12px 0;
+}
+.sno{width:60px}
+.name{
+  width:260px;
+  overflow-wrap:anywhere;
+}
+.doctor{
+  width:220px;
+  overflow-wrap:anywhere;
+}
+.status-col{
+  width:140px;
+  white-space:nowrap;
+}
+.action-col{
+  width:90px;
+}
+.status{font-weight:600;}
+.patient-link{
+  font-weight:600;
+  text-decoration:none;
+}
+.patient-link:hover{text-decoration:underline}
+.action-btn{
+  cursor:pointer;
+  font-weight:600;
+}
+.no-data{
+  text-align:center;
+  padding:16px 0;
+}
+tbody td.no-data{
+  border-left:1px solid ;
+  border-right:1px solid ;
+  border-radius:12px;
+}
+@keyframes fadeUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@media (max-width:900px){
+  body{padding:16px}
+  .head-title{flex-direction:column; align-items:flex-start}
+  .date-filter{width:100%}
+}
+@media (max-width:600px){
+  .head-title h1{font-size:28px}
+  .input-wrap{padding:10px}
+}
+</style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
+<script src="theme-init.js"></script>
 <div class="page">
   <div class="head-title">
     <div>
@@ -40,7 +189,104 @@
     </div>
   </div>
 </div>
-
-<script src="3-reports.js"></script>
+<script src="../../api.js"></script>
+<script>
+const reportDate = document.getElementById("reportDate");
+const table = document.getElementById("reportTable");
+let isAutoDate = true;
+function getLocalDateInputValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+function setDateToToday(){
+  const today = getLocalDateInputValue();
+  if (reportDate.value !== today) {
+    reportDate.value = today;
+    loadByDate(today);
+  }
+}
+function scheduleMidnightUpdate(){
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0);
+  const delay = Math.max(0, nextMidnight.getTime() - now.getTime() + 1000);
+  setTimeout(() => {
+    if (isAutoDate) {
+      setDateToToday();
+    }
+    scheduleMidnightUpdate();
+  }, delay);
+}
+reportDate.value = getLocalDateInputValue();
+loadByDate(reportDate.value);
+reportDate.addEventListener("change", () => {
+  isAutoDate = reportDate.value === getLocalDateInputValue();
+  loadByDate(reportDate.value);
+});
+scheduleMidnightUpdate();
+function loadByDate(date){
+  fetch(`${API_BASE_URL}/patients/by-date/${date}`)
+    .then(res=>res.json())
+    .then(data=>renderTable(data))
+    .catch(()=>{
+      table.innerHTML =
+        `<tr><td colspan="5" class="no-data">No data</td></tr>`;
+    });
+}
+function renderTable(data){
+  table.innerHTML = "";
+  if(!data || data.length===0){
+    table.innerHTML =
+      `<tr><td colspan="5" class="no-data">No patients found</td></tr>`;
+    return;
+  }
+  data.forEach((p,i)=>{
+    table.innerHTML += `
+      <tr>
+        <td class="sno">${i+1}</td>
+        <!-- ENTER VALUES -->
+        <td class="name">
+          <a class="patient-link" href="#"
+             onclick='openPatient(${JSON.stringify(p)})'>
+            ${p.name || "-"}
+          </a>
+        </td>
+        <td class="doctor">${p.doctor || "SELF"}</td>
+        <td class="status-col"><span class="status">${p.status}</span></td>
+        <!-- VIEW FINAL REPORT -->
+        <td class="action-col">
+          <span class="action-btn"
+            onclick='openReport(${JSON.stringify(p)})'>
+            View
+          </span>
+        </td>
+      </tr>
+    `;
+  });
+}
+/* ✅ ENTER VALUES PAGE */
+/* ENTER VALUES */
+function openPatient(patient){
+  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.removeItem("selectedTests");
+  localStorage.removeItem("patientResults");
+  parent.loadPage(
+    "home/sub-tasks/pt/enter-values.html",
+    "reports"
+  );
+}
+/* FINAL REPORT */
+function openReport(patient){
+  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.removeItem("selectedTests");
+  localStorage.removeItem("patientResults");
+  parent.loadPage(
+    "home/sub-tasks/pt/reports.html",
+    "reports"
+  );
+}
+</script>
 </body>
 </html>
