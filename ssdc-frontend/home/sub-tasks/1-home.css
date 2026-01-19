@@ -25,8 +25,7 @@
   --theme-shadow: 2px 2px 6px #b6a9a9, -1px -1px 6px #ffffff;
   --theme-shadow-sm: 1px 1px 4px rgba(182, 169, 169, 0.9), -1px -1px 4px #ffffff;
   --theme-inset: inset 2px 2px 6px rgba(182, 169, 169, 0.45), inset -2px -2px 6px rgba(255, 255, 255, 0.95);
-
-  /* Used by the dashboard iframe wrapper */
+/* Used by the dashboard iframe wrapper */
   --theme-bg-gradient: var(--grey);
   --dash-sidebar-active: var(--grey);
   --dash-sidebar-hover: var(--grey);
@@ -287,7 +286,7 @@ body{
 	display: flex;
 	align-items: center;
 	grid-gap: 24px;
-	box-shadow: var(--theme-shadow);
+	box-shadow: 2px 2px 6px #b6a9a9, -1px -1px 6px #ffffff;
 }
 
  main .box-info li .bx {
