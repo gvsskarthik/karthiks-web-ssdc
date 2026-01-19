@@ -1,8 +1,7 @@
 body{
   margin:0;
   padding:20px;
-  font-family:Poppins,Arial,sans-serif;
-  background:#ecf0f3;
+  background: var(--theme-bg-gradient, #ffffff);
 }
 
 body.in-frame{
@@ -13,8 +12,9 @@ body.in-frame{
   max-width:900px;
   margin:auto;
   padding:30px;
-  background:#fff;
+  background: var(--theme-surface, #fff);
   border-radius:10px;
+  border: 1px solid var(--theme-line, #000);
 }
 
 /* HEADER */
@@ -59,7 +59,6 @@ th{background: var(--theme-surface-2, #f2f2f2)}
   border:none;
   border-radius:6px;
 }
-.print{background:#2980b9;color:#fff}
 
 @media print{
   body{background:#fff !important;color:#000 !important}

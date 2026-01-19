@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patient Bill</title>
 <link rel="stylesheet" href="print-common.css">
+<link rel="stylesheet" href="../theme.css">
 
 <style>
 table{
@@ -34,13 +35,11 @@ td.amount{text-align:right;width:140px}
   margin-top:6px;
   padding-top:8px;
 }
-
-/* BUTTONS */
-.back{background:#7f8c8d;color:#fff}
 </style>
 </head>
 
 <body>
+<script src="../theme-init.js"></script>
 
 <div class="neo-card" id="bill">
 
@@ -81,7 +80,7 @@ td.amount{text-align:right;width:140px}
 
   <!-- ACTIONS -->
   <div class="actions">
-    <button class="btn back" onclick="goPatients()">BACK</button>
+    <button class="btn" onclick="goPatients()">BACK</button>
     <button class="btn print" onclick="window.print()">PRINT</button>
   </div>
 
