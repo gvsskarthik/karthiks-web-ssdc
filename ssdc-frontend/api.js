@@ -1,12 +1,15 @@
 (function () {
   const defaultBase = "/api";
+
   let stored = null;
   if (window.localStorage) {
     stored = window.localStorage.getItem("SSDC_API_BASE_URL");
   }
+
   if (stored) {
     stored = stored.trim();
   }
+
   const isAbsoluteApiBase = stored && /^https?:\/\//i.test(stored);
   const isValidRelativeApiBase = stored && stored.indexOf("/api") === 0;
   window.API_BASE_URL =
@@ -19,9 +22,11 @@
       ? window.API_BASE_URL + path
       : window.API_BASE_URL + "/" + path;
   };
+
   if (!window.fetch) {
     return;
   }
+
   const CACHE_VERSION = 1;
   const CACHE_PREFIX = "SSDC_API_CACHE:";
   const CACHE_INDEX_KEY = CACHE_PREFIX + "INDEX";
@@ -31,9 +36,11 @@
     maxEntries: 60,
     maxBodyBytes: 200 * 1024
   };
+
   const memCache = new Map();
   const inflight = new Map();
   const nativeFetch = window.fetch.bind(window);
+
   function canUseStorage() {
     try {
       return Boolean(window.localStorage);
@@ -41,6 +48,7 @@
       return false;
     }
   }
+
   function toAbsoluteUrl(url) {
     try {
       return new URL(String(url), window.location.origin).toString();
@@ -48,13 +56,17 @@
       return String(url);
     }
   }
+
   const apiPrefixAbs = toAbsoluteUrl(window.API_BASE_URL);
+
   function isApiUrl(url) {
     return url.indexOf(apiPrefixAbs) === 0;
   }
+
   function storageKey(url) {
     return CACHE_PREFIX + url;
   }
+
   function readIndex() {
     if (!canUseStorage()) {
       return [];
@@ -67,6 +79,7 @@
       return [];
     }
   }
+
   function writeIndex(list) {
     if (!canUseStorage()) {
       return;
@@ -77,6 +90,7 @@
       // Ignore storage write errors.
     }
   }
+
   function updateIndex(key, timestamp) {
     const list = readIndex();
     const existing = list.find((item) => item.key === key);
@@ -95,6 +109,7 @@
     }
     writeIndex(list);
   }
+
   function readCache(url) {
     const existing = memCache.get(url);
     if (existing) {
@@ -120,6 +135,7 @@
       return null;
     }
   }
+
   function writeCache(url, entry) {
     memCache.set(url, entry);
     if (!canUseStorage()) {
@@ -132,6 +148,7 @@
       // Ignore storage errors (quota, etc).
     }
   }
+
   function clearCache() {
     memCache.clear();
     if (!canUseStorage()) {
@@ -145,6 +162,7 @@
     });
     window.localStorage.removeItem(CACHE_INDEX_KEY);
   }
+
   function shouldBypassCache(request, init) {
     if (!request) {
       return true;
@@ -156,6 +174,7 @@
     const headerValue = request.headers && request.headers.get("Cache-Control");
     return headerValue === "no-store";
   }
+
   function buildResponse(entry, cacheStatus) {
     const headers = new Headers();
     if (entry.contentType) {
@@ -166,6 +185,7 @@
     }
     return new Response(entry.body, { status: entry.status || 200, headers });
   }
+
   function cacheResponse(url, response) {
     if (!response || !response.ok) {
       return;
@@ -189,6 +209,7 @@
       // Ignore cache write errors.
     });
   }
+
   function revalidate(url, request) {
     if (inflight.has(url)) {
       return;
@@ -204,12 +225,15 @@
       });
     inflight.set(url, promise);
   }
+
   window.fetch = function (input, init) {
     const request = input instanceof Request
       ? (init ? new Request(input, init) : input)
       : new Request(input, init);
+
     const method = String(request.method || "GET").toUpperCase();
     const absUrl = toAbsoluteUrl(request.url);
+
     if (method !== "GET") {
       return nativeFetch(request).then((response) => {
         if (response && response.ok && isApiUrl(absUrl)) {
@@ -218,9 +242,11 @@
         return response;
       });
     }
+
     if (!isApiUrl(absUrl) || shouldBypassCache(request, init)) {
       return nativeFetch(request);
     }
+
     const cached = readCache(absUrl);
     const now = Date.now();
     if (cached) {
@@ -233,6 +259,7 @@
         return Promise.resolve(buildResponse(cached, "STALE"));
       }
     }
+
     return nativeFetch(request).then((response) => {
       cacheResponse(absUrl, response);
       return response;

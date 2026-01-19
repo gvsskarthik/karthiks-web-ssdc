@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <title>Reports</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+
 <style>
 :root{
   --radius-lg:22px;
@@ -36,6 +38,7 @@ body{
 }
 .subtitle{
   font-size:12px;
+  color:var(--muted);
   margin-top:4px;
   letter-spacing:.4px;
   text-transform:uppercase;
@@ -47,6 +50,7 @@ body{
 }
 .date-filter label{
   font-size:12px;
+  color:var(--muted);
   letter-spacing:.4px;
   text-transform:uppercase;
 }
@@ -56,16 +60,21 @@ body{
   gap:10px;
   padding:10px 12px;
   border-radius:var(--radius-md);
-  border:1px solid ;
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
 }
 .input-wrap i{
   font-size:18px;
+  color:var(--muted);
 }
 .neo-input{
   flex:1;
   border:none;
+  background:transparent;
   outline:none;
   font-size:14px;
+  color:var(--ink);
 }
 .table-box{
   border-radius:var(--radius-lg);
@@ -84,25 +93,28 @@ thead th{
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.6px;
+  color:var(--muted);
   padding:0 12px 6px;
 }
 tbody tr{
+  background:var(--bg-soft);
   transition:transform .15s ease, box-shadow .15s ease;
 }
 tbody tr:hover{
   transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
 }
 tbody td{
   padding:12px;
-  border-top:1px solid ;
-  border-bottom:1px solid ;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
 }
 tbody td:first-child{
-  border-left:1px solid ;
+  border-left:1px solid var(--line);
   border-radius:12px 0 0 12px;
 }
 tbody td:last-child{
-  border-right:1px solid ;
+  border-right:1px solid var(--line);
   border-radius:0 12px 12px 0;
 }
 .sno{width:60px}
@@ -121,23 +133,26 @@ tbody td:last-child{
 .action-col{
   width:90px;
 }
-.status{font-weight:600;}
+.status{font-weight:600;color:var(--warm)}
 .patient-link{
+  color:var(--accent);
   font-weight:600;
   text-decoration:none;
 }
 .patient-link:hover{text-decoration:underline}
 .action-btn{
   cursor:pointer;
+  color:var(--accent);
   font-weight:600;
 }
 .no-data{
   text-align:center;
+  color:var(--muted);
   padding:16px 0;
 }
 tbody td.no-data{
-  border-left:1px solid ;
-  border-right:1px solid ;
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
   border-radius:12px;
 }
 @keyframes fadeUp{
@@ -156,8 +171,10 @@ tbody td.no-data{
 </style>
   <link rel="stylesheet" href="theme.css">
 </head>
+
 <body>
 <script src="theme-init.js"></script>
+
 <div class="page">
   <div class="head-title">
     <div>
@@ -172,6 +189,7 @@ tbody td.no-data{
       </div>
     </div>
   </div>
+
   <div class="table-box">
     <div class="table-wrap">
       <table>
@@ -189,17 +207,20 @@ tbody td.no-data{
     </div>
   </div>
 </div>
+
 <script src="../../api.js"></script>
 <script>
 const reportDate = document.getElementById("reportDate");
 const table = document.getElementById("reportTable");
 let isAutoDate = true;
+
 function getLocalDateInputValue(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
 function setDateToToday(){
   const today = getLocalDateInputValue();
   if (reportDate.value !== today) {
@@ -207,6 +228,7 @@ function setDateToToday(){
     loadByDate(today);
   }
 }
+
 function scheduleMidnightUpdate(){
   const now = new Date();
   const nextMidnight = new Date(now);
@@ -219,13 +241,17 @@ function scheduleMidnightUpdate(){
     scheduleMidnightUpdate();
   }, delay);
 }
+
 reportDate.value = getLocalDateInputValue();
 loadByDate(reportDate.value);
+
 reportDate.addEventListener("change", () => {
   isAutoDate = reportDate.value === getLocalDateInputValue();
   loadByDate(reportDate.value);
 });
+
 scheduleMidnightUpdate();
+
 function loadByDate(date){
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)
     .then(res=>res.json())
@@ -235,17 +261,21 @@ function loadByDate(date){
         `<tr><td colspan="5" class="no-data">No data</td></tr>`;
     });
 }
+
 function renderTable(data){
   table.innerHTML = "";
+
   if(!data || data.length===0){
     table.innerHTML =
       `<tr><td colspan="5" class="no-data">No patients found</td></tr>`;
     return;
   }
+
   data.forEach((p,i)=>{
     table.innerHTML += `
       <tr>
         <td class="sno">${i+1}</td>
+
         <!-- ENTER VALUES -->
         <td class="name">
           <a class="patient-link" href="#"
@@ -253,8 +283,10 @@ function renderTable(data){
             ${p.name || "-"}
           </a>
         </td>
+
         <td class="doctor">${p.doctor || "SELF"}</td>
         <td class="status-col"><span class="status">${p.status}</span></td>
+
         <!-- VIEW FINAL REPORT -->
         <td class="action-col">
           <span class="action-btn"
@@ -266,27 +298,32 @@ function renderTable(data){
     `;
   });
 }
+
 /* ✅ ENTER VALUES PAGE */
 /* ENTER VALUES */
 function openPatient(patient){
   localStorage.setItem("currentPatient", JSON.stringify(patient));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
+
   parent.loadPage(
     "home/sub-tasks/pt/enter-values.html",
     "reports"
   );
 }
+
 /* FINAL REPORT */
 function openReport(patient){
   localStorage.setItem("currentPatient", JSON.stringify(patient));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
+
   parent.loadPage(
     "home/sub-tasks/pt/reports.html",
     "reports"
   );
 }
 </script>
+
 </body>
 </html>

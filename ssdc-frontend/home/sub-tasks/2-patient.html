@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patients</title>
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+
 <style>
 :root{
   --radius-lg:22px;
@@ -36,6 +37,7 @@ body{
 }
 .subtitle{
   font-size:12px;
+  color:var(--muted);
   margin-top:4px;
   letter-spacing:.4px;
   text-transform:uppercase;
@@ -54,7 +56,7 @@ body{
 .neo-btn:hover{transform:translateY(-1px)}
 .neo-btn:active{transform:translateY(1px)}
 .neo-btn.secondary{
-  border:1px solid ;
+  border:1px solid var(--line);
 }
 .filters{
   display:grid;
@@ -72,6 +74,7 @@ body{
 }
 .filter-group label{
   font-size:12px;
+  color:var(--muted);
   letter-spacing:.4px;
   text-transform:uppercase;
 }
@@ -81,22 +84,28 @@ body{
   gap:10px;
   padding:8px 12px;
   border-radius:var(--radius-md);
-  border:1px solid ;
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
 }
 .input-wrap i{
   font-size:18px;
+  color:var(--muted);
 }
 .icon-btn{
   border:none;
+  background:transparent;
   padding:0;
   margin:0;
   cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
+  color:var(--muted);
   transition:color .15s ease;
 }
 .icon-btn:hover{
+  color:var(--accent);
 }
 .icon-btn:focus-visible{
   outline:2px solid rgba(15, 118, 110, 0.35);
@@ -106,8 +115,10 @@ body{
 .neo-input{
   flex:1;
   border:none;
+  background:transparent;
   outline:none;
   font-size:14px;
+  color:var(--ink);
   min-width:0;
 }
 .bulk-bar{
@@ -117,7 +128,9 @@ body{
   gap:12px;
   padding:12px 16px;
   border-radius:var(--radius-md);
-  border:1px solid ;
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
   animation:fadeUp .45s ease both;
 }
 .bulk-actions{
@@ -145,13 +158,16 @@ thead th{
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.6px;
+  color:var(--muted);
   padding:0 12px 6px;
 }
 tbody tr{
+  background:var(--bg-soft);
   transition:transform .15s ease, box-shadow .15s ease;
 }
 tbody tr:hover{
   transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(20, 30, 45, 0.1);
 }
 body.menu-open tbody tr:hover{
   transform:none;
@@ -163,24 +179,25 @@ tbody tr.menu-open{
 }
 tbody td{
   padding:12px;
-  border-top:1px solid ;
-  border-bottom:1px solid ;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
 }
 .round-left{
-  border-left:1px solid ;
+  border-left:1px solid var(--line);
   border-radius:12px 0 0 12px;
 }
 tbody td:last-child{
-  border-right:1px solid ;
+  border-right:1px solid var(--line);
   border-radius:0 12px 12px 0;
 }
 .no-data{
   text-align:center;
+  color:var(--muted);
   padding:16px 0;
 }
 tbody td.no-data{
-  border-left:1px solid ;
-  border-right:1px solid ;
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
   border-radius:12px;
 }
 .check-col{
@@ -208,6 +225,7 @@ tbody td.no-data{
 }
 .status{
   font-weight:600;
+  color:var(--warm);
 }
 .options{width:90px}
 .menu{
@@ -222,15 +240,18 @@ tbody td.no-data{
   line-height:1;
   padding:6px 10px;
   border-radius:10px;
-  border:1px solid ;
+  border:1px solid var(--line);
+  background:var(--bg-soft);
 }
 .menu-list{
   display:none;
   position:absolute;
   right:0;
   top:32px;
+  background:var(--bg-soft);
   border-radius:14px;
-  border:1px solid ;
+  border:1px solid var(--line);
+  box-shadow:0 12px 24px rgba(20, 30, 45, 0.12);
   z-index:30;
   min-width:140px;
   overflow:hidden;
@@ -240,12 +261,12 @@ tbody td.no-data{
   cursor:pointer;
   font-size:13px;
 }
-.menu-list div:hover{}
-.menu-list .danger{}
+.menu-list div:hover{background:var(--theme-surface-2)}
+.menu-list .danger{color:var(--danger)}
 .row-check{
   width:16px;
   height:16px;
-  accent-
+  accent-color:var(--accent);
 }
 @keyframes fadeUp{
   from{opacity:0; transform:translateY(8px)}
@@ -264,8 +285,10 @@ tbody td.no-data{
 </style>
   <link rel="stylesheet" href="theme.css">
 </head>
+
 <body>
 <script src="theme-init.js"></script>
+
 <div class="page">
   <div class="head-title">
     <div>
@@ -276,6 +299,7 @@ tbody td.no-data{
       <i class="bx bx-plus"></i> New Patient
     </button>
   </div>
+
   <div class="filters">
     <div class="filter-group">
       <label for="datePicker">Date</label>
@@ -298,6 +322,7 @@ tbody td.no-data{
       </div>
     </div>
   </div>
+
   <div class="bulk-bar" id="bulkBar">
     <div id="selectedCount">0 items selected</div>
     <div class="bulk-actions">
@@ -305,12 +330,13 @@ tbody td.no-data{
       <button class="neo-btn secondary" onclick="exitSelectMode()">Cancel</button>
     </div>
   </div>
+
   <div class="table-box">
     <div class="table-wrap">
       <table>
         <thead>
         <tr>
-          <th id="checkHead" class="check-col" style="display: none"></th>
+          <th id="checkHead" class="check-col" style="display:none"></th>
           <th class="sno">S.No</th>
           <th class="name">Name</th>
           <th class="doctor">Doctor</th>
@@ -324,9 +350,11 @@ tbody td.no-data{
     </div>
   </div>
 </div>
+
 <script src="../../api.js"></script>
 <script>
 if(parent?.setActiveMenu){ parent.setActiveMenu("patient"); }
+
 const datePicker = document.getElementById("datePicker");
 const searchBox  = document.getElementById("searchBox");
 const dateToggle = document.getElementById("dateToggle");
@@ -335,17 +363,21 @@ const tableBody  = document.getElementById("patientTable");
 const bulkBar    = document.getElementById("bulkBar");
 const checkHead  = document.getElementById("checkHead");
 const selectedCount = document.getElementById("selectedCount");
+
 let allPatients = [];
 let selectMode = false;
 let isAutoDate = true;
+
 function getLocalDateInputValue(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
 datePicker.value = getLocalDateInputValue();
 loadByDate(datePicker.value);
+
 function setDateToToday(){
   const today = getLocalDateInputValue();
   if (datePicker.value !== today) {
@@ -353,6 +385,7 @@ function setDateToToday(){
     loadByDate(today);
   }
 }
+
 function scheduleMidnightUpdate(){
   const now = new Date();
   const nextMidnight = new Date(now);
@@ -365,43 +398,53 @@ function scheduleMidnightUpdate(){
     scheduleMidnightUpdate();
   }, delay);
 }
+
 datePicker.onchange = () => {
   isAutoDate = datePicker.value === getLocalDateInputValue();
   loadByDate(datePicker.value);
 };
+
 scheduleMidnightUpdate();
+
 function loadByDate(date){
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)
     .then(r=>r.json())
     .then(d=>{ allPatients=d; renderTable(d); })
     .catch(()=>renderEmpty());
 }
+
 function searchPatient(){
   const q = searchBox.value.toLowerCase();
   renderTable(allPatients.filter(p =>
     (p.name||"").toLowerCase().includes(q)
   ));
 }
+
 function openDatePicker(){
   datePicker.focus();
   if (typeof datePicker.showPicker === "function") {
     datePicker.showPicker();
   }
 }
+
 function focusSearch(){
   searchBox.focus();
 }
+
 dateToggle.addEventListener("click", openDatePicker);
 searchToggle.addEventListener("click", focusSearch);
+
 function renderTable(data){
   tableBody.innerHTML="";
   if(!data.length){ renderEmpty(); return; }
+
   const checkClass = selectMode ? "check-col round-left" : "check-col";
   const snoClass = selectMode ? "sno" : "sno round-left";
+
   data.forEach((p,i)=>{
     tableBody.innerHTML+=`
     <tr>
-      <td class="${checkClass}" style="display: ${selectMode?'table-cell':'none'}">
+      <td class="${checkClass}" style="display:${selectMode?'table-cell':'none'}">
         <input type="checkbox"
                id="patient-${p.id}"
                name="patient-${p.id}"
@@ -428,12 +471,14 @@ function renderTable(data){
     </tr>`;
   });
 }
+
 function renderEmpty(){
   tableBody.innerHTML=`<tr>
     <td colspan="7" class="no-data">
       No patients found
     </td></tr>`;
 }
+
 function closeMenus(){
   document.querySelectorAll(".menu-list")
     .forEach(m=>m.style.display="none");
@@ -441,6 +486,7 @@ function closeMenus(){
     .forEach(row => row.classList.remove("menu-open"));
   document.body.classList.remove("menu-open");
 }
+
 function toggleMenu(id){
   const m=document.getElementById(`menu-${id}`);
   const isOpen = m && m.style.display === "block";
@@ -456,11 +502,13 @@ function toggleMenu(id){
     }
   }
 }
+
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".menu")) {
     closeMenus();
   }
 });
+
 function enterSelectMode(){
   selectMode=true;
   bulkBar.style.display="flex";
@@ -468,6 +516,7 @@ function enterSelectMode(){
   closeMenus();
   renderTable(allPatients);
 }
+
 function exitSelectMode(){
   selectMode=false;
   bulkBar.style.display="none";
@@ -475,24 +524,30 @@ function exitSelectMode(){
   closeMenus();
   renderTable(allPatients);
 }
+
 function updateCount(){
   const c=document.querySelectorAll(".row-check:checked").length;
   selectedCount.innerText=`${c} items selected`;
 }
+
 function deleteOne(id){
   if(!confirm("Delete patient and all related data?")) return;
+
   fetch(`${API_BASE_URL}/patients/${id}`, {
     method: "DELETE"
   })
   .then(() => {
+
     // 🔥 clear localStorage if this patient was open
     const current =
       JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
     if(current.id === id){
       localStorage.removeItem("currentPatient");
       localStorage.removeItem("selectedTests");
       localStorage.removeItem("patientResults");
     }
+
     loadByDate(datePicker.value);
   })
   .catch(err => {
@@ -500,28 +555,37 @@ function deleteOne(id){
     alert("Failed to delete patient");
   });
 }
+
 function deleteSelected(){
   const checked = document.querySelectorAll(".row-check:checked");
   if(!checked.length){
     alert("No patients selected");
     return;
   }
+
   if(!confirm("Delete selected patients and all related data?")) return;
+
   const ids = [...checked].map(cb => Number(cb.dataset.id));
+
   Promise.all(
     ids.map(id =>
       fetch(`${API_BASE_URL}/patients/${id}`, {
         method: "DELETE"
       })
+    )
+  )
   .then(() => {
+
     // 🔥 clear localStorage if deleted patient was active
     const current =
       JSON.parse(localStorage.getItem("currentPatient") || "{}");
+
     if(ids.includes(current.id)){
       localStorage.removeItem("currentPatient");
       localStorage.removeItem("selectedTests");
       localStorage.removeItem("patientResults");
     }
+
     exitSelectMode();
     loadByDate(datePicker.value);
   })
@@ -530,17 +594,21 @@ function deleteSelected(){
     alert("Bulk delete failed");
   });
 }
+
 function editPatient(id){
   alert("Edit coming soon");
 }
+
 function openBill(patient){
   if (!patient || !patient.id) {
     alert("Patient not found");
     return;
   }
+
   localStorage.setItem("currentPatient", JSON.stringify(patient));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
+
   if (parent?.loadPage) {
     parent.loadPage("home/sub-tasks/pt/bill.html", "patient");
   } else {
@@ -548,5 +616,6 @@ function openBill(patient){
   }
 }
 </script>
+
 </body>
 </html>

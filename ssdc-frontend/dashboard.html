@@ -4,17 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>SSDC LABS</title>
+
     <link rel="stylesheet" href="home/sub-tasks/theme.css">
     <link rel="stylesheet" href="style.css">
     <link href="vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 </head>
+
 <body>
+
 <section id="sidebar">
     <a href="#" class="brand">
         <i class="bx bxs-smile"></i>
         <span class="text">SSDC</span>
     </a>
+
     <ul class="side-menu top">
         <li data-menu="dashboard" class="active">
   <a href="#" onclick="loadPage('home/sub-tasks/1-home.html','dashboard')">
@@ -22,36 +27,42 @@
     <span class="text">Dashboard</span>
   </a>
 </li>
+
 <li data-menu="patient">
     <a href="#" onclick="loadPage('home/sub-tasks/2-patient.html','patient')">
         <i class="bx bxs-user-detail"></i>
         <span class="text">Patient</span>
     </a>
 </li>
+
 <li data-menu="reports">
   <a href="#" onclick="loadPage('home/sub-tasks/3-reports.html','reports')">
     <i class="bx bxs-book"></i>
     <span class="text">Reports</span>
   </a>
 </li>
+
 <li data-menu="accounts">
   <a href="#" onclick="loadPage('home/sub-tasks/4-accounts.html','accounts')">
     <i class="bx bxs-dollar-circle"></i>
     <span class="text">Accounts</span>
   </a>
 </li>
+
 <li data-menu="tests">
   <a href="#" onclick="loadPage('home/sub-tasks/5-tests.html','tests')">
     <i class="bx bxs-droplet"></i>
     <span class="text">Tests</span>
   </a>
 </li>
+
 <li data-menu="doctors">
   <a href="#" onclick="loadPage('home/sub-tasks/6-doctor.html','doctors')">
     <i class="bx bxs-user-check"></i>
     <span class="text">Doctors</span>
   </a>
 </li>
+
 <li data-menu="settings">
   <a href="#" onclick="loadPage('home/sub-tasks/7-settings.html','settings')">
     <i class="bx bxs-cog"></i>
@@ -59,6 +70,7 @@
   </a>
 </li>
     </ul>
+
     <ul>
         <li>
             <a href="#" class="logout">
@@ -68,13 +80,24 @@
         </li>
     </ul>
 </section>
+
 <div id="sidebar-overlay" aria-hidden="true"></div>
+
 <section id="content">
+
     <nav>
         <i class="bx bx-menu"></i>
         <h1 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h1>
-        
+
+        <input type="checkbox" id="switch-mode" hidden>
+        <label for="switch-mode" class="switch-mode" aria-label="Toggle dark mode">
+            <span class="switch-knob" aria-hidden="true">
+                <i class="bx bx-sun"></i>
+                <i class="bx bx-moon"></i>
+            </span>
+        </label>
     </nav>
+
     <!-- ✅ MAIN CONTENT -->
     <main id="main-content">
         <iframe
@@ -82,7 +105,9 @@
             src="home/sub-tasks/1-home.html">
         </iframe>
     </main>
+
 </section>
+
 <script src="script.js"></script>
 </body>
 </html>
