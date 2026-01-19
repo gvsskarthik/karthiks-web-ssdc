@@ -1,25 +1,26 @@
-body{
-  margin:0;
-  padding:20px;
-  font-family:Poppins,Arial,sans-serif;
-  background:#ecf0f3;
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: var(--font-sans, Poppins, Arial, sans-serif);
+  background: var(--theme-bg, #ecf0f3);
+  color: var(--theme-ink, #111);
 }
 
-body.in-frame{
-  background: transparent !important;
+body.in-frame {
+  background: transparent;
 }
 
-.neo-card{
-  max-width:900px;
-  margin:auto;
-  padding:30px;
-  background:#fff;
-  border-radius:10px;
+.neo-card {
+  max-width: 900px;
+  margin: auto;
+  padding: 30px;
+  background: var(--theme-surface, #fff);
+  border-radius: var(--radius-sm, 10px);
 }
 
 /* HEADER */
-.header{text-align:center;margin-bottom:20px}
-.header h2{margin:0}
+.header {text-align:center;margin-bottom:20px}
+.header h2 {margin:0}
 
 /* PATIENT */
 .patient-box{
@@ -62,10 +63,10 @@ th{background: var(--theme-surface-2, #f2f2f2)}
 .print{background:#2980b9;color:#fff}
 
 @media print{
-  body{background:#fff !important;color:#000 !important}
-  .neo-card{background:#fff !important;box-shadow:none !important}
-  .patient-box{border-color:#000 !important}
-  th,td{border-color:#000 !important}
-  th{background:#f2f2f2 !important}
+  body{background:#fff;color:#000}
+  .neo-card{background:#fff;box-shadow:none}
+  .patient-box{border-color:#000}
+  th,td{border-color:#000}
+  th{background:#f2f2f2}
   .actions{display:none}
 }

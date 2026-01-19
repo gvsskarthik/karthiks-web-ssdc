@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>New Patient</title>
 
+<link href="../../../vendor/fonts/fonts.css" rel="stylesheet">
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="../components.css">
 <link rel="stylesheet" href="new.css">
-  <link rel="stylesheet" href="../theme.css">
 </head>
 
 <body>
@@ -30,12 +32,12 @@
 </div>
 
 <div class="row">
-<div class="form-group" style="flex:1">
+<div class="form-group flex-1">
 <label for="age">Age</label>
 <input id="age" type="number" class="neo-input" required>
 </div>
 
-<div class="form-group" style="flex:1">
+<div class="form-group flex-1">
 <label for="gender">Sex</label>
 <select id="gender" class="neo-select">
 <option>Male</option>
@@ -95,12 +97,12 @@
 </div>
 <div id="billItems" class="bill-items"></div>
 
-<div class="row" style="margin-top:12px">
-  <div class="form-group" style="flex:1">
+<div class="row mt-12">
+  <div class="form-group flex-1">
     <label for="discount">Discount</label>
     <input id="discount" type="number" class="neo-input" min="0" step="0.01">
   </div>
-  <div class="form-group" style="flex:1">
+  <div class="form-group flex-1">
     <label for="amount">Total</label>
     <input id="amount" type="number" class="neo-input" min="0" step="0.01">
   </div>

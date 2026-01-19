@@ -14,6 +14,19 @@ th,td{
   font-size:11px;
 }
 
+.legend-abnormal{
+  color: var(--theme-danger);
+  font-weight: 700;
+}
+
+.param-indent{
+  padding-left: 20px;
+}
+
+.is-abnormal{
+  color: var(--theme-danger);
+}
+
 .section-header td{
   padding-top:8px;
   font-size:11px;

@@ -223,8 +223,8 @@ Promise.all([loadResults(), loadSelectedTests()])
 
             body.innerHTML += `
               <tr>
-                <td style="padding-left:20px">${param.name}</td>
-                <td style="color:${out ? "red" : "black"}">
+                <td class="param-indent">${param.name}</td>
+                <td class="${out ? "is-abnormal" : ""}">
                   ${displayValue}
                 </td>
                 <td>${unitText}</td>
@@ -255,7 +255,7 @@ Promise.all([loadResults(), loadSelectedTests()])
           body.innerHTML += `
             <tr>
               <td><b>${test.testName}</b></td>
-              <td style="color:${out ? "red" : "black"}">
+              <td class="${out ? "is-abnormal" : ""}">
                 ${resultValue}
               </td>
               <td>${unit}</td>

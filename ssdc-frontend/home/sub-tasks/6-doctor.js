@@ -178,7 +178,7 @@ function loadDoctors() {
     console.error("Error loading doctors", err);
     table.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align:center;color:#888">
+        <td colspan="8" class="empty-cell">
           Failed to load doctors
         </td>
       </tr>

@@ -1,0 +1,108 @@
+html,
+body {
+  background: var(--theme-bg-gradient);
+  color: var(--theme-ink);
+  font-family: var(--font-sans);
+  overflow-x: auto;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.neo-card,
+.table-box,
+.card,
+.modal-card,
+.patient-row {
+  background: var(--theme-surface);
+  border-color: var(--theme-line);
+  box-shadow: var(--theme-shadow);
+}
+
+.neo-btn,
+.btn,
+.small-btn {
+  background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-2));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-accent);
+}
+
+.neo-btn.secondary,
+.btn.secondary {
+  background: var(--theme-surface);
+  color: var(--theme-ink);
+  border-color: var(--theme-line);
+  box-shadow: none;
+}
+
+.neo-input,
+.neo-select,
+.search,
+.search-input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea {
+  background: var(--theme-field-bg);
+  color: var(--theme-ink);
+  border-color: var(--theme-line);
+}
+
+.menu-list {
+  background: var(--theme-field-bg-2);
+  border-color: var(--theme-line);
+}
+
+.menu-list div:hover {
+  background: var(--theme-surface-2);
+}
+
+.status {
+  color: var(--theme-warm);
+}
+
+.danger {
+  color: var(--theme-danger);
+}
+
+.neo-input::placeholder,
+.search::placeholder,
+.search-input::placeholder,
+textarea::placeholder {
+  color: var(--theme-muted);
+}
+
+table th {
+  background: var(--theme-surface-2);
+  color: var(--theme-ink);
+}
+
+table td {
+  color: var(--theme-ink);
+}
+
+.patient-box {
+  border-color: var(--theme-line);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+  min-width: 720px;
+}
+
+@media (max-width: 900px) {
+  .table-box {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .table-wrap table {
+    min-width: 640px;
+  }
+}

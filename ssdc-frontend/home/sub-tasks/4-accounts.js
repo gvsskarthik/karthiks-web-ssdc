@@ -36,29 +36,29 @@ function formatNumber(value){
 
 function setSummaryMessage(message){
   sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p style="color:#0f766e">${message}</p>`;
+    `<h4>Total Revenue</h4><p class="summary-value summary-revenue">${message}</p>`;
   sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p style="color:#c0392b">${message}</p>`;
+    `<h4>Discounts Given</h4><p class="summary-value summary-discount">${message}</p>`;
   sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p style="color:#d0812a">${message}</p>`;
+    `<h4>Total Commission</h4><p class="summary-value summary-commission">${message}</p>`;
   sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p style="color:#1b7a3f">${message}</p>`;
+    `<h4>Net Profit</h4><p class="summary-value summary-profit">${message}</p>`;
 }
 
 function setSummaryValues(data){
   sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p style="color:#0f766e">₹${formatNumber(data?.totalRevenue)}</p>`;
+    `<h4>Total Revenue</h4><p class="summary-value summary-revenue">₹${formatNumber(data?.totalRevenue)}</p>`;
   sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p style="color:#c0392b">₹${formatNumber(data?.totalDiscount)}</p>`;
+    `<h4>Discounts Given</h4><p class="summary-value summary-discount">₹${formatNumber(data?.totalDiscount)}</p>`;
   sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p style="color:#d0812a">₹${formatNumber(data?.totalCommission)}</p>`;
+    `<h4>Total Commission</h4><p class="summary-value summary-commission">₹${formatNumber(data?.totalCommission)}</p>`;
   sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p style="color:#1b7a3f">₹${formatNumber(data?.netProfit)}</p>`;
+    `<h4>Net Profit</h4><p class="summary-value summary-profit">₹${formatNumber(data?.netProfit)}</p>`;
 }
 
 function setDetailsMessage(message){
   detailsBody.innerHTML =
-    `<tr><td colspan="6" class="muted" style="text-align:center">${message}</td></tr>`;
+    `<tr><td colspan="6" class="muted text-center">${message}</td></tr>`;
 }
 
 function renderDetails(rows, doctorNameFallback){

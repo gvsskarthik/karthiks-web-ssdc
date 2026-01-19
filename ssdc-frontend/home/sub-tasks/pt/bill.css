@@ -5,6 +5,7 @@ th,td{
   padding:6px;
 }
 td.amount{text-align:right;width:140px}
+.col-price{width:140px}
 
 /* TOTALS */
 .totals{

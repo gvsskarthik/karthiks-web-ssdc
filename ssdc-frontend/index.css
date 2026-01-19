@@ -1,25 +1,6 @@
-:root {
-  --surface: var(--theme-surface, #fffaf2);
-  --ink: var(--theme-ink, #1e262d);
-  --muted: var(--theme-muted, #6b737c);
-  --line: var(--theme-line, #e3d9c9);
-  --accent: var(--theme-accent, #0f766e);
-  --accent-strong: var(--theme-accent-strong, #0b5f58);
-  --shadow: var(--theme-shadow, 0 18px 40px rgba(28, 41, 61, 0.12));
-}
-
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   padding: clamp(16px, 4vw, 32px);
-  font-family: "Poppins", "Lato", sans-serif;
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
-    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -70,12 +51,9 @@ label {
   height: 40px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent), #1aa191);
-  color: #fff;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 

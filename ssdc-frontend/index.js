@@ -1,11 +1,11 @@
 function showSignup() {
-  document.getElementById("loginForm").style.display = "none";
-  document.getElementById("signupForm").style.display = "block";
+  document.getElementById("loginForm").hidden = true;
+  document.getElementById("signupForm").hidden = false;
 }
 
 function showLogin() {
-  document.getElementById("signupForm").style.display = "none";
-  document.getElementById("loginForm").style.display = "block";
+  document.getElementById("signupForm").hidden = true;
+  document.getElementById("loginForm").hidden = false;
 }
 
 // TEMP login logic

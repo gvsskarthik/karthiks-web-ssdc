@@ -349,7 +349,7 @@ function addSlot(testId){
       </div>
       <div class="inline">
         <input type="checkbox" disabled>
-        <label style="margin:0;">Details (read-only)</label>
+        <label class="label-inline">Details (read-only)</label>
       </div>
     </div>
     <div class="detail-card"></div>

@@ -250,7 +250,7 @@ function renderTests(tests) {
 
       body.innerHTML += `
         <tr>
-          <td style="padding-left:25px">${param.name}</td>
+          <td class="param-indent">${param.name}</td>
           <td>
             ${inputHtml}
           </td>
