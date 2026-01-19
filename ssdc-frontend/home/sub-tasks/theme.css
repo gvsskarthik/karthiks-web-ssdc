@@ -44,8 +44,9 @@ body.dark{
   --theme-shadow:0 18px 40px rgba(0, 0, 0, 0.35);
   --theme-field-bg:var(--theme-surface);
   --theme-field-bg-2:var(--theme-surface-2);
-  /* Dark mode: simple 2-color background. */
-  --theme-bg-gradient: linear-gradient(135deg, #060714 0%, #0c0c1e 100%);
+  --theme-bg-gradient:
+    radial-gradient(circle at 12% 8%, #0f1022 0%, #080916 40%, #060714 100%),
+    linear-gradient(135deg, #060714 0%, #0b0c1a 100%);
   color-scheme: dark;
 }
 

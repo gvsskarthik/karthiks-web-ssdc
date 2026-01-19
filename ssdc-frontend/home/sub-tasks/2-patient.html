@@ -4,16 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patients</title>
+<link href="../../vendor/fonts/fonts.css" rel="stylesheet">
 <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
 <style>
 :root{
+  --bg:#f6f1e7;
+  --bg-soft:#fffaf2;
+  --ink:#1e262d;
+  --muted:#6b737c;
+  --accent:#0f766e;
+  --accent-strong:#0b5f58;
+  --warm:#e08f2f;
+  --danger:#c0392b;
+  --line:#e3d9c9;
+  --shadow:0 18px 40px rgba(28, 41, 61, 0.12);
   --radius-lg:22px;
   --radius-md:14px;
+  --radius-sm:10px;
 }
+*{box-sizing:border-box}
 body{
   margin:0;
   padding:24px;
+  font-family:"Poppins","Lato",sans-serif;
+  background:
+    radial-gradient(circle at 12% 8%, #ffffff 0%, #f8f3ea 40%, #f2ede2 100%),
+    linear-gradient(135deg, #f2ede2 0%, #f9f5ee 100%);
+  color:var(--ink);
   min-height:100vh;
 }
 .page{
@@ -48,6 +66,9 @@ body{
   gap:8px;
   padding:10px 18px;
   border-radius:999px;
+  background:linear-gradient(135deg, var(--accent), #1aa191);
+  color:#fff;
+  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
   border:none;
   font-weight:600;
   cursor:pointer;
@@ -56,7 +77,10 @@ body{
 .neo-btn:hover{transform:translateY(-1px)}
 .neo-btn:active{transform:translateY(1px)}
 .neo-btn.secondary{
+  background:var(--bg-soft);
+  color:var(--ink);
   border:1px solid var(--line);
+  box-shadow:none;
 }
 .filters{
   display:grid;
@@ -140,6 +164,9 @@ body{
 }
 .table-box{
   border-radius:var(--radius-lg);
+  background:var(--bg-soft);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
   padding:16px;
   animation:fadeUp .55s ease both;
 }
@@ -162,7 +189,7 @@ thead th{
   padding:0 12px 6px;
 }
 tbody tr{
-  background:var(--bg-soft);
+  background:#fff;
   transition:transform .15s ease, box-shadow .15s ease;
 }
 tbody tr:hover{
@@ -248,7 +275,7 @@ tbody td.no-data{
   position:absolute;
   right:0;
   top:32px;
-  background:var(--bg-soft);
+  background:#fff;
   border-radius:14px;
   border:1px solid var(--line);
   box-shadow:0 12px 24px rgba(20, 30, 45, 0.12);
@@ -261,7 +288,7 @@ tbody td.no-data{
   cursor:pointer;
   font-size:13px;
 }
-.menu-list div:hover{background:var(--theme-surface-2)}
+.menu-list div:hover{background:#f6f1e7}
 .menu-list .danger{color:var(--danger)}
 .row-check{
   width:16px;
