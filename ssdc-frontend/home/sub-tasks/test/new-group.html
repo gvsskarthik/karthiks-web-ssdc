@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>New Group</title>
-
 <style>
 :root{
   --radius-lg:22px;
@@ -18,8 +17,6 @@ body{
   margin:0;
   padding:24px;
   font-family:"Poppins","Lato",sans-serif;
-  color:var(--theme-ink);
-  background:transparent;
   min-height:100vh;
 }
 .neo-card{
@@ -27,9 +24,7 @@ body{
   margin:0 auto;
   padding:26px;
   border-radius:var(--radius-lg);
-  background:var(--theme-surface);
-  border:1px solid var(--theme-line);
-  box-shadow:var(--theme-shadow);
+  border:1px solid ;
   display:grid;
   gap:18px;
 }
@@ -48,12 +43,10 @@ body{
 .subtitle{
   margin-top:4px;
   font-size:13px;
-  color:var(--theme-muted);
 }
 label{
   font-size:12px;
   text-transform:uppercase;
-  color:var(--theme-muted);
   font-weight:600;
   display:block;
   margin-bottom:6px;
@@ -63,16 +56,12 @@ input, select{
   width:100%;
   padding:10px 12px;
   border-radius:var(--radius-md);
-  border:1px solid var(--theme-line);
-  background:var(--theme-field-bg);
+  border:1px solid ;
   font-size:14px;
-  color:var(--theme-ink);
 }
 input:focus,
 select:focus{
   outline:none;
-  border-color:var(--theme-accent);
-  box-shadow:0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 .search-wrap{position:relative}
 .suggestions{
@@ -81,10 +70,8 @@ select:focus{
   right:0;
   top:100%;
   margin-top:8px;
-  background:var(--theme-surface);
   border-radius:var(--radius-md);
-  border:1px solid var(--theme-line);
-  box-shadow:var(--theme-shadow);
+  border:1px solid ;
   max-height:260px;
   overflow-y:auto;
   z-index:10;
@@ -95,18 +82,17 @@ select:focus{
   justify-content:space-between;
   padding:10px 12px;
   cursor:pointer;
-  border-bottom:1px solid var(--theme-line);
+  border-bottom:1px solid ;
 }
 .suggestion:last-child{border-bottom:none}
-.suggestion:hover,.suggestion.active{background:var(--theme-surface-2)}
+.suggestion:hover,.suggestion.active{}
 .suggestion-main{display:flex;flex-direction:column;gap:2px}
 .suggestion-name{font-weight:600}
-.suggestion-meta{font-size:12px;color:var(--theme-muted)}
+.suggestion-meta{font-size:12px;}
 .suggestion-cost{font-weight:600}
 .hidden{display:none}
 .no-result{
   text-align:center;
-  color:var(--theme-muted);
   padding:10px 0;
 }
 .grid-2{
@@ -120,7 +106,7 @@ select:focus{
   align-items:center;
   gap:12px;
   padding-top:6px;
-  border-top:1px dashed var(--theme-line);
+  border-top:1px dashed ;
 }
 .section-header h3{
   margin:0;
@@ -133,61 +119,49 @@ select:focus{
   margin-top:4px;
   padding:8px 10px;
   border-radius:999px;
-  background:var(--theme-surface-2);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
   width:fit-content;
 }
 input[type="checkbox"]{
   width:auto;
   padding:0;
   box-shadow:none;
-  accent-color:var(--theme-accent);
+  accent-
 }
 .btn{
   padding:10px 16px;
   border-radius:999px;
   border:none;
-  background:linear-gradient(135deg, var(--theme-accent), #1aa191);
-  color:#fff;
   font-weight:600;
   cursor:pointer;
-  box-shadow:0 12px 24px rgba(15, 118, 110, 0.18);
 }
 .btn.small{
   padding:8px 12px;
   font-size:12px;
 }
 .btn.secondary{
-  background:var(--theme-surface);
-  color:var(--theme-ink);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
   box-shadow:none;
 }
 .btn.link{
   padding:6px 10px;
   font-size:12px;
-  color:var(--theme-danger);
-  background:transparent;
   box-shadow:none;
 }
 .message{
   margin-top:6px;
   font-size:13px;
-  color:var(--theme-muted);
 }
 .message.error{
-  color:var(--theme-danger);
 }
 .muted{
-  color:var(--theme-muted);
   font-size:13px;
 }
 .slot-card{
   margin-top:12px;
   padding:16px;
   border-radius:var(--radius-md);
-  background:var(--theme-surface-2);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
 }
 .slot-header{
   display:flex;
@@ -204,8 +178,7 @@ input[type="checkbox"]{
   margin-top:12px;
   padding:14px;
   border-radius:var(--radius-sm);
-  background:var(--theme-field-bg);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
 }
 .detail-grid{
   display:grid;
@@ -216,7 +189,6 @@ input[type="checkbox"]{
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.4px;
-  color:var(--theme-muted);
 }
 .detail-value{
   font-size:14px;
@@ -231,8 +203,7 @@ input[type="checkbox"]{
 .param-item{
   padding:10px 12px;
   border-radius:var(--radius-sm);
-  border:1px dashed var(--theme-line);
-  background:var(--theme-surface);
+  border:1px dashed ;
 }
 .param-title{
   font-size:13px;
@@ -241,7 +212,6 @@ input[type="checkbox"]{
 }
 .param-meta{
   font-size:12px;
-  color:var(--theme-muted);
 }
 .param-normal{
   margin-top:6px;
@@ -265,10 +235,8 @@ input[type="checkbox"]{
 </style>
   <link rel="stylesheet" href="../theme.css">
 </head>
-
 <body>
 <script src="../theme-init.js"></script>
-
 <div class="neo-card">
   <div class="header-row">
     <div>
@@ -280,7 +248,6 @@ input[type="checkbox"]{
       <button class="btn secondary" type="button" onclick="location.href='../5-tests.html'">Cancel</button>
     </div>
   </div>
-
   <div class="grid-2">
     <div>
       <label for="groupName">Group Name</label>
@@ -306,22 +273,17 @@ input[type="checkbox"]{
       <input id="cost" type="number" step="0.01" placeholder="Price">
     </div>
   </div>
-
   <div class="inline">
     <input id="active" type="checkbox" checked>
-    <label for="active" style="margin:0;">Active</label>
+    <label for="active" style="margin: 0">Active</label>
   </div>
-
   <div class="section-header">
     <h3>Group Tests</h3>
     <button class="btn small" type="button" id="addTestBtn">Add Test</button>
   </div>
-
   <div id="slotList"></div>
-
   <div id="status" class="message"></div>
 </div>
-
 <script src="../../../api.js"></script>
 <script>
 const title = document.getElementById("title");
@@ -334,28 +296,22 @@ const slotList = document.getElementById("slotList");
 const addTestBtn = document.getElementById("addTestBtn");
 const status = document.getElementById("status");
 const saveBtn = document.getElementById("saveBtn");
-
 const params = new URLSearchParams(location.search);
 const editId = params.get("edit");
-
 let tests = [];
 let testMap = new Map();
 let slots = [];
 let slotCounter = 0;
-
 addTestBtn.addEventListener("click", () => addSlot());
 saveBtn.addEventListener("click", () => saveGroup());
-
 function setStatus(message, type){
   status.textContent = message || "";
   status.className = "message" + (type ? " " + type : "");
 }
-
 function normalizeId(value){
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
 }
-
 function getSelectedIds(excludeSlotId){
   return new Set(
     slots
@@ -363,26 +319,22 @@ function getSelectedIds(excludeSlotId){
       .map(slot => slot.testId)
   );
 }
-
 function normalizeQuery(value){
   return String(value || "")
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
 }
-
 function formatValue(value, fallback){
   if (value === null || value === undefined || value === "") {
     return fallback || "—";
   }
   return String(value);
 }
-
 function formatCost(value){
   const num = Number(value);
   return Number.isFinite(num) ? `₹${num}` : "—";
 }
-
 function getParamNormals(param){
   if (!param) return "";
   if (Array.isArray(param.normalRanges) && param.normalRanges.length) {
@@ -396,7 +348,6 @@ function getParamNormals(param){
   }
   return "";
 }
-
 function renderParamList(test){
   const params = Array.isArray(test.parameters) ? test.parameters : [];
   if (params.length) {
@@ -415,17 +366,14 @@ function renderParamList(test){
       `;
     }).join("");
   }
-
   const normalValues = Array.isArray(test.normalValues) ? test.normalValues : [];
   const normals = normalValues
     .map(n => (n && n.normalValue ? String(n.normalValue) : ""))
     .filter(Boolean)
     .join(" | ");
-
   if (!normals) {
     return '<div class="param-item"><div class="param-title">No parameters</div></div>';
   }
-
   return `
     <div class="param-item">
       <div class="param-title">Normal Values</div>
@@ -433,7 +381,6 @@ function renderParamList(test){
     </div>
   `;
 }
-
 function renderDetails(slot){
   const detail = slot.detail;
   const test = testMap.get(slot.testId);
@@ -441,11 +388,9 @@ function renderDetails(slot){
     detail.innerHTML = '<div class="muted">Select a test to see details.</div>';
     return;
   }
-
   const shortcutText = test.shortcut || "—";
   const categoryText = test.category || "—";
   const activeText = test.active ? "Active" : "Inactive";
-
   detail.innerHTML = `
     <div class="detail-grid">
       <div>
@@ -474,7 +419,6 @@ function renderDetails(slot){
     </div>
   `;
 }
-
 function setSlotInputFromSelection(slot){
   const test = testMap.get(slot.testId);
   if (!test) {
@@ -484,7 +428,6 @@ function setSlotInputFromSelection(slot){
   const shortcutText = test.shortcut ? ` (${test.shortcut})` : "";
   slot.searchInput.value = `${test.testName || ""}${shortcutText}`.trim();
 }
-
 function rankSuggestion(test, query){
   const name = normalizeQuery(test.testName);
   const shortcut = normalizeQuery(test.shortcut);
@@ -499,13 +442,11 @@ function rankSuggestion(test, query){
   }
   return 3;
 }
-
 function setActiveSuggestion(slot, index){
   if (!slot.suggestionItems.length) {
     slot.activeSuggestionIndex = -1;
     return;
   }
-
   if (index < 0) {
     slot.activeSuggestionIndex = slot.suggestionItems.length - 1;
   } else if (index >= slot.suggestionItems.length) {
@@ -513,16 +454,13 @@ function setActiveSuggestion(slot, index){
   } else {
     slot.activeSuggestionIndex = index;
   }
-
   const items = slot.suggestions.querySelectorAll(".suggestion");
   items.forEach((item, idx) => {
     item.classList.toggle("active", idx === slot.activeSuggestionIndex);
   });
 }
-
 function updateSlotSuggestions(slot){
   const query = normalizeQuery(slot.searchInput.value);
-
   if (!query) {
     slot.suggestionItems = [];
     slot.activeSuggestionIndex = -1;
@@ -531,9 +469,7 @@ function updateSlotSuggestions(slot){
     slot.noResult.classList.add("hidden");
     return;
   }
-
   const selectedElsewhere = getSelectedIds(slot.id);
-
   const matches = tests
     .filter(test => {
       const id = Number(test?.id);
@@ -562,11 +498,9 @@ function updateSlotSuggestions(slot){
       return (a.id || 0) - (b.id || 0);
     })
     .slice(0, 8);
-
   slot.suggestionItems = matches;
   slot.activeSuggestionIndex = matches.length ? 0 : -1;
   slot.suggestions.innerHTML = "";
-
   matches.forEach((item, index) => {
     const shortcut = item.shortcut ? item.shortcut : "";
     const activeClass = index === slot.activeSuggestionIndex ? " active" : "";
@@ -581,23 +515,19 @@ function updateSlotSuggestions(slot){
       </div>
     `;
   });
-
   slot.suggestions.classList.toggle("hidden", !matches.length);
   slot.noResult.classList.toggle("hidden", matches.length > 0);
 }
-
 function chooseSlotTest(slot, testId){
   const id = Number(testId);
   if (!Number.isFinite(id)) {
     return;
   }
-
   const selectedElsewhere = getSelectedIds(slot.id);
   if (selectedElsewhere.has(id)) {
     setStatus("This test is already selected in another slot.", "error");
     return;
   }
-
   slot.testId = id;
   setSlotInputFromSelection(slot);
   renderDetails(slot);
@@ -607,7 +537,6 @@ function chooseSlotTest(slot, testId){
     }
   });
 }
-
 function handleSlotSuggestionClick(slot, event){
   const item = event.target.closest(".suggestion");
   if (!item) {
@@ -617,7 +546,6 @@ function handleSlotSuggestionClick(slot, event){
   slot.suggestions.classList.add("hidden");
   slot.noResult.classList.add("hidden");
 }
-
 function handleSlotSuggestionKeys(slot, event){
   if (event.key === "ArrowDown") {
     if (slot.suggestionItems.length) {
@@ -626,7 +554,6 @@ function handleSlotSuggestionKeys(slot, event){
     }
     return;
   }
-
   if (event.key === "ArrowUp") {
     if (slot.suggestionItems.length) {
       event.preventDefault();
@@ -634,7 +561,6 @@ function handleSlotSuggestionKeys(slot, event){
     }
     return;
   }
-
   if (event.key === "Enter") {
     if (slot.suggestionItems.length) {
       event.preventDefault();
@@ -647,18 +573,15 @@ function handleSlotSuggestionKeys(slot, event){
     }
     return;
   }
-
   if (event.key === "Escape") {
     slot.suggestions.classList.add("hidden");
     slot.noResult.classList.add("hidden");
   }
 }
-
 function addSlot(testId){
   const slotId = `slot-${slotCounter++}`;
   const wrapper = document.createElement("div");
   wrapper.className = "slot-card";
-
   wrapper.innerHTML = `
     <div class="slot-header">
       <h4 class="slot-title"></h4>
@@ -675,19 +598,17 @@ function addSlot(testId){
       </div>
       <div class="inline">
         <input type="checkbox" disabled>
-        <label style="margin:0;">Details (read-only)</label>
+        <label style="margin: 0">Details (read-only)</label>
       </div>
     </div>
     <div class="detail-card"></div>
   `;
-
   const searchInput = wrapper.querySelector(".test-search");
   const suggestions = wrapper.querySelector(".suggestions");
   const noResult = wrapper.querySelector(".no-result");
   const removeBtn = wrapper.querySelector(".btn.link");
   const titleEl = wrapper.querySelector(".slot-title");
   const detail = wrapper.querySelector(".detail-card");
-
   const slot = {
     id: slotId,
     testId: normalizeId(testId),
@@ -701,7 +622,6 @@ function addSlot(testId){
     titleEl
   };
   slots.push(slot);
-
   searchInput.addEventListener("input", () => updateSlotSuggestions(slot));
   searchInput.addEventListener("keydown", event => handleSlotSuggestionKeys(slot, event));
   suggestions.addEventListener("click", event => handleSlotSuggestionClick(slot, event));
@@ -713,26 +633,22 @@ function addSlot(testId){
       setSlotInputFromSelection(slot);
     }, 120);
   });
-
   removeBtn.addEventListener("click", () => {
     slots = slots.filter(item => item.id !== slot.id);
     wrapper.remove();
     slots.forEach(other => updateSlotSuggestions(other));
     refreshSlotTitles();
   });
-
   slotList.appendChild(wrapper);
   setSlotInputFromSelection(slot);
   renderDetails(slot);
   refreshSlotTitles();
 }
-
 function refreshSlotTitles(){
   slots.forEach((slot, index) => {
     slot.titleEl.textContent = `Test ${index + 1}`;
   });
 }
-
 async function loadData(){
   setStatus("Loading tests...");
   try {
@@ -744,7 +660,6 @@ async function loadData(){
     tests = await testRes.json();
     tests = Array.isArray(tests) ? tests : [];
     testMap = new Map(tests.map(t => [Number(t.id), t]));
-
     if (editId) {
       const groupRes = await fetch(API_BASE_URL + "/groups/" + editId);
       if (groupRes.ok) {
@@ -765,25 +680,21 @@ async function loadData(){
         setStatus("Failed to load group.", "error");
       }
     }
-
     if (!slots.length) {
       addSlot();
     }
-
     setStatus("");
   } catch (err) {
     console.error(err);
     setStatus("Failed to load data. Check backend connection.", "error");
   }
 }
-
 async function saveGroup(){
   const nameValue = groupName.value.trim();
   const shortcutValue = shortcut.value.trim();
   const categoryValue = category.value.trim();
   const costValue = cost.value.trim();
   let costNumber = null;
-
   if (!nameValue) {
     setStatus("Group name is required.", "error");
     groupName.focus();
@@ -802,17 +713,14 @@ async function saveGroup(){
       return;
     }
   }
-
   const testIds = slots
     .map(slot => slot.testId)
     .filter(id => Number.isFinite(id));
-
   const uniqueIds = [...new Set(testIds)];
   if (!uniqueIds.length) {
     setStatus("Select at least one test.", "error");
     return;
   }
-
   const payload = {
     groupName: nameValue,
     shortcut: shortcutValue,
@@ -821,29 +729,24 @@ async function saveGroup(){
     active: active.checked,
     testIds: uniqueIds
   };
-
   setStatus("Saving...");
   saveBtn.disabled = true;
-
   try {
     const url = editId
       ? API_BASE_URL + "/groups/" + editId
       : API_BASE_URL + "/groups";
     const method = editId ? "PUT" : "POST";
-
     const res = await fetch(url, {
       method: method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-
     if (!res.ok) {
       const errText = await res.text();
       setStatus(errText || "Save failed.", "error");
       saveBtn.disabled = false;
       return;
     }
-
     setStatus("Saved successfully.");
     setTimeout(() => {
       window.location.href = "../5-tests.html";
@@ -855,9 +758,7 @@ async function saveGroup(){
     saveBtn.disabled = false;
   }
 }
-
 loadData();
 </script>
-
 </body>
 </html>

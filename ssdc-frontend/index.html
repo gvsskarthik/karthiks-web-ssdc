@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!--suppress SpellCheckingInspection -->
   <title>SSDC Login</title>
-
   <style>
     body {
       margin: 0;
@@ -16,73 +15,54 @@
       align-items: center;
       justify-content: center;
     }
-
     .box {
       padding: 48px 40px;
       width: min(360px, 92vw);
       border-radius: 24px;
-      background-color: var(--surface);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
+      border: 1px solid ;
     }
-
     h1 {
       text-align: center;
       margin: 0 0 20px;
       font-size: 26px;
       letter-spacing: 1px;
     }
-
     label {
       font-size: 15px;
-      color: var(--muted);
     }
-
     .input-box {
       width: 100%;
       height: 40px;
       padding: 0 16px;
-      border: 1px solid var(--line);
+      border: 1px solid ;
       margin-top: 10px;
-      background-color: var(--theme-field-bg);
       outline: none;
       border-radius: 12px;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-
     .input-box:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
     }
-
     .btn {
       width: 100%;
       margin-top: 20px;
       height: 40px;
       border: none;
       border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), #1aa191);
-      color: #fff;
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
       transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     }
-
     .btn:hover {
       filter: brightness(0.98);
       transform: translateY(-1px);
     }
-
     .btn:active {
       transform: translateY(1px);
     }
-
     .toggle-btn {
       background: none;
       border: none;
-      color: var(--accent-strong);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -91,70 +71,53 @@
       width: 100%;
       text-align: center;
     }
-
     .toggle-btn:hover {
       text-decoration: underline;
     }
   </style>
   <link rel="stylesheet" href="home/sub-tasks/theme.css">
 </head>
-
 <body>
-<script src="home/sub-tasks/theme-init.js"></script>
-
 <div class="box">
   <!--suppress SpellCheckingInspection -->
   <h1>SSDC LABS</h1>
-
   <!-- LOGIN FORM -->
   <form id="loginForm">
     <label for="loginUser">Username</label>
     <input type="text" id="loginUser" class="input-box" autocomplete="username" required>
-
     <br><br>
-
     <label for="loginPass">Password</label>
     <input type="password" id="loginPass" class="input-box" autocomplete="current-password" required>
-
     <button class="btn" type="submit">Sign In</button>
     <button type="button" class="toggle-btn" onclick="showSignup()">
       New user? Sign Up
     </button>
   </form>
-
   <!-- SIGNUP FORM -->
-  <form id="signupForm" style="display:none;">
+  <form id="signupForm" style="display: none">
     <label for="signupUser">Username</label>
     <input type="text" id="signupUser" class="input-box" autocomplete="username" required>
-
     <br><br>
-
     <label for="signupEmail">Email</label>
     <input type="email" id="signupEmail" class="input-box" autocomplete="email" required>
-
     <br><br>
-
     <label for="signupPass">Password</label>
     <input type="password" id="signupPass" class="input-box" autocomplete="new-password" required>
-
     <button class="btn" type="submit">Sign Up</button>
     <button type="button" class="toggle-btn" onclick="showLogin()">
       Already have an account? Sign In
     </button>
   </form>
 </div>
-
 <script>
   function showSignup() {
     document.getElementById("loginForm").style.display = "none";
     document.getElementById("signupForm").style.display = "block";
   }
-
   function showLogin() {
     document.getElementById("signupForm").style.display = "none";
     document.getElementById("loginForm").style.display = "block";
   }
-
   // TEMP login logic
   document.getElementById("loginForm").addEventListener("submit", function(e){
     e.preventDefault();
@@ -167,7 +130,6 @@
       alert("Invalid login");
     }
   });
-
   // TEMP signup logic
   document.getElementById("signupForm").addEventListener("submit", function(e){
     e.preventDefault();
@@ -175,6 +137,5 @@
     showLogin();
   });
 </script>
-
 </body>
 </html>

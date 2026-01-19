@@ -4,14 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Select Tests</title>
-
 <style>
 body{
   margin:0;
   padding:24px;
   min-height:100vh;
 }
-
 .neo-card{
   max-width:900px;
   margin:auto;
@@ -20,62 +18,49 @@ body{
   display:grid;
   gap:14px;
 }
-
 .search{
   width:100%;
   padding:12px;
-  border:1px solid var(--theme-line);
+  border:1px solid ;
   border-radius:14px;
   margin-bottom:8px;
 }
-
 .section{
   margin-top:8px;
 }
-
 .section h3{
   margin:0 0 8px;
   font-size:14px;
   text-transform:uppercase;
   letter-spacing:.6px;
-  color:var(--theme-muted);
 }
-
 .group-card{
   margin-bottom:14px;
   padding:12px;
   border-radius:14px;
-  border:1px solid var(--theme-line);
-  background:var(--theme-surface-2);
+  border:1px solid ;
 }
-
 .group-header{
   display:flex;
   align-items:center;
   gap:8px;
   font-weight:600;
 }
-
 .group-meta{
   font-size:12px;
-  color:var(--theme-muted);
 }
-
 .group-tests{
   margin-top:8px;
   display:flex;
   flex-wrap:wrap;
   gap:8px;
 }
-
 .test-chip{
   font-size:12px;
   padding:6px 10px;
   border-radius:999px;
-  border:1px solid var(--theme-line);
-  background:var(--theme-surface);
+  border:1px solid ;
 }
-
 .row{
   display:flex;
   align-items:center;
@@ -83,21 +68,17 @@ body{
   margin:6px 0;
   font-weight:500;
 }
-
 .row input{
   width:16px;
   height:16px;
-  accent-color:var(--theme-accent);
+  accent-
 }
-
 .row.disabled{
   opacity:0.6;
 }
-
 .hidden{
   display:none;
 }
-
 .neo-btn{
   margin-top:16px;
   width:100%;
@@ -107,45 +88,35 @@ body{
   font-weight:600;
   cursor:pointer;
 }
-
 .no-result{
   text-align:center;
-  color:var(--theme-muted);
   margin-top:20px;
 }
 </style>
   <link rel="stylesheet" href="../theme.css">
 </head>
-
 <body>
 <script src="../theme-init.js"></script>
-
 <div class="neo-card">
   <h2>Select Tests</h2>
-
   <input
     id="search"
     class="search"
     placeholder="Search by test or group name/shortcut"
   >
-
   <div class="section">
     <h3>Groups</h3>
     <div id="groupList"></div>
   </div>
-
   <div class="section">
     <h3>Individual Tests</h3>
     <div id="testList"></div>
   </div>
-
   <div id="noResult" class="no-result hidden">
     ❌ No test available
   </div>
-
   <button class="neo-btn" onclick="submitTests()">CONTINUE</button>
 </div>
-
 <script src="../../../api.js"></script>
 <script>
 const selected = new Set();
@@ -153,17 +124,14 @@ const groupList = document.getElementById("groupList");
 const testList = document.getElementById("testList");
 const searchInput = document.getElementById("search");
 const noResult = document.getElementById("noResult");
-
 let tests = [];
 let groups = [];
 let testMap = new Map();
 let currentQuery = "";
-
 searchInput.addEventListener("input", () => {
   currentQuery = searchInput.value.toLowerCase().trim();
   render();
 });
-
 Promise.all([
   fetch(API_BASE_URL + "/tests/active").then(r => r.json()),
   fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
@@ -174,7 +142,6 @@ Promise.all([
   testMap = new Map(tests.map(t => [Number(t.id), t]));
   render();
 });
-
 function normalizeGroup(group){
   const ids = Array.isArray(group.testIds) ? group.testIds : [];
   const testIds = ids
@@ -182,7 +149,6 @@ function normalizeGroup(group){
     .filter(id => Number.isFinite(id) && testMap.has(id));
   return { ...group, testIds };
 }
-
 function deriveGroups(){
   const ordered = groups
     .map(normalizeGroup)
@@ -192,10 +158,8 @@ function deriveGroups(){
       if (diff !== 0) return diff;
       return (Number(a.id) || 0) - (Number(b.id) || 0);
     });
-
   const selectedGroups = [];
   const coveredTests = new Set();
-
   ordered.forEach(group => {
     const allSelected = group.testIds.every(id => selected.has(id));
     if (!allSelected) {
@@ -208,15 +172,12 @@ function deriveGroups(){
     selectedGroups.push(group);
     group.testIds.forEach(id => coveredTests.add(id));
   });
-
   return { selectedGroups, coveredTests };
 }
-
 function formatCost(value){
   const num = Number(value);
   return Number.isFinite(num) ? `₹${num}` : "—";
 }
-
 function toggleGroup(group, checked){
   if (!group || !group.testIds.length) {
     return;
@@ -228,7 +189,6 @@ function toggleGroup(group, checked){
   }
   render();
 }
-
 function toggleTest(cb){
   const id = Number(cb.value);
   if (!Number.isFinite(id)) {
@@ -241,7 +201,6 @@ function toggleTest(cb){
   }
   render();
 }
-
 function groupMatchesQuery(group, query){
   if (!query) return true;
   const name = String(group.groupName || "").toLowerCase();
@@ -256,24 +215,19 @@ function groupMatchesQuery(group, query){
     return testName.includes(query) || testShortcut.includes(query);
   });
 }
-
 function testMatchesQuery(test, query){
   if (!query) return true;
   const name = String(test.testName || "").toLowerCase();
   const shortcut = String(test.shortcut || "").toLowerCase();
   return name.includes(query) || shortcut.includes(query);
 }
-
 function render(){
   groupList.innerHTML = "";
   testList.innerHTML = "";
-
   const { selectedGroups, coveredTests } = deriveGroups();
   const lockedTests = new Set(coveredTests);
-
   const query = currentQuery;
   let hasVisible = false;
-
   const normalizedGroups = groups
     .map(normalizeGroup)
     .filter(group =>
@@ -281,30 +235,24 @@ function render(){
       && group.testIds.length
       && groupMatchesQuery(group, query)
     );
-
   normalizedGroups.forEach(group => {
     const isSelected = group.testIds.every(id => selected.has(id));
     const isLocked = isSelected;
     const groupCard = document.createElement("div");
     groupCard.className = "group-card";
-
     const header = document.createElement("label");
     header.className = "group-header";
-
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = isSelected;
     checkbox.addEventListener("change", () => toggleGroup(group, checkbox.checked));
-
     const name = document.createElement("div");
     name.innerHTML = `
       <div>${group.groupName || ""}${group.shortcut ? " (" + group.shortcut + ")" : ""}</div>
       <div class="group-meta">${formatCost(group.cost)} · ${group.testIds.length} tests</div>
     `;
-
     header.appendChild(checkbox);
     header.appendChild(name);
-
     const testsWrap = document.createElement("div");
     testsWrap.className = "group-tests";
     group.testIds.forEach(id => {
@@ -314,24 +262,19 @@ function render(){
       chip.textContent = test.testName || "";
       testsWrap.appendChild(chip);
     });
-
     groupCard.appendChild(header);
     groupCard.appendChild(testsWrap);
-
     if (isLocked) {
       groupCard.classList.add("selected");
     }
-
     groupList.appendChild(groupCard);
     hasVisible = true;
   });
-
   const testQueryMatchesShortcut = query && tests.some(test => {
     const shortcut = String(test.shortcut || "").toLowerCase();
     return shortcut && shortcut === query;
   });
   let selectionChanged = false;
-
   tests.forEach(test => {
     if (!test || test.id == null) {
       return;
@@ -339,44 +282,36 @@ function render(){
     if (!testMatchesQuery(test, query)) {
       return;
     }
-
     const id = Number(test.id);
     const isSelected = selected.has(id);
     const isLocked = lockedTests.has(id);
-
     const row = document.createElement("label");
     row.className = "row" + (isLocked ? " disabled" : "");
     row.dataset.name = String(test.testName || "").toLowerCase();
     row.dataset.shortcut = String(test.shortcut || "").toLowerCase();
-
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = id;
     checkbox.checked = isSelected;
     checkbox.disabled = isLocked;
     checkbox.addEventListener("change", () => toggleTest(checkbox));
-
     const shortcut = test.shortcut ? ` (${test.shortcut})` : "";
     row.appendChild(checkbox);
     row.appendChild(document.createTextNode(`${test.testName || ""}${shortcut}`));
     testList.appendChild(row);
     hasVisible = true;
-
     if (testQueryMatchesShortcut && !isLocked && !isSelected) {
       checkbox.checked = true;
       selected.add(id);
       selectionChanged = true;
     }
   });
-
   if (selectionChanged) {
     render();
     return;
   }
-
   noResult.classList.toggle("hidden", hasVisible || !query);
 }
-
 function submitTests(){
   if(!selected.size){
     alert("Select at least one test");

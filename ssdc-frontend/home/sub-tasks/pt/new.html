@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>New Patient</title>
-
 <style>
 :root{
   --page-max:1200px;
@@ -31,9 +30,7 @@ body{
 .neo-card{
   padding:22px;
   border-radius:var(--radius-lg);
-  background:var(--theme-surface);
-  border:1px solid var(--theme-line);
-  box-shadow:var(--theme-shadow);
+  border:1px solid ;
 }
 h3{
   margin:0 0 16px;
@@ -43,7 +40,6 @@ h3{
 .form-group{margin-bottom:14px}
 label{
   font-size:12px;
-  color:var(--theme-muted);
   margin-bottom:6px;
   display:block;
   text-transform:uppercase;
@@ -53,18 +49,14 @@ label{
   width:100%;
   padding:10px 12px;
   border-radius:var(--radius-md);
-  background:var(--theme-field-bg);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
   box-shadow:none;
   font-size:14px;
-  color:var(--theme-ink);
 }
 .neo-input:focus,
 .neo-select:focus,
 .search:focus{
   outline:none;
-  border-color:var(--theme-accent);
-  box-shadow:0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 .row{display:flex;gap:16px;flex-wrap:wrap}
 .row .form-group{flex:1;min-width:160px}
@@ -89,8 +81,7 @@ label{
   gap:12px;
   padding:10px 12px;
   border-radius:var(--radius-md);
-  background:var(--theme-surface-2);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
 }
 .patient-row b{font-size:14px}
 .small-btn{
@@ -98,11 +89,9 @@ label{
   border-radius:999px;
   border:none;
   cursor:pointer;
-  background:var(--theme-accent);
-  color:#fff;
   font-weight:600;
 }
-.small-btn:hover{background:var(--theme-accent-strong)}
+.small-btn:hover{}
 .search{
   padding:12px 12px;
   margin-bottom:16px;
@@ -114,10 +103,8 @@ label{
   right:0;
   top:100%;
   margin-top:8px;
-  background:var(--theme-surface);
   border-radius:var(--radius-md);
-  border:1px solid var(--theme-line);
-  box-shadow:var(--theme-shadow);
+  border:1px solid ;
   max-height:260px;
   overflow-y:auto;
   z-index:5;
@@ -128,13 +115,13 @@ label{
   justify-content:space-between;
   padding:10px 12px;
   cursor:pointer;
-  border-bottom:1px solid var(--theme-line);
+  border-bottom:1px solid ;
 }
 .suggestion:last-child{border-bottom:none}
-.suggestion:hover,.suggestion.active{background:var(--theme-surface-2)}
+.suggestion:hover,.suggestion.active{}
 .suggestion-main{display:flex;flex-direction:column;gap:2px}
 .suggestion-name{font-weight:600}
-.suggestion-meta{font-size:12px;color:var(--theme-muted)}
+.suggestion-meta{font-size:12px;}
 .suggestion-cost{font-weight:600}
 .selected-tests{margin-top:12px;display:grid;gap:8px}
 .selected-item{
@@ -144,20 +131,17 @@ label{
   gap:10px;
   padding:8px 10px;
   border-radius:var(--radius-md);
-  background:var(--theme-surface-2);
-  border:1px solid var(--theme-line);
+  border:1px solid ;
 }
 .selected-item.group-item{
   font-weight:600;
 }
 .selected-item.group-test{
   margin-left:16px;
-  background:transparent;
   border-style:dashed;
 }
 .selected-item.group-test .selected-cost{
   font-size:12px;
-  color:var(--theme-muted);
 }
 .selected-item label{
   display:flex;
@@ -165,7 +149,7 @@ label{
   gap:8px;
   flex:1;
 }
-.selected-item input{width:16px;height:16px;accent-color:var(--theme-accent)}
+.selected-item input{width:16px;height:16px;accent-}
 .selected-cost{font-weight:600;min-width:72px;text-align:right}
 .bill-header{
   display:flex;
@@ -179,7 +163,7 @@ label{
   justify-content:space-between;
   align-items:center;
   padding:6px 0;
-  border-bottom:1px dashed var(--theme-line);
+  border-bottom:1px dashed ;
 }
 .bill-row:last-child{border-bottom:none}
 .bill-name{flex:1}
@@ -196,7 +180,7 @@ label{
   border:0;
 }
 .hidden{display:none}
-.no-result{text-align:center;color:var(--theme-muted);padding:10px 0}
+.no-result{text-align:center;padding:10px 0}
 @media (max-width:1020px){
   body{padding:18px}
   .wrapper{grid-template-columns:1fr}
@@ -210,34 +194,27 @@ label{
 </style>
   <link rel="stylesheet" href="../theme.css">
 </head>
-
 <body>
 <script src="../theme-init.js"></script>
-
 <div class="page">
 <div class="wrapper">
-
 <div class="neo-card">
 <h3>New Patient Registration</h3>
-
 <form id="patientForm">
 <div class="form-group">
 <label for="visitDate">Date</label>
 <input id="visitDate" type="date" class="neo-input">
 </div>
-
 <div class="form-group">
 <label for="name">Name</label>
 <input id="name" class="neo-input" autocomplete="name" required>
 </div>
-
 <div class="row">
-<div class="form-group" style="flex:1">
+<div class="form-group" style="flex: 1">
 <label for="age">Age</label>
 <input id="age" type="number" class="neo-input" required>
 </div>
-
-<div class="form-group" style="flex:1">
+<div class="form-group" style="flex: 1">
 <label for="gender">Sex</label>
 <select id="gender" class="neo-select">
 <option>Male</option>
@@ -248,36 +225,28 @@ label{
 </select>
 </div>
 </div>
-
 <div class="form-group">
 <label for="mobile">Mobile</label>
 <input id="mobile" class="neo-input" autocomplete="tel" required>
 </div>
-
 <div class="form-group">
 <label for="address">Address</label>
 <input id="address" class="neo-input" autocomplete="street-address">
 </div>
-
 <div class="form-group">
 <label for="doctor">Doctor Refer</label>
 <select id="doctor" class="neo-select">
 <option value="">SELF</option>
 </select>
 </div>
-
 </form>
 </div>
-
 <div class="neo-card">
 <h3>Existing Patient Data</h3>
 <div id="existingPatients"></div>
 </div>
-
 </div>
-
 <div class="wrapper-vertical">
-
 <div class="neo-card">
 <h3>Select Tests</h3>
 <label class="visually-hidden" for="search">Search tests</label>
@@ -288,7 +257,6 @@ label{
 <div id="noResult" class="no-result hidden">❌ No test available</div>
 <div id="selectedTests" class="selected-tests"></div>
 </div>
-
 <div class="neo-card">
 <h3>Bill</h3>
 <div class="bill-header">
@@ -296,35 +264,29 @@ label{
   <div class="bill-amount">Amount</div>
 </div>
 <div id="billItems" class="bill-items"></div>
-
-<div class="row" style="margin-top:12px">
-  <div class="form-group" style="flex:1">
+<div class="row" style="margin-top: 12px">
+  <div class="form-group" style="flex: 1">
     <label for="discount">Discount</label>
     <input id="discount" type="number" class="neo-input" min="0" step="0.01">
   </div>
-  <div class="form-group" style="flex:1">
+  <div class="form-group" style="flex: 1">
     <label for="amount">Total</label>
     <input id="amount" type="number" class="neo-input" min="0" step="0.01">
   </div>
 </div>
 </div>
-
 <div class="action-bar">
   <button class="neo-btn" type="button" id="savePatientBtn">
   SAVE PATIENT & ENTER RESULTS
   </button>
 </div>
-
 </div>
 </div>
-
 <script src="../../../api.js"></script>
 <script>
-
 /**
  * @typedef {{id:number,testName:string,shortcut?:string,cost?:number}} TestItem
  */
-
 const patientForm = document.getElementById("patientForm");
 const visitDate = document.getElementById("visitDate");
 const doctor = document.getElementById("doctor");
@@ -334,7 +296,6 @@ const noResult = document.getElementById("noResult");
 const searchInput = document.getElementById("search");
 const suggestions = document.getElementById("suggestions");
 const savePatientBtn = document.getElementById("savePatientBtn");
-
 visitDate.value = new Date().toISOString().split("T")[0];
 let selected = new Set();
 let testInfoMap = new Map();
@@ -356,23 +317,19 @@ const billItems = document.getElementById("billItems");
 let lastBillEdited = null;
 let isAutoBillUpdate = false;
 let searchTimer = null;
-
 searchInput.addEventListener("input", updateSuggestions);
 searchInput.addEventListener("keydown", handleSuggestionKeys);
 suggestions.addEventListener("click", handleSuggestionClick);
 selectedList.addEventListener("change", handleSelectedChange);
 savePatientBtn.addEventListener("click", () => patientForm.requestSubmit());
-
 nameInput.addEventListener("input", () => {
   localStorage.removeItem("currentPatient");
   applyPatientFilter();
 });
-
 mobileInput.addEventListener("input", () => {
   localStorage.removeItem("currentPatient");
   applyPatientFilter();
 });
-
 discountInput.addEventListener("input", () => {
   if (isAutoBillUpdate) {
     return;
@@ -380,7 +337,6 @@ discountInput.addEventListener("input", () => {
   lastBillEdited = "discount";
   updateBillFromSelection();
 });
-
 amountInput.addEventListener("input", () => {
   if (isAutoBillUpdate) {
     return;
@@ -388,8 +344,6 @@ amountInput.addEventListener("input", () => {
   lastBillEdited = "total";
   updateBillFromSelection();
 });
-
-
 /* LOAD DOCTORS */
 fetch(API_BASE_URL + "/doctors")
 .then(r=>r.json())
@@ -408,17 +362,14 @@ fetch(API_BASE_URL + "/doctors")
     doctor.innerHTML += `<option>${name}</option>`;
   });
 });
-
 /* LOAD EXISTING PATIENTS (DB SEARCH) */
 applyPatientFilter();
-
 function renderExistingPatients(list){
   existingPatients.innerHTML = "";
   if (!list.length) {
     existingPatients.innerHTML = `<div class="no-result">No matching patients</div>`;
     return;
   }
-
   list.forEach(p=>{
     existingPatients.innerHTML+=`
     <div class="patient-row">
@@ -427,20 +378,16 @@ function renderExistingPatients(list){
     </div>`;
   });
 }
-
 function applyPatientFilter(){
   const nameQuery = nameInput.value.trim();
   const mobileQuery = normalizeDigits(mobileInput.value.trim());
-
   if (searchTimer) {
     clearTimeout(searchTimer);
   }
-
   searchTimer = setTimeout(() => {
     const params = new URLSearchParams();
     params.set("name", nameQuery);
     params.set("mobile", mobileQuery);
-
     fetch(`${API_BASE_URL}/patients/search?${params.toString()}`)
     .then(r=>r.json())
     .then(list=>{
@@ -449,20 +396,16 @@ function applyPatientFilter(){
     });
   }, 250);
 }
-
 function normalizeDigits(value){
   return String(value || "").replace(/\D/g, "");
 }
-
 function parseMoney(value){
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
 }
-
 function formatMoney(value){
   return String(Math.round(value * 100) / 100);
 }
-
 function resolveGroupCost(group){
   const cost = Number(group.cost);
   if (Number.isFinite(cost)) {
@@ -475,7 +418,6 @@ function resolveGroupCost(group){
   });
   return Math.round(sum * 100) / 100;
 }
-
 function deriveGroupSelection(){
   const ordered = [...groupMap.values()]
     .filter(group => Array.isArray(group.testIds) && group.testIds.length)
@@ -486,10 +428,8 @@ function deriveGroupSelection(){
       const orderB = groupOrderMap.has(b.id) ? groupOrderMap.get(b.id) : 0;
       return orderA - orderB;
     });
-
   const selectedGroups = [];
   const coveredTests = new Set();
-
   ordered.forEach(group => {
     const ids = group.testIds || [];
     const allSelected = ids.every(id => selected.has(id));
@@ -503,22 +443,17 @@ function deriveGroupSelection(){
     selectedGroups.push(group);
     ids.forEach(id => coveredTests.add(id));
   });
-
   return { selectedGroups, coveredTests };
 }
-
 function setInputValue(input, value){
   isAutoBillUpdate = true;
   input.value = value;
   isAutoBillUpdate = false;
 }
-
 function buildBillLines(){
   const lines = [];
   let baseTotal = 0;
-
   const { selectedGroups, coveredTests } = deriveGroupSelection();
-
   const groupRows = selectedGroups
     .slice()
     .sort((a, b) => {
@@ -533,13 +468,11 @@ function buildBillLines(){
       }
       return String(a.groupName || "").localeCompare(String(b.groupName || ""));
     });
-
   groupRows.forEach(group => {
     const cost = resolveGroupCost(group);
     lines.push({ label: `${group.groupName || "Group"} (Group)`, cost });
     baseTotal += cost;
   });
-
   const rows = [...selected]
     .filter(id => !coveredTests.has(id))
     .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
@@ -556,29 +489,24 @@ function buildBillLines(){
       }
       return a.name.localeCompare(b.name);
     });
-
   rows.forEach(item => {
     const cost = Number(item.cost) || 0;
     lines.push({ label: item.name, cost });
     baseTotal += cost;
   });
-
   return { lines, baseTotal: Math.round(baseTotal * 100) / 100 };
 }
-
 function renderBillItems(){
   billItems.innerHTML = "";
   if (!selected.size) {
     billItems.innerHTML = `<div class="no-result">No tests selected</div>`;
     return 0;
   }
-
   const { lines, baseTotal } = buildBillLines();
   if (!lines.length) {
     billItems.innerHTML = `<div class="no-result">No tests selected</div>`;
     return 0;
   }
-
   lines.forEach(line => {
     billItems.innerHTML += `
       <div class="bill-row">
@@ -587,14 +515,11 @@ function renderBillItems(){
       </div>
     `;
   });
-
   return baseTotal;
 }
-
 function syncBillTotals(baseTotal){
   let discount = parseMoney(discountInput.value);
   let total = parseMoney(amountInput.value);
-
   if (lastBillEdited === "discount") {
     total = baseTotal - discount;
   } else if (lastBillEdited === "total") {
@@ -603,16 +528,13 @@ function syncBillTotals(baseTotal){
     discount = 0;
     total = baseTotal;
   }
-
   setInputValue(discountInput, formatMoney(discount));
   setInputValue(amountInput, formatMoney(total));
 }
-
 function updateBillFromSelection(){
   const baseTotal = renderBillItems();
   syncBillTotals(baseTotal);
 }
-
 /* ✅ FIXED */
 function selectPatient(p){
   document.getElementById("name").value    = p.name || "";
@@ -625,7 +547,6 @@ function selectPatient(p){
   setInputValue(discountInput, "");
   setInputValue(amountInput, "");
   updateBillFromSelection();
-
   // Prefill only; keep visits separate
   localStorage.setItem("prefillPatient", JSON.stringify(p));
   localStorage.removeItem("currentPatient");
@@ -634,13 +555,11 @@ function selectPatient(p){
   applyPatientFilter();
 }
 /* TEST LIST */
-
 Promise.all([
   fetch(API_BASE_URL + "/tests/active").then(r => r.json()),
   fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
 ])
 .then(([testList, groupList]) => initTests(testList, groupList));
-
 /** @param {TestItem[]} list */
 function initTests(list, groupList){
   const tests = (Array.isArray(list) ? list : [])
@@ -651,7 +570,6 @@ function initTests(list, groupList){
     const right = Number(b && b.id) || 0;
     return left - right;
   });
-
   allTests = ordered;
   testInfoMap = new Map();
   testOrderMap = new Map();
@@ -660,7 +578,6 @@ function initTests(list, groupList){
   groupMap = new Map();
   groupOrderMap = new Map();
   groupOrderCounter = 0;
-
   ordered.forEach(test => {
     if (!test || test.id == null) {
       return;
@@ -676,7 +593,6 @@ function initTests(list, groupList){
       testOrderMap.set(test.id, testOrderCounter++);
     }
   });
-
   groups
     .filter(group => group && group.active !== false)
     .map(group => {
@@ -695,14 +611,11 @@ function initTests(list, groupList){
       groupMap.set(groupId, normalized);
       groupOrderMap.set(groupId, groupOrderCounter++);
     });
-
   renderSelectedList();
   updateBillFromSelection();
   updateSuggestions();
 }
-
 /* ================= LOGIC ================= */
-
 function addSelectedTest(id){
   if (!testInfoMap.has(id)) {
     return;
@@ -714,7 +627,6 @@ function addSelectedTest(id){
   renderSelectedList();
   updateBillFromSelection();
 }
-
 function addSelectedGroup(groupId){
   const group = groupMap.get(groupId);
   if (!group || !Array.isArray(group.testIds)) {
@@ -729,7 +641,6 @@ function addSelectedGroup(groupId){
   updateBillFromSelection();
   updateSuggestions();
 }
-
 function removeSelectedTest(id){
   if (!selected.has(id)) {
     return;
@@ -739,16 +650,13 @@ function removeSelectedTest(id){
   updateBillFromSelection();
   updateSuggestions();
 }
-
 function renderSelectedList(){
   selectedList.innerHTML = "";
   if (!selected.size) {
     selectedList.innerHTML = `<div class="no-result">No tests selected</div>`;
     return;
   }
-
   const { selectedGroups, coveredTests } = deriveGroupSelection();
-
   const groupRows = selectedGroups
     .slice()
     .sort((a, b) => {
@@ -763,7 +671,6 @@ function renderSelectedList(){
       }
       return String(a.groupName || "").localeCompare(String(b.groupName || ""));
     });
-
   const testRows = [...selected]
     .filter(id => !coveredTests.has(id))
     .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
@@ -780,12 +687,10 @@ function renderSelectedList(){
       }
       return a.name.localeCompare(b.name);
     });
-
   if (!groupRows.length && !testRows.length) {
     selectedList.innerHTML = `<div class="no-result">No tests selected</div>`;
     return;
   }
-
   groupRows.forEach(group => {
     const shortcutText = group.shortcut ? ` (${group.shortcut})` : "";
     const cost = resolveGroupCost(group);
@@ -798,7 +703,6 @@ function renderSelectedList(){
         <div class="selected-cost">₹${formatMoney(cost)}</div>
       </div>
     `;
-
     (group.testIds || [])
       .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
       .filter(item => item && item.name)
@@ -815,7 +719,6 @@ function renderSelectedList(){
         `;
       });
   });
-
   testRows.forEach(item => {
     const shortcut = item.shortcut ? ` (${item.shortcut})` : "";
     selectedList.innerHTML += `
@@ -829,7 +732,6 @@ function renderSelectedList(){
     `;
   });
 }
-
 function handleSelectedChange(event){
   const target = event.target;
   if (!target.classList.contains("selected-checkbox")) {
@@ -851,11 +753,9 @@ function handleSelectedChange(event){
     removeSelectedTest(id);
   }
 }
-
 function normalizeQuery(value){
   return String(value || "").trim().toLowerCase();
 }
-
 function rankSuggestion(test, query){
   const name = normalizeQuery(test.testName);
   const shortcut = normalizeQuery(test.shortcut);
@@ -870,7 +770,6 @@ function rankSuggestion(test, query){
   }
   return 3;
 }
-
 function rankGroupSuggestion(group, query){
   const name = normalizeQuery(group.groupName);
   const shortcut = normalizeQuery(group.shortcut);
@@ -885,7 +784,6 @@ function rankGroupSuggestion(group, query){
   }
   return 3;
 }
-
 function groupMatchesQuery(group, query){
   const name = normalizeQuery(group.groupName);
   const shortcut = normalizeQuery(group.shortcut);
@@ -899,7 +797,6 @@ function groupMatchesQuery(group, query){
     return testName.includes(query) || testShortcut.includes(query);
   });
 }
-
 function updateSuggestions(){
   const query = normalizeQuery(searchInput.value);
   if (!query) {
@@ -910,10 +807,8 @@ function updateSuggestions(){
     noResult.classList.add("hidden");
     return;
   }
-
   const { selectedGroups } = deriveGroupSelection();
   const selectedGroupIds = new Set(selectedGroups.map(group => group.id));
-
   const groupMatches = [...groupMap.values()].filter(group => {
     if (selectedGroupIds.has(group.id)) {
       return false;
@@ -923,7 +818,6 @@ function updateSuggestions(){
     }
     return groupMatchesQuery(group, query);
   });
-
   const testMatches = allTests.filter(test => {
     if (!test || test.id == null) {
       return false;
@@ -935,7 +829,6 @@ function updateSuggestions(){
     const shortcut = normalizeQuery(test.shortcut);
     return name.includes(query) || shortcut.includes(query);
   });
-
   const combined = [
     ...groupMatches.map(group => ({
       type: "group",
@@ -954,7 +847,6 @@ function updateSuggestions(){
       rank: rankSuggestion(test, query)
     }))
   ];
-
   combined.sort((a, b) => {
     const rankDiff = a.rank - b.rank;
     if (rankDiff !== 0) {
@@ -962,11 +854,9 @@ function updateSuggestions(){
     }
     return (Number(a.id) || 0) - (Number(b.id) || 0);
   });
-
   suggestionItems = combined.slice(0, 8);
   activeSuggestionIndex = suggestionItems.length ? 0 : -1;
   suggestions.innerHTML = "";
-
   suggestionItems.forEach((item, index) => {
     const shortcut = item.shortcut ? item.shortcut : "";
     const price = formatMoney(Number(item.cost) || 0);
@@ -984,11 +874,9 @@ function updateSuggestions(){
       </div>
     `;
   });
-
   suggestions.classList.toggle("hidden", !suggestionItems.length);
   noResult.classList.toggle("hidden", suggestionItems.length > 0);
 }
-
 function setActiveSuggestion(index){
   if (!suggestionItems.length) {
     activeSuggestionIndex = -1;
@@ -1001,13 +889,11 @@ function setActiveSuggestion(index){
   } else {
     activeSuggestionIndex = index;
   }
-
   const items = suggestions.querySelectorAll(".suggestion");
   items.forEach((item, idx) => {
     item.classList.toggle("active", idx === activeSuggestionIndex);
   });
 }
-
 function chooseSuggestion(type, id){
   const numericId = Number(id);
   if (!numericId) {
@@ -1022,7 +908,6 @@ function chooseSuggestion(type, id){
   updateSuggestions();
   searchInput.focus();
 }
-
 function handleSuggestionClick(event){
   const item = event.target.closest(".suggestion");
   if (!item) {
@@ -1031,7 +916,6 @@ function handleSuggestionClick(event){
   const type = item.dataset.type || "test";
   chooseSuggestion(type, item.dataset.id);
 }
-
 function handleSuggestionKeys(event){
   if (event.key === "ArrowDown") {
     if (suggestionItems.length) {
@@ -1040,7 +924,6 @@ function handleSuggestionKeys(event){
     }
     return;
   }
-
   if (event.key === "ArrowUp") {
     if (suggestionItems.length) {
       event.preventDefault();
@@ -1048,7 +931,6 @@ function handleSuggestionKeys(event){
     }
     return;
   }
-
   if (event.key === "Enter") {
     if (suggestionItems.length) {
       event.preventDefault();
@@ -1059,26 +941,21 @@ function handleSuggestionKeys(event){
     }
     return;
   }
-
   if (event.key === "Escape") {
     suggestions.classList.add("hidden");
     noResult.classList.add("hidden");
   }
 }
-
 /* SUBMIT */
 patientForm.addEventListener("submit", e => {
   e.preventDefault();
-
   if (!selected.size) {
     alert("Select at least one test");
     return;
   }
-
   const current =
     JSON.parse(localStorage.getItem("currentPatient") || "null");
   localStorage.removeItem("prefillPatient");
-
   const payload = {
     name: document.getElementById("name").value.trim(),
     age: Number(document.getElementById("age").value),
@@ -1091,14 +968,12 @@ patientForm.addEventListener("submit", e => {
     discount: parseMoney(discountInput.value),
     status: "NOT COMPLETE"
   };
-
   // ✅ EXISTING PATIENT → no save
   if (current && current.id) {
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
     parent.loadPage("home/sub-tasks/pt/enter-values.html");
     return;
   }
-
   // ✅ NEW PATIENT → save
   fetch(API_BASE_URL + "/patients", {
     method: "POST",
@@ -1117,6 +992,5 @@ patientForm.addEventListener("submit", e => {
   });
 });
 </script>
-
 </body>
 </html>
