@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patient Report</title>
 <link rel="stylesheet" href="print-common.css">
+<link rel="stylesheet" href="../theme.css">
 
 <style>
 /* TABLE */
@@ -15,9 +16,6 @@ table{
 th,td{
   padding:4px;
 }
-.save{background:#27ae60;color:#fff}
-.download{background:#8e44ad;color:#fff}
-.whatsapp{background:#25d366;color:#fff}
 
 .legend{
   margin-top:10px;
@@ -33,6 +31,7 @@ th,td{
 </head>
 
 <body>
+<script src="../theme-init.js"></script>
 
 <div class="neo-card" id="report">
 
@@ -63,10 +62,10 @@ th,td{
 
   <!-- ACTIONS -->
   <div class="actions">
-    <button class="btn save" onclick="goPatients()">SAVE</button>
+    <button class="btn" onclick="goPatients()">SAVE</button>
     <button class="btn print" onclick="window.print()">PRINT</button>
-    <button class="btn download" onclick="downloadPDF()">DOWNLOAD</button>
-    <button class="btn whatsapp" onclick="shareWhatsApp()">WHATSAPP</button>
+    <button class="btn" onclick="downloadPDF()">DOWNLOAD</button>
+    <button class="btn" onclick="shareWhatsApp()">WHATSAPP</button>
   </div>
 
 </div>

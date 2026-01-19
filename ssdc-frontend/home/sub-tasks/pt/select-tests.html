@@ -8,9 +8,8 @@
 <style>
 body{
   margin:0;
-  padding:20px;
-  font-family:Poppins,Arial,sans-serif;
-  background:#ecf0f3;
+  padding:24px;
+  min-height:100vh;
 }
 
 .neo-card{
@@ -18,24 +17,20 @@ body{
   margin:auto;
   padding:25px;
   border-radius:24px;
-  background:#ecf0f3;
-  box-shadow:10px 10px 20px #c5c9cc,
-             -10px -10px 20px #ffffff;
+  display:grid;
+  gap:14px;
 }
 
 .search{
   width:100%;
   padding:12px;
-  border:none;
+  border:1px solid var(--theme-line);
   border-radius:14px;
-  margin-bottom:20px;
-  background:#ecf0f3;
-  box-shadow:inset 6px 6px 10px #c5c9cc,
-             inset -6px -6px 10px #ffffff;
+  margin-bottom:8px;
 }
 
 .section{
-  margin-top:16px;
+  margin-top:8px;
 }
 
 .section h3{
@@ -43,16 +38,15 @@ body{
   font-size:14px;
   text-transform:uppercase;
   letter-spacing:.6px;
-  color:#666;
+  color:var(--theme-muted);
 }
 
 .group-card{
   margin-bottom:14px;
   padding:12px;
   border-radius:14px;
-  background:#ecf0f3;
-  box-shadow:inset 4px 4px 6px #c5c9cc,
-             inset -4px -4px 6px #ffffff;
+  border:1px solid var(--theme-line);
+  background:var(--theme-surface-2);
 }
 
 .group-header{
@@ -64,7 +58,7 @@ body{
 
 .group-meta{
   font-size:12px;
-  color:#777;
+  color:var(--theme-muted);
 }
 
 .group-tests{
@@ -78,9 +72,8 @@ body{
   font-size:12px;
   padding:6px 10px;
   border-radius:999px;
-  background:#ecf0f3;
-  box-shadow:4px 4px 8px #c5c9cc,
-             -4px -4px 8px #ffffff;
+  border:1px solid var(--theme-line);
+  background:var(--theme-surface);
 }
 
 .row{
@@ -91,34 +84,33 @@ body{
   font-weight:500;
 }
 
-.row input{ width:16px; height:16px }
+.row input{
+  width:16px;
+  height:16px;
+  accent-color:var(--theme-accent);
+}
 
 .row.disabled{
   opacity:0.6;
 }
 
-.hidden{ display:none }
+.hidden{
+  display:none;
+}
 
 .neo-btn{
-  margin-top:25px;
+  margin-top:16px;
   width:100%;
   padding:14px;
   border:none;
   border-radius:18px;
-  background:#ecf0f3;
-  box-shadow:6px 6px 12px #c5c9cc,
-             -6px -6px 12px #ffffff;
   font-weight:600;
   cursor:pointer;
-}
-.neo-btn:active{
-  box-shadow:inset 6px 6px 12px #c5c9cc,
-             inset -6px -6px 12px #ffffff;
 }
 
 .no-result{
   text-align:center;
-  color:#999;
+  color:var(--theme-muted);
   margin-top:20px;
 }
 </style>

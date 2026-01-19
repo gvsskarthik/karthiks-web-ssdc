@@ -7,20 +7,16 @@
 <link href="../../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
 <style>
-body {
-  margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background: #ecf0f3;
+body{
+  margin:0;
+  padding:24px;
+  min-height:100vh;
 }
 .neo-card {
   max-width: 520px;
   margin: auto;
   padding: 30px;
   border-radius: 24px;
-  background: #ecf0f3;
-  box-shadow: 10px 10px 20px #c5c9cc,
-              -10px -10px 20px #ffffff;
 }
 .neo-card h2 {
   margin-bottom: 25px;
@@ -31,25 +27,24 @@ body {
 }
 .form-group label {
   font-size: 14px;
-  color: #555;
+  color: var(--theme-muted);
 }
 .neo-input {
   width: 100%;
   padding: 12px 14px;
   border-radius: 16px;
-  background: #ecf0f3;
-  box-shadow: inset 6px 6px 10px #c5c9cc,
-              inset -6px -6px 10px #ffffff;
-  border: none;
+  background: var(--theme-field-bg);
+  border: 1px solid var(--theme-line);
   outline: none;
+}
+.neo-input:focus{
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 .neo-btn {
   width: 100%;
   padding: 12px;
   border-radius: 18px;
-  background: #ecf0f3;
-  box-shadow: 6px 6px 12px #c5c9cc,
-              -6px -6px 12px #ffffff;
   border: none;
   font-weight: 600;
   cursor: pointer;

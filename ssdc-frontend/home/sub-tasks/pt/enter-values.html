@@ -8,9 +8,8 @@
 <style>
 body{
   margin:0;
-  padding:20px;
-  font-family:Poppins,Arial,sans-serif;
-  background:#ecf0f3;
+  padding:24px;
+  min-height:100vh;
 }
 
 .neo-card{
@@ -18,13 +17,10 @@ body{
   margin:auto;
   padding:25px;
   border-radius:24px;
-  background:#ecf0f3;
-  box-shadow:10px 10px 20px #c5c9cc,
-             -10px -10px 20px #ffffff;
 }
 
 .patient-box{
-  border:2px solid #000;
+  border:1px solid var(--theme-line);
   padding:14px 18px;
   margin-bottom:25px;
   font-size:14px;
@@ -47,30 +43,32 @@ table{
 }
 th,td{
   padding:10px;
-  border-bottom:1px solid #ccc;
+  border-bottom:1px solid var(--theme-line);
 }
-th{font-size:13px;color:#555}
+th{
+  font-size:13px;
+  color:var(--theme-muted);
+}
 
 .result-input{
   width:100%;
-  padding:8px;
-  border:none;
+  padding:8px 10px;
+  border:1px solid var(--theme-line);
   border-radius:10px;
-  background:#ecf0f3;
-  box-shadow:inset 5px 5px 8px #c5c9cc,
-             inset -5px -5px 8px #ffffff;
+  background:var(--theme-field-bg);
 }
 
 .normal{
   font-size:12px;
   white-space:pre-line;
+  color:var(--theme-muted);
 }
 
 .section-header td{
   padding-top:12px;
   font-size:12px;
   font-weight:600;
-  color:#555;
+  color:var(--theme-muted);
 }
 
 .actions{
@@ -83,15 +81,8 @@ th{font-size:13px;color:#555}
   padding:14px;
   border:none;
   border-radius:18px;
-  background:#ecf0f3;
-  box-shadow:6px 6px 12px #c5c9cc,
-             -6px -6px 12px #ffffff;
   font-weight:600;
   cursor:pointer;
-}
-.neo-btn:active{
-  box-shadow:inset 6px 6px 12px #c5c9cc,
-             inset -6px -6px 12px #ffffff;
 }
 </style>
   <link rel="stylesheet" href="../theme.css">

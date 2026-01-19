@@ -85,7 +85,7 @@ body.dark {
 	display: flex;
 	align-items: center;
 	grid-gap: 24px;
-	box-shadow: 2px 2px 6px #b6a9a9, -1px -1px 6px #ffffff;
+	box-shadow: var(--theme-shadow);
 }
 
  main .box-info li .bx {
@@ -146,7 +146,7 @@ body.dark {
 	background: var(--light);
 	padding: 24px;
 	overflow-x: auto;
-	box-shadow: 2px 2px 6px #b6a9a9, -1px -1px 6px #ffffff;
+	box-shadow: var(--theme-shadow);
 }
 
  main .table-data .head {
