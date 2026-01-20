@@ -1,3 +1,17 @@
+html,
+body{
+  background:#ffffff;
+}
+
+#report{
+  background:#ffffff;
+  box-shadow:none;
+}
+
+table th{
+  background:#ffffff;
+}
+
 /* TABLE */
 table{
   font-size:10px;

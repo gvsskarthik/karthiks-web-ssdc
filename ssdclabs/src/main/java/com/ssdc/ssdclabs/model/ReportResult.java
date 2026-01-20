@@ -16,7 +16,7 @@ import jakarta.persistence.UniqueConstraint;
 @Table(
     name = "report_results",
     uniqueConstraints = @UniqueConstraint(
-        columnNames = {"patient_id", "test_id", "parameter_id"}
+        columnNames = {"patient_id", "test_id", "parameter_id", "sub_test"}
     )
 )
 public class ReportResult {
@@ -37,6 +37,9 @@ public class ReportResult {
     @JoinColumn(name = "parameter_id", nullable = false)
     private TestParameter parameter;
 
+    @Column(name = "sub_test")
+    private String subTest;
+
     @Column(name = "result_value", columnDefinition = "TEXT")
     private String resultValue;
 
@@ -54,6 +57,9 @@ public class ReportResult {
     public void setParameter(TestParameter parameter) {
         this.parameter = parameter;
     }
+
+    public String getSubTest() { return subTest; }
+    public void setSubTest(String subTest) { this.subTest = subTest; }
 
     public String getResultValue() { return resultValue; }
     public void setResultValue(String resultValue) {
