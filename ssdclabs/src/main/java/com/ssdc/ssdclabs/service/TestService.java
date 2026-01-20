@@ -110,9 +110,6 @@ public class TestService {
         if (payload.active != null) {
             test.setActive(payload.active);
         }
-        if (payload.commonResult != null) {
-            test.setCommonResult(payload.commonResult);
-        }
 
         boolean shouldRebuild =
             payload.parameters != null
@@ -134,9 +131,6 @@ public class TestService {
 
         if (test.getActive() == null) {
             test.setActive(true);
-        }
-        if (test.getCommonResult() == null) {
-            test.setCommonResult(false);
         }
     }
 
@@ -193,7 +187,9 @@ public class TestService {
             param.setTest(test);
             param.setName(name);
             param.setUnit(trimToNull(payloadParam.unit));
-            param.setDefaultResult(trimToNull(payloadParam.defaultResult));
+            param.setDefaultResult(
+                serializeDefaultResults(payloadParam.defaultResults)
+            );
 
             List<NormalRange> ranges = new ArrayList<>();
             if (payloadParam.normalRanges != null) {
@@ -241,6 +237,7 @@ public class TestService {
         List<String> units = extractUnits(payload, existingParams);
         List<String> normals = extractNormalValues(payload, existingParams);
         List<String> names = extractNames(existingParams);
+        List<String> defaultResults = extractDefaultResults(existingParams);
 
         int count = Math.max(units.size(), normals.size());
         count = Math.max(count, names.size());
@@ -261,6 +258,9 @@ public class TestService {
                 payload.testName
             ));
             param.setUnit(i < units.size() ? units.get(i) : null);
+            param.setDefaultResult(
+                i < defaultResults.size() ? defaultResults.get(i) : null
+            );
 
             List<NormalRange> ranges = new ArrayList<>();
             if (singleParam && normals.size() > 1) {
@@ -344,6 +344,17 @@ public class TestService {
             .map(TestParameter::getName)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
+    }
+
+    private List<String> extractDefaultResults(List<TestParameter> existingParams) {
+        if (existingParams == null) {
+            return List.of();
+        }
+        List<String> results = new ArrayList<>();
+        for (TestParameter param : existingParams) {
+            results.add(param == null ? null : param.getDefaultResult());
+        }
+        return results;
     }
 
     private String resolveParamName(List<String> names,
@@ -433,6 +444,45 @@ public class TestService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private String serializeDefaultResults(List<String> defaultResults) {
+        if (defaultResults == null || defaultResults.isEmpty()) {
+            return null;
+        }
+        List<String> cleaned = new ArrayList<>();
+        for (String value : defaultResults) {
+            if (value == null) {
+                continue;
+            }
+            String trimmed = value.trim();
+            if (!trimmed.isEmpty()) {
+                cleaned.add(trimmed);
+            }
+        }
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        return String.join("\n", cleaned);
+    }
+
+    private List<String> parseDefaultResults(String stored) {
+        if (stored == null) {
+            return List.of();
+        }
+        String trimmed = stored.trim();
+        if (trimmed.isEmpty()) {
+            return List.of();
+        }
+        String[] parts = trimmed.split("\\r?\\n");
+        List<String> results = new ArrayList<>();
+        for (String part : parts) {
+            String value = part.trim();
+            if (!value.isEmpty()) {
+                results.add(value);
+            }
+        }
+        return results;
+    }
+
     @Transactional(readOnly = true)
     public @NonNull TestViewDTO toView(Test test) {
         List<TestParameter> params =
@@ -451,7 +501,7 @@ public class TestService {
                 param.getUnit(),
                 valueType,
                 formatNormalRanges(param.getNormalRanges()),
-                param.getDefaultResult()
+                parseDefaultResults(param.getDefaultResult())
             ));
         }
 
@@ -483,7 +533,6 @@ public class TestService {
             test.getShortcut(),
             test.getCost(),
             test.getActive(),
-            test.getCommonResult(),
             units,
             normalValues,
             parameterViews

@@ -3,7 +3,6 @@ const patient =
   JSON.parse(localStorage.getItem("currentPatient") || "{}");
 
 let results = [];
-const COMMON_RESULT_KEY = "__common__";
 let selectedTestIds = [];
 
 /* ================= PATIENT DETAILS ================= */
@@ -194,19 +193,6 @@ Promise.all([loadResults(), loadSelectedTests()])
             }));
 
           let currentSection = null;
-          if (test.commonResult) {
-            const commonItem =
-              normalizedItems[normalizeKey(COMMON_RESULT_KEY)];
-            const resultValue = commonItem?.resultValue || "";
-            body.innerHTML += `
-              <tr>
-                <td class="param-indent">Common Result</td>
-                <td>${resultValue}</td>
-                <td></td>
-                <td></td>
-              </tr>
-            `;
-          }
           rows.forEach(param => {
             const item = normalizedItems[normalizeKey(param.name)];
             const normalText = param.normalText || "";

@@ -1,5 +1,7 @@
 package com.ssdc.ssdclabs.dto;
 
+import java.util.List;
+
 import com.ssdc.ssdclabs.model.ValueType;
 
 public class TestParameterViewDTO {
@@ -9,19 +11,19 @@ public class TestParameterViewDTO {
     public String unit;
     public ValueType valueType;
     public String normalText;
-    public String defaultResult;
+    public List<String> defaultResults;
 
     public TestParameterViewDTO(Long id,
                                 String name,
                                 String unit,
                                 ValueType valueType,
                                 String normalText,
-                                String defaultResult) {
+                                List<String> defaultResults) {
         this.id = id;
         this.name = name;
         this.unit = unit;
         this.valueType = valueType;
         this.normalText = normalText;
-        this.defaultResult = defaultResult;
+        this.defaultResults = defaultResults;
     }
 }
