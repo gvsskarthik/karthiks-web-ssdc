@@ -118,6 +118,50 @@ function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
 
+function buildResultSlots(baseName, defaultResults, savedBySub) {
+  const defaults = Array.isArray(defaultResults)
+    ? defaultResults.map(v => (v || "").trim()).filter(Boolean)
+    : [];
+  const slots = [];
+  const baseKey = baseName || "";
+  const normalizedBase = normalizeKey(baseKey);
+  const seen = new Set();
+
+  const addSlot = (suffix, label, defaultValue) => {
+    const subKey = suffix ? `${baseKey}::${suffix}` : baseKey;
+    const normalized = normalizeKey(subKey);
+    if (seen.has(normalized)) {
+      return;
+    }
+    seen.add(normalized);
+    const saved = savedBySub[normalized];
+    slots.push({
+      label,
+      subKey,
+      savedValue: saved?.resultValue || saved?.value || "",
+      defaultValue: defaultValue || ""
+    });
+  };
+
+  const count = Math.max(1, defaults.length);
+  for (let i = 0; i < count; i++) {
+    const suffix = i === 0 ? "" : String(i + 1);
+    const label = i === 0 ? baseName : `${baseName} (${i + 1})`;
+    addSlot(suffix, label, defaults[i] || "");
+  }
+
+  if (normalizedBase) {
+    Object.keys(savedBySub).forEach(key => {
+      if (key.startsWith(normalizedBase + "::")) {
+        const rawSuffix = key.slice(normalizedBase.length + 2);
+        addSlot(rawSuffix, `${baseName} (${rawSuffix})`, "");
+      }
+    });
+  }
+
+  return slots;
+}
+
 function resolveUnit(param){
   const unit = (param.unit || "").trim();
   if (unit) {
@@ -240,7 +284,6 @@ function renderTests(tests) {
 
     let currentSection = null;
     rows.forEach((param, i) => {
-      const saved = savedBySub[normalizeKey(param.name)];
       const sectionName = String(param.sectionName || "").trim();
       if (sectionName) {
         if (sectionName !== currentSection) {
@@ -254,26 +297,34 @@ function renderTests(tests) {
         currentSection = null;
       }
 
-      const inputHtml = renderResultControl(
-        test.id,
-        `result-${test.id}-${i}`,
+      const slots = buildResultSlots(
         param.name,
-        param,
-        saved?.resultValue || saved?.value || "",
-        param.defaultResults[0] || ""
+        param.defaultResults,
+        savedBySub
       );
 
-      body.innerHTML += `
-        <tr>
-          <td class="param-indent">${param.name}</td>
-          <td>
-            ${inputHtml}
-          </td>
-          <td>${resolveUnit(param)}</td>
-          <td class="normal">
-            ${param.normalText || ""}
-          </td>
-        </tr>`;
+      slots.forEach((slot, slotIndex) => {
+        const inputHtml = renderResultControl(
+          test.id,
+          `result-${test.id}-${i}-${slotIndex}`,
+          slot.subKey,
+          param,
+          slot.savedValue,
+          slot.defaultValue
+        );
+
+        body.innerHTML += `
+          <tr>
+            <td class="param-indent">${slot.label}</td>
+            <td>
+              ${inputHtml}
+            </td>
+            <td>${resolveUnit(param)}</td>
+            <td class="normal">
+              ${param.normalText || ""}
+            </td>
+          </tr>`;
+      });
     });
   });
 }
