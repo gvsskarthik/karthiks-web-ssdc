@@ -59,6 +59,47 @@ function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
 
+function buildResultSlots(param, normalizedItems) {
+  const baseName = param.name || "";
+  const defaults = Array.isArray(param.defaultResults)
+    ? param.defaultResults.map(v => (v || "").trim()).filter(Boolean)
+    : [];
+  const baseKey = normalizeKey(baseName);
+  const slots = [];
+  const seen = new Set();
+
+  const addSlot = (suffix, label) => {
+    const subKey = suffix ? `${baseName}::${suffix}` : baseName;
+    const normalized = normalizeKey(subKey);
+    if (seen.has(normalized)) {
+      return;
+    }
+    seen.add(normalized);
+    slots.push({
+      label,
+      item: normalizedItems[normalized]
+    });
+  };
+
+  const count = Math.max(1, defaults.length);
+  for (let i = 0; i < count; i++) {
+    const suffix = i === 0 ? "" : String(i + 1);
+    const label = i === 0 ? baseName : `${baseName} (${i + 1})`;
+    addSlot(suffix, label);
+  }
+
+  if (baseKey) {
+    Object.keys(normalizedItems).forEach(key => {
+      if (key.startsWith(baseKey + "::")) {
+        const suffix = key.slice(baseKey.length + 2);
+        addSlot(suffix, `${baseName} (${suffix})`);
+      }
+    });
+  }
+
+  return slots;
+}
+
 function resolveUnit(param){
   const unit = (param.unit || "").trim();
   if (unit) {
@@ -182,6 +223,7 @@ Promise.all([loadResults(), loadSelectedTests()])
               unit: p.unit || "",
               valueType: p.valueType,
               normalText: p.normalText || "",
+              defaultResults: Array.isArray(p.defaultResults) ? p.defaultResults : [],
               sectionName: p.sectionName || ""
             }))
             : (test.units || []).map((u, index) => ({
@@ -194,12 +236,6 @@ Promise.all([loadResults(), loadSelectedTests()])
 
           let currentSection = null;
           rows.forEach(param => {
-            const item = normalizedItems[normalizeKey(param.name)];
-            const normalText = param.normalText || "";
-            const resultValue = item?.resultValue || "";
-            const unitText = resolveUnit(param);
-            const displayValue =
-              resultValue && unitText === "%" ? `${resultValue} %` : resultValue;
             const sectionName = String(param.sectionName || "").trim();
 
             if (sectionName) {
@@ -215,22 +251,31 @@ Promise.all([loadResults(), loadSelectedTests()])
               currentSection = null;
             }
 
-            const out = isOutOfRange(
-              resultValue,
-              normalText,
-              patient.gender
-            );
+            const slots = buildResultSlots(param, normalizedItems);
+            slots.forEach(slot => {
+              const normalText = param.normalText || "";
+              const resultValue = slot.item?.resultValue || "";
+              const unitText = resolveUnit(param);
+              const displayValue =
+                resultValue && unitText === "%" ? `${resultValue} %` : resultValue;
 
-            body.innerHTML += `
-              <tr>
-                <td class="param-indent">${param.name}</td>
-                <td class="${out ? "is-abnormal" : ""}">
-                  ${displayValue}
-                </td>
-                <td>${unitText}</td>
-                <td>${normalText}</td>
-              </tr>
-            `;
+              const out = isOutOfRange(
+                resultValue,
+                normalText,
+                patient.gender
+              );
+
+              body.innerHTML += `
+                <tr>
+                  <td class="param-indent">${slot.label}</td>
+                  <td class="${out ? "is-abnormal" : ""}">
+                    ${displayValue}
+                  </td>
+                  <td>${unitText}</td>
+                  <td>${normalText}</td>
+                </tr>
+              `;
+            });
           });
         } else {
           const item = rawItemMap["__single__"];
