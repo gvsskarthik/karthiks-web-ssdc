@@ -42,6 +42,9 @@ public class TestParameter {
     @Column(name = "value_type", nullable = false)
     private ValueType valueType;
 
+    @Column(name = "default_result")
+    private String defaultResult;
+
     @OneToMany(
         mappedBy = "parameter",
         cascade = CascadeType.ALL,
@@ -65,6 +68,11 @@ public class TestParameter {
 
     public ValueType getValueType() { return valueType; }
     public void setValueType(ValueType valueType) { this.valueType = valueType; }
+
+    public String getDefaultResult() { return defaultResult; }
+    public void setDefaultResult(String defaultResult) {
+        this.defaultResult = defaultResult;
+    }
 
     public List<NormalRange> getNormalRanges() { return normalRanges; }
     public void setNormalRanges(List<NormalRange> normalRanges) {

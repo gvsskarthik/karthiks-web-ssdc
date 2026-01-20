@@ -134,10 +134,20 @@ function resolveUnit(param){
   return "%";
 }
 
-function renderResultControl(testId, inputId, subTest, param, savedValue){
+function renderResultControl(testId,
+                             inputId,
+                             subTest,
+                             param,
+                             savedValue,
+                             defaultValue){
   const valueType = (param.valueType || "").toUpperCase();
   const subAttr = subTest ? ` data-sub="${subTest}"` : "";
-  const safeValue = savedValue || "";
+  const defaultText =
+    defaultValue == null ? "" : String(defaultValue);
+  const savedText =
+    savedValue == null ? "" : String(savedValue);
+  const safeValue =
+    savedText.trim() !== "" ? savedText : defaultText;
 
   return `
     <input class="result-input"
@@ -181,7 +191,8 @@ function renderTests(tests) {
         `result-${test.id}`,
         null,
         singleParam,
-        saved?.resultValue || saved?.value || ""
+        saved?.resultValue || saved?.value || "",
+        singleParam.defaultResult || ""
       );
 
       body.innerHTML += `
@@ -215,6 +226,7 @@ function renderTests(tests) {
         unit: p.unit || "",
         valueType: p.valueType,
         normalText: p.normalText || "",
+        defaultResult: p.defaultResult || "",
         sectionName: p.sectionName || ""
       }))
       : (test.units || []).map((u, i) => ({
@@ -233,7 +245,8 @@ function renderTests(tests) {
         `result-${test.id}-common`,
         COMMON_RESULT_KEY,
         {},
-        commonSaved?.resultValue || commonSaved?.value || ""
+        commonSaved?.resultValue || commonSaved?.value || "",
+        ""
       );
 
       body.innerHTML += `
@@ -266,7 +279,8 @@ function renderTests(tests) {
         `result-${test.id}-${i}`,
         param.name,
         param,
-        saved?.resultValue || saved?.value || ""
+        saved?.resultValue || saved?.value || "",
+        param.defaultResult || ""
       );
 
       body.innerHTML += `

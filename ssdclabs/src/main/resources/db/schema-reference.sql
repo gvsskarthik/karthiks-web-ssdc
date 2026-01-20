@@ -43,6 +43,7 @@ CREATE TABLE test_parameters (
   parameter_name VARCHAR(255) NOT NULL,
   unit VARCHAR(100),
   value_type VARCHAR(20) NOT NULL,
+  default_result TEXT,
   CONSTRAINT fk_params_test
     FOREIGN KEY (test_id) REFERENCES tests(id)
 );

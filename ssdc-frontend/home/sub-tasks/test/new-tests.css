@@ -92,6 +92,18 @@ input[type="checkbox"] {
   box-shadow: none;
 }
 
+.param-default {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.param-default-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .param-header {
   display: flex;
   justify-content: space-between;

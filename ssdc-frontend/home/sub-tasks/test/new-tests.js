@@ -22,6 +22,8 @@ function addParameter() {
   const nameId = `${paramId}-name`;
   const unitId = `${paramId}-unit`;
   const typeId = `${paramId}-type`;
+  const defaultToggleId = `${paramId}-default-toggle`;
+  const defaultValueId = `${paramId}-default`;
   card.innerHTML = `
     <div class="param-header">
       <h4 class="param-title">Parameter</h4>
@@ -45,6 +47,16 @@ function addParameter() {
         </select>
       </div>
     </div>
+    <div class="param-default">
+      <div class="param-default-toggle">
+        <input id="${defaultToggleId}" type="checkbox" class="param-default-toggle-input">
+        <label for="${defaultToggleId}">Default Result</label>
+      </div>
+      <div class="param-default-input hidden">
+        <label for="${defaultValueId}">Result</label>
+        <input id="${defaultValueId}" type="text" class="param-default-value" placeholder="Result">
+      </div>
+    </div>
     <div class="section-row normal-section">
       <h4>Normal Ranges</h4>
       <button class="btn small add-normal" type="button">Add Normal</button>
@@ -59,6 +71,16 @@ function addParameter() {
   });
   card.querySelector(".add-normal").addEventListener("click", () => {
     addNormalRow(card.querySelector(".normals"));
+  });
+
+  const defaultToggle = card.querySelector(".param-default-toggle-input");
+  const defaultInputWrap = card.querySelector(".param-default-input");
+  const defaultInput = card.querySelector(".param-default-value");
+  defaultToggle.addEventListener("change", () => {
+    defaultInputWrap.classList.toggle("hidden", !defaultToggle.checked);
+    if (!defaultToggle.checked) {
+      defaultInput.value = "";
+    }
   });
 
   addNormalRow(card.querySelector(".normals"));
@@ -195,6 +217,8 @@ function collectPayload() {
     const nameInput = card.querySelector(".param-name");
     const unitInput = card.querySelector(".param-unit");
     const typeSelect = card.querySelector(".param-type");
+    const defaultToggle = card.querySelector(".param-default-toggle-input");
+    const defaultInput = card.querySelector(".param-default-value");
 
     const name = nameInput.value.trim();
     if (!typeSelect.value) {
@@ -223,6 +247,9 @@ function collectPayload() {
       name: name || `Parameter ${index + 1}`,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,
+      defaultResult: defaultToggle.checked
+        ? (defaultInput.value.trim() || null)
+        : null,
       normalRanges: normals
     });
   });

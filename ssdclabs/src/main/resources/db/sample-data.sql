@@ -12,14 +12,14 @@ VALUES
   (2, 'Differential Count', 'DC', 'MULTI', true, false, 2, 200.00, 'Hematology');
 
 INSERT INTO test_parameters
-  (id, test_id, parameter_name, unit, value_type)
+  (id, test_id, parameter_name, unit, value_type, default_result)
 VALUES
-  (1, 1, 'Haemoglobin', 'g/dL', 'NUMBER'),
-  (2, 2, 'Neutrophils', '%', 'NUMBER'),
-  (3, 2, 'Lymphocytes', '%', 'NUMBER'),
-  (4, 2, 'Eosinophils', '%', 'NUMBER'),
-  (5, 2, 'Monocytes', '%', 'NUMBER'),
-  (6, 2, 'Basophils', '%', 'NUMBER');
+  (1, 1, 'Haemoglobin', 'g/dL', 'NUMBER', NULL),
+  (2, 2, 'Neutrophils', '%', 'NUMBER', NULL),
+  (3, 2, 'Lymphocytes', '%', 'NUMBER', NULL),
+  (4, 2, 'Eosinophils', '%', 'NUMBER', NULL),
+  (5, 2, 'Monocytes', '%', 'NUMBER', NULL),
+  (6, 2, 'Basophils', '%', 'NUMBER', NULL);
 
 INSERT INTO normal_ranges
   (id, parameter_id, gender, min_value, max_value, text_value)
