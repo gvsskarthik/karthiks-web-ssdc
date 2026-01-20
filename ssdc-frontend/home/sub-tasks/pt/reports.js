@@ -68,7 +68,7 @@ function buildResultSlots(param, normalizedItems) {
   const slots = [];
   const seen = new Set();
 
-  const addSlot = (suffix, label) => {
+  const addSlot = (suffix, label, defaultValue) => {
     const subKey = suffix ? `${baseName}::${suffix}` : baseName;
     const normalized = normalizeKey(subKey);
     if (seen.has(normalized)) {
@@ -77,22 +77,23 @@ function buildResultSlots(param, normalizedItems) {
     seen.add(normalized);
     slots.push({
       label,
-      item: normalizedItems[normalized]
+      item: normalizedItems[normalized],
+      defaultValue: defaultValue || ""
     });
   };
 
   const count = Math.max(1, defaults.length);
   for (let i = 0; i < count; i++) {
     const suffix = i === 0 ? "" : String(i + 1);
-    const label = i === 0 ? baseName : `${baseName} (${i + 1})`;
-    addSlot(suffix, label);
+    const label = i === 0 ? baseName : "";
+    addSlot(suffix, label, defaults[i] || "");
   }
 
   if (baseKey) {
     Object.keys(normalizedItems).forEach(key => {
       if (key.startsWith(baseKey + "::")) {
         const suffix = key.slice(baseKey.length + 2);
-        addSlot(suffix, `${baseName} (${suffix})`);
+        addSlot(suffix, "", "");
       }
     });
   }
@@ -255,12 +256,18 @@ Promise.all([loadResults(), loadSelectedTests()])
             slots.forEach(slot => {
               const normalText = param.normalText || "";
               const resultValue = slot.item?.resultValue || "";
+              const valueForDisplay =
+                resultValue && resultValue.trim() !== ""
+                  ? resultValue
+                  : slot.defaultValue;
               const unitText = resolveUnit(param);
               const displayValue =
-                resultValue && unitText === "%" ? `${resultValue} %` : resultValue;
+                valueForDisplay && unitText === "%"
+                  ? `${valueForDisplay} %`
+                  : valueForDisplay;
 
               const out = isOutOfRange(
-                resultValue,
+                valueForDisplay,
                 normalText,
                 patient.gender
               );

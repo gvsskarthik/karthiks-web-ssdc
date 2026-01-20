@@ -11,10 +11,11 @@ public interface ReportResultRepository
         extends JpaRepository<ReportResult, Long> {
     List<ReportResult> findByPatient_Id(Long patientId);
 
-    Optional<ReportResult> findFirstByPatient_IdAndTest_IdAndParameter_Id(
+    Optional<ReportResult> findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
         Long patientId,
         Long testId,
-        Long parameterId
+        Long parameterId,
+        String subTest
     );
 
     void deleteByPatient_Id(Long patientId);

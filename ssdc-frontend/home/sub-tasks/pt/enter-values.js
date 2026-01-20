@@ -146,7 +146,7 @@ function buildResultSlots(baseName, defaultResults, savedBySub) {
   const count = Math.max(1, defaults.length);
   for (let i = 0; i < count; i++) {
     const suffix = i === 0 ? "" : String(i + 1);
-    const label = i === 0 ? baseName : `${baseName} (${i + 1})`;
+    const label = i === 0 ? baseName : "";
     addSlot(suffix, label, defaults[i] || "");
   }
 
@@ -154,7 +154,7 @@ function buildResultSlots(baseName, defaultResults, savedBySub) {
     Object.keys(savedBySub).forEach(key => {
       if (key.startsWith(normalizedBase + "::")) {
         const rawSuffix = key.slice(normalizedBase.length + 2);
-        addSlot(rawSuffix, `${baseName} (${rawSuffix})`, "");
+        addSlot(rawSuffix, "", "");
       }
     });
   }

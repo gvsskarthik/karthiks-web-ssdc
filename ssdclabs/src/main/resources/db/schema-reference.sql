@@ -85,8 +85,9 @@ CREATE TABLE report_results (
   patient_id BIGINT NOT NULL,
   test_id BIGINT NOT NULL,
   parameter_id BIGINT NOT NULL,
+  sub_test VARCHAR(255),
   result_value TEXT,
-  CONSTRAINT uk_report_result UNIQUE (patient_id, test_id, parameter_id),
+  CONSTRAINT uk_report_result UNIQUE (patient_id, test_id, parameter_id, sub_test),
   CONSTRAINT fk_report_patient
     FOREIGN KEY (patient_id) REFERENCES patients(id),
   CONSTRAINT fk_report_test

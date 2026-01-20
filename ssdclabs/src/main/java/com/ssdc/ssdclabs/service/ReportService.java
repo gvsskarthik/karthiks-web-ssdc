@@ -185,9 +185,10 @@ public class ReportService {
                 continue;
             }
 
+            String normalizedSubTest = normalizeSubTest(incoming.subTest);
             TestParameter param = resolveParameter(
                 params,
-                incoming.subTest,
+                normalizedSubTest,
                 paramByNameCache,
                 safeTestId
             );
@@ -196,16 +197,18 @@ public class ReportService {
             }
 
             ReportResult result = resultRepo
-                .findFirstByPatient_IdAndTest_IdAndParameter_Id(
+                .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
                     patientId,
                     testId,
-                    param.getId()
+                    param.getId(),
+                    normalizedSubTest
                 )
                 .orElseGet(ReportResult::new);
 
             result.setPatient(patient);
             result.setTest(test);
             result.setParameter(param);
+            result.setSubTest(normalizedSubTest);
             result.setResultValue(incoming.resultValue);
             toSave.add(result);
         }
@@ -247,7 +250,10 @@ public class ReportService {
                 testId,
                 id -> paramRepo.findByTest_IdOrderByIdAsc(id).size()
             );
-            String subTest = count > 1 ? result.getParameter().getName() : null;
+            String subTest = normalizeSubTest(result.getSubTest());
+            if (isBlank(subTest) && count > 1) {
+                subTest = result.getParameter().getName();
+            }
             response.add(new PatientTestResultDTO(
                 result.getId(),
                 patientId,
@@ -263,21 +269,46 @@ public class ReportService {
                                            String subTest,
                                            Map<String, TestParameter> cache,
                                            Long testId) {
-        if (subTest == null || subTest.trim().isEmpty()) {
+        String baseName = extractBaseName(subTest);
+        if (isBlank(baseName)) {
             return params.get(0);
         }
-        String key = testId + "::" + subTest.trim().toLowerCase();
+        String key = testId + "::" + baseName.trim().toLowerCase();
         if (cache.containsKey(key)) {
             return cache.get(key);
         }
         for (TestParameter param : params) {
             if (param.getName() != null
-                    && param.getName().equalsIgnoreCase(subTest.trim())) {
+                    && param.getName().equalsIgnoreCase(baseName.trim())) {
                 cache.put(key, param);
                 return param;
             }
         }
         return params.get(0);
+    }
+
+    private String normalizeSubTest(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String extractBaseName(String subTest) {
+        if (subTest == null) {
+            return null;
+        }
+        String trimmed = subTest.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        int sep = trimmed.indexOf("::");
+        if (sep < 0) {
+            return trimmed;
+        }
+        String base = trimmed.substring(0, sep).trim();
+        return base.isEmpty() ? null : base;
     }
 
     private boolean isBlank(String value) {
