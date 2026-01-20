@@ -193,6 +193,7 @@ public class TestService {
             param.setTest(test);
             param.setName(name);
             param.setUnit(trimToNull(payloadParam.unit));
+            param.setDefaultResult(trimToNull(payloadParam.defaultResult));
 
             List<NormalRange> ranges = new ArrayList<>();
             if (payloadParam.normalRanges != null) {
@@ -449,7 +450,8 @@ public class TestService {
                 param.getName(),
                 param.getUnit(),
                 valueType,
-                formatNormalRanges(param.getNormalRanges())
+                formatNormalRanges(param.getNormalRanges()),
+                param.getDefaultResult()
             ));
         }
 
