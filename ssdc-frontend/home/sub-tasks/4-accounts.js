@@ -163,6 +163,7 @@ function applyDateFilter(rows){
 function renderCurrentRows(rows, doctorNameFallback){
   const filtered = applyDateFilter(rows || []);
   renderDetails(filtered, doctorNameFallback);
+  renderSummaryFromRows(filtered);
 }
 
 async function fetchJson(url){
@@ -173,20 +174,38 @@ async function fetchJson(url){
   return response.json();
 }
 
-async function loadSummary(){
-  setSummaryMessage("Loading...");
-  try{
-    const data = await fetchJson(apiPath("/accounts/summary"));
-    setSummaryValues(data);
-  } catch (err) {
-    console.error("Failed to load summary", err);
-    setSummaryValues({
-      totalRevenue: 0,
-      totalDiscount: 0,
-      totalCommission: 0,
-      netProfit: 0
-    });
-  }
+function getDiscountAmount(row){
+  return parseNumber(
+    row?.discountAmount ?? row?.discount ?? row?.discountValue ?? row?.discountAmt ?? 0
+  );
+}
+
+function computeSummary(rows){
+  const totals = {
+    totalRevenue: 0,
+    totalDiscount: 0,
+    totalCommission: 0,
+    netProfit: 0,
+  };
+
+  rows.forEach(row => {
+    const bill = parseNumber(row?.billAmount ?? row?.amount ?? 0);
+    const discount = getDiscountAmount(row);
+    const commission = parseNumber(row?.commissionAmount ?? 0);
+    totals.totalRevenue += bill;
+    totals.totalDiscount += discount;
+    totals.totalCommission += commission;
+  });
+
+  totals.netProfit =
+    totals.totalRevenue - totals.totalDiscount - totals.totalCommission;
+
+  return totals;
+}
+
+function renderSummaryFromRows(rows){
+  const data = computeSummary(rows || []);
+  setSummaryValues(data);
 }
 
 async function loadAllDetails(){
@@ -272,7 +291,6 @@ async function selectDoctor(id){
 }
 
 function init(){
-  loadSummary();
   loadDoctors();
   loadAllDetails();
 
