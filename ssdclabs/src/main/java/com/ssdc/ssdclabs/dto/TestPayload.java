@@ -9,6 +9,7 @@ public class TestPayload {
     public String shortcut;
     public Double cost;
     public Boolean active;
+    public Boolean commonResult;
     public List<TestUnitDTO> units;
     public List<TestNormalValueDTO> normalValues;
     public List<TestParameterPayload> parameters;

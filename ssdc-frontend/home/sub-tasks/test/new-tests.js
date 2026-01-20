@@ -153,6 +153,7 @@ function collectPayload() {
   const category = document.getElementById("category");
   const cost = document.getElementById("cost");
   const active = document.getElementById("active");
+  const commonResult = document.getElementById("commonResult");
 
   if (!testName.value.trim()) {
     testName.classList.add("error");
@@ -237,6 +238,7 @@ function collectPayload() {
     category: category.value.trim(),
     cost: costValue,
     active: active.checked,
+    commonResult: commonResult.checked,
     parameters: parameters
   };
 }

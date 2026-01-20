@@ -31,6 +31,7 @@ CREATE TABLE tests (
   test_shortcut VARCHAR(100) NOT NULL UNIQUE,
   test_type VARCHAR(20) NOT NULL,
   active BOOLEAN NOT NULL,
+  common_result BOOLEAN NOT NULL DEFAULT false,
   display_order INT NOT NULL DEFAULT 0,
   cost DECIMAL(10,2) NOT NULL DEFAULT 0,
   category VARCHAR(255)
