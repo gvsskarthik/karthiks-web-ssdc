@@ -8,12 +8,6 @@ html, body {
     background: var(--grey);
 }
 
-body.dark {
-	--light: #0C0C1E;
-	--grey: #060714;
-	--dark: #FBFBFB;
-}
-
 :root {
 	--dash-sidebar-bg: var(--theme-surface, #fffaf2);
 	--dash-frame-bg: var(--theme-bg, #f2eadd);
@@ -246,44 +240,6 @@ body.dark {
 }
 
 
-#content nav .switch-mode {
-	display: block;
-	margin-left: auto;
-	min-width: 50px;
-	height: 25px;
-	border-radius: 25px;
-	background: var(--dash-sidebar-active);
-	cursor: pointer;
-	position: relative;
-	padding: 2px;
-}
-#content nav .switch-mode .switch-knob{
-	width: calc(25px - 4px);
-	height: calc(25px - 4px);
-	background: var(--dash-accent);
-	border-radius: 50%;
-	display: grid;
-	place-items: center;
-	color: #fff;
-	position: relative;
-	transition: transform .3s ease;
-}
-#content nav .switch-mode .switch-knob .bx{
-	position: absolute;
-	opacity: 0;
-	transition: opacity .15s ease;
-	font-size: 16px;
-	line-height: 1;
-}
-#content nav #switch-mode:not(:checked) + .switch-mode .switch-knob .bx-sun{
-	opacity: 1;
-}
-#content nav #switch-mode:checked + .switch-mode .switch-knob .bx-moon{
-	opacity: 1;
-}
-#content nav #switch-mode:checked + .switch-mode .switch-knob{
-	transform: translateX(25px);
-}
 /* NAVBAR */
 
 
