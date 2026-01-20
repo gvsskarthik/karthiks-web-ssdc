@@ -41,6 +41,9 @@ public class Test {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(name = "common_result", nullable = false)
+    private Boolean commonResult = false;
+
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder = 0;
 
@@ -71,6 +74,11 @@ public class Test {
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+
+    public Boolean getCommonResult() { return commonResult; }
+    public void setCommonResult(Boolean commonResult) {
+        this.commonResult = commonResult;
+    }
 
     @SuppressWarnings("unused")
     public Integer getDisplayOrder() { return displayOrder; }

@@ -1,5 +1,6 @@
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
+const COMMON_RESULT_KEY = "__common__";
 
 /* ================= LOAD PATIENT ================= */
 const patient =
@@ -225,6 +226,26 @@ function renderTests(tests) {
       }));
 
     let currentSection = null;
+    if (test.commonResult) {
+      const commonSaved = savedBySub[normalizeKey(COMMON_RESULT_KEY)];
+      const inputHtml = renderResultControl(
+        test.id,
+        `result-${test.id}-common`,
+        COMMON_RESULT_KEY,
+        {},
+        commonSaved?.resultValue || commonSaved?.value || ""
+      );
+
+      body.innerHTML += `
+        <tr>
+          <td class="param-indent">Common Result</td>
+          <td>
+            ${inputHtml}
+          </td>
+          <td></td>
+          <td class="normal"></td>
+        </tr>`;
+    }
     rows.forEach((param, i) => {
       const saved = savedBySub[normalizeKey(param.name)];
       const sectionName = String(param.sectionName || "").trim();

@@ -6,10 +6,10 @@ VALUES
   (1, 'Hematology', 500.00, 'Hematology', 'HEMA', 1, true);
 
 INSERT INTO tests
-  (id, test_name, test_shortcut, test_type, active, display_order, cost, category)
+  (id, test_name, test_shortcut, test_type, active, common_result, display_order, cost, category)
 VALUES
-  (1, 'Haemoglobin', 'HB', 'SINGLE', true, 1, 100.00, 'Hematology'),
-  (2, 'Differential Count', 'DC', 'MULTI', true, 2, 200.00, 'Hematology');
+  (1, 'Haemoglobin', 'HB', 'SINGLE', true, false, 1, 100.00, 'Hematology'),
+  (2, 'Differential Count', 'DC', 'MULTI', true, false, 2, 200.00, 'Hematology');
 
 INSERT INTO test_parameters
   (id, test_id, parameter_name, unit, value_type)

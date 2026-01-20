@@ -110,6 +110,9 @@ public class TestService {
         if (payload.active != null) {
             test.setActive(payload.active);
         }
+        if (payload.commonResult != null) {
+            test.setCommonResult(payload.commonResult);
+        }
 
         boolean shouldRebuild =
             payload.parameters != null
@@ -131,6 +134,9 @@ public class TestService {
 
         if (test.getActive() == null) {
             test.setActive(true);
+        }
+        if (test.getCommonResult() == null) {
+            test.setCommonResult(false);
         }
     }
 
@@ -475,6 +481,7 @@ public class TestService {
             test.getShortcut(),
             test.getCost(),
             test.getActive(),
+            test.getCommonResult(),
             units,
             normalValues,
             parameterViews
