@@ -141,6 +141,14 @@ input[type="checkbox"] {
   margin-top: 10px;
 }
 
+.default-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
 .hidden {
   display: none;
 }

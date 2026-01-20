@@ -9,6 +9,7 @@ let shortcutsLoaded = false;
 let existingShortcuts = new Set();
 let paramIdCounter = 0;
 let normalIdCounter = 0;
+let defaultIdCounter = 0;
 
 addParamBtn.addEventListener("click", () => addParameter());
 saveBtn.addEventListener("click", () => saveTest());
@@ -23,7 +24,6 @@ function addParameter() {
   const unitId = `${paramId}-unit`;
   const typeId = `${paramId}-type`;
   const defaultToggleId = `${paramId}-default-toggle`;
-  const defaultValueId = `${paramId}-default`;
   card.innerHTML = `
     <div class="param-header">
       <h4 class="param-title">Parameter</h4>
@@ -50,11 +50,14 @@ function addParameter() {
     <div class="param-default">
       <div class="param-default-toggle">
         <input id="${defaultToggleId}" type="checkbox" class="param-default-toggle-input">
-        <label for="${defaultToggleId}">Default Result</label>
+        <label for="${defaultToggleId}">Default Results</label>
       </div>
-      <div class="param-default-input hidden">
-        <label for="${defaultValueId}">Result</label>
-        <input id="${defaultValueId}" type="text" class="param-default-value" placeholder="Result">
+      <div class="param-default-controls hidden">
+        <div class="section-row">
+          <h4>Default Results</h4>
+          <button class="btn small add-default" type="button">Add Result</button>
+        </div>
+        <div class="default-results"></div>
       </div>
     </div>
     <div class="section-row normal-section">
@@ -74,12 +77,19 @@ function addParameter() {
   });
 
   const defaultToggle = card.querySelector(".param-default-toggle-input");
-  const defaultInputWrap = card.querySelector(".param-default-input");
-  const defaultInput = card.querySelector(".param-default-value");
+  const defaultControls = card.querySelector(".param-default-controls");
+  const defaultResults = card.querySelector(".default-results");
+  card.querySelector(".add-default").addEventListener("click", () => {
+    addDefaultResultRow(defaultResults);
+  });
   defaultToggle.addEventListener("change", () => {
-    defaultInputWrap.classList.toggle("hidden", !defaultToggle.checked);
+    defaultControls.classList.toggle("hidden", !defaultToggle.checked);
     if (!defaultToggle.checked) {
-      defaultInput.value = "";
+      defaultResults.innerHTML = "";
+      return;
+    }
+    if (!defaultResults.children.length) {
+      addDefaultResultRow(defaultResults);
     }
   });
 
@@ -98,6 +108,18 @@ function addNormalRow(container) {
   `;
   container.appendChild(row);
   row.querySelector(".remove-normal").addEventListener("click", () => row.remove());
+}
+
+function addDefaultResultRow(container) {
+  const row = document.createElement("div");
+  row.className = "default-row";
+  const defaultId = `default-${defaultIdCounter++}`;
+  row.innerHTML = `
+    <input id="${defaultId}" name="${defaultId}" type="text" class="default-result-input" placeholder="Result">
+    <button class="btn link remove-default" type="button">Remove</button>
+  `;
+  container.appendChild(row);
+  row.querySelector(".remove-default").addEventListener("click", () => row.remove());
 }
 
 function refreshParameterLabels() {
@@ -175,7 +197,6 @@ function collectPayload() {
   const category = document.getElementById("category");
   const cost = document.getElementById("cost");
   const active = document.getElementById("active");
-  const commonResult = document.getElementById("commonResult");
 
   if (!testName.value.trim()) {
     testName.classList.add("error");
@@ -218,7 +239,7 @@ function collectPayload() {
     const unitInput = card.querySelector(".param-unit");
     const typeSelect = card.querySelector(".param-type");
     const defaultToggle = card.querySelector(".param-default-toggle-input");
-    const defaultInput = card.querySelector(".param-default-value");
+    const defaultResultsContainer = card.querySelector(".default-results");
 
     const name = nameInput.value.trim();
     if (!typeSelect.value) {
@@ -243,13 +264,17 @@ function collectPayload() {
       });
     });
 
+    const defaultResults = defaultToggle.checked
+      ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
+          .map(input => input.value.trim())
+          .filter(Boolean)
+      : [];
+
     parameters.push({
       name: name || `Parameter ${index + 1}`,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,
-      defaultResult: defaultToggle.checked
-        ? (defaultInput.value.trim() || null)
-        : null,
+      defaultResults: defaultResults.length ? defaultResults : null,
       normalRanges: normals
     });
   });
@@ -265,7 +290,6 @@ function collectPayload() {
     category: category.value.trim(),
     cost: costValue,
     active: active.checked,
-    commonResult: commonResult.checked,
     parameters: parameters
   };
 }

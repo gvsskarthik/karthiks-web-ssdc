@@ -1,6 +1,5 @@
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
-const COMMON_RESULT_KEY = "__common__";
 
 /* ================= LOAD PATIENT ================= */
 const patient =
@@ -192,7 +191,9 @@ function renderTests(tests) {
         null,
         singleParam,
         saved?.resultValue || saved?.value || "",
-        singleParam.defaultResult || ""
+        Array.isArray(singleParam.defaultResults)
+          ? (singleParam.defaultResults[0] || "")
+          : ""
       );
 
       body.innerHTML += `
@@ -226,7 +227,7 @@ function renderTests(tests) {
         unit: p.unit || "",
         valueType: p.valueType,
         normalText: p.normalText || "",
-        defaultResult: p.defaultResult || "",
+        defaultResults: Array.isArray(p.defaultResults) ? p.defaultResults : [],
         sectionName: p.sectionName || ""
       }))
       : (test.units || []).map((u, i) => ({
@@ -238,27 +239,6 @@ function renderTests(tests) {
       }));
 
     let currentSection = null;
-    if (test.commonResult) {
-      const commonSaved = savedBySub[normalizeKey(COMMON_RESULT_KEY)];
-      const inputHtml = renderResultControl(
-        test.id,
-        `result-${test.id}-common`,
-        COMMON_RESULT_KEY,
-        {},
-        commonSaved?.resultValue || commonSaved?.value || "",
-        ""
-      );
-
-      body.innerHTML += `
-        <tr>
-          <td class="param-indent">Common Result</td>
-          <td>
-            ${inputHtml}
-          </td>
-          <td></td>
-          <td class="normal"></td>
-        </tr>`;
-    }
     rows.forEach((param, i) => {
       const saved = savedBySub[normalizeKey(param.name)];
       const sectionName = String(param.sectionName || "").trim();
@@ -280,7 +260,7 @@ function renderTests(tests) {
         param.name,
         param,
         saved?.resultValue || saved?.value || "",
-        param.defaultResult || ""
+        param.defaultResults[0] || ""
       );
 
       body.innerHTML += `
