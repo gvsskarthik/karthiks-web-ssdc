@@ -5,15 +5,6 @@ html {
 	overflow-x: hidden;
 }
 
-body.dark {
-	--light: #0C0C1E;
-	--grey: #060714;
-	--dark: #FBFBFB;
-}
-
-
-
-
 /* MAIN */
  main {
 	width: 100%;
