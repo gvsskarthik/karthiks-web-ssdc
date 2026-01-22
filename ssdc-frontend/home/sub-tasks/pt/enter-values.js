@@ -118,6 +118,14 @@ function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
 
+function escapeAttr(value){
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function buildResultSlots(baseName, defaultResults, savedBySub) {
   const defaults = Array.isArray(defaultResults)
     ? defaultResults.map(v => (v || "").trim()).filter(Boolean)
@@ -191,13 +199,15 @@ function renderResultControl(testId,
     savedValue == null ? "" : String(savedValue);
   const safeValue =
     savedText.trim() !== "" ? savedText : defaultText;
+  const safeAttr = escapeAttr(safeValue);
 
   return `
     <input class="result-input"
            id="${inputId}"
            name="${inputId}"
            data-testid="${testId}"${subAttr}
-           value="${safeValue}">
+           data-default="${safeAttr}"
+           value="${safeAttr}">
   `;
 }
 
@@ -205,6 +215,8 @@ function renderResultControl(testId,
 function renderTests(tests) {
   const body = document.getElementById("resultBody");
   body.innerHTML = "";
+  body.removeEventListener("input", markTouched);
+  body.addEventListener("input", markTouched);
 
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
@@ -329,16 +341,30 @@ function renderTests(tests) {
   });
 }
 
+function markTouched(event) {
+  const target = event.target;
+  if (target && target.classList.contains("result-input")) {
+    target.dataset.touched = "1";
+  }
+}
+
 /* ================= COLLECT RESULTS ================= */
 function collectResults() {
   return [...document.querySelectorAll(".result-input")]
-    .filter(i => i.value.trim() !== "")
-    .map(i => ({
-      patientId: patient.id,
-      testId: Number(i.dataset.testid),
-      subTest: i.dataset.sub || null,
-      resultValue: i.value
-    }));
+    .map(i => {
+      const rawValue = i.value || "";
+      const hasRaw = rawValue.trim() !== "";
+      const touched = i.dataset.touched === "1";
+      const fallback = i.dataset.default || i.getAttribute("value") || i.defaultValue || "";
+      const finalValue = hasRaw ? rawValue : (touched ? "" : fallback);
+      return {
+        patientId: patient.id,
+        testId: Number(i.dataset.testid),
+        subTest: i.dataset.sub || null,
+        resultValue: finalValue
+      };
+    })
+    .filter(r => r.resultValue && r.resultValue.trim() !== "");
 }
 
 /* ================= SAVE ONLY ================= */

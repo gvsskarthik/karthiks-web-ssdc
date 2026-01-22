@@ -212,6 +212,13 @@ public class ReportService {
                     .orElseGet(ReportResult::new)
                 );
 
+            // Don't overwrite existing values with blank input.
+            if (isBlank(incoming.resultValue)
+                    && result.getId() != null
+                    && !isBlank(result.getResultValue())) {
+                continue;
+            }
+
             result.setPatient(patient);
             result.setTest(test);
             result.setParameter(param);
