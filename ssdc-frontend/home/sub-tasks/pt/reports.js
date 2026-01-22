@@ -201,9 +201,11 @@ Promise.all([loadResults(), loadSelectedTests()])
       selectedTests.forEach(test => {
         const params = Array.isArray(test.parameters) ? test.parameters : [];
         const hasParams = params.length > 0;
-        const isMulti = (hasParams && params.length > 1)
-          || (!hasParams && (test.units || []).length > 1);
         const rawItemMap = grouped[test.id] || {};
+        const hasSubSlots = Object.keys(rawItemMap)
+          .some(key => key !== "__single__");
+        const isMulti = (hasParams && (params.length > 1 || hasSubSlots))
+          || (!hasParams && (test.units || []).length > 1);
 
         if (isMulti) {
           body.innerHTML += `
@@ -218,7 +220,8 @@ Promise.all([loadResults(), loadSelectedTests()])
             normalizedItems[normalized] = value;
           });
 
-          const rows = hasParams && params.length > 1
+          const useParams = hasParams && (params.length > 1 || hasSubSlots);
+          const rows = useParams
             ? params.map(p => ({
               name: p.name || "",
               unit: p.unit || "",
