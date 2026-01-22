@@ -2,6 +2,7 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/DoctorRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/result/TestResultEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/PatientRepository.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/patient/PatientEntityFactory.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/patient/PatientVisitEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/TestController.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/patient/PatientTestEntity.java
@@ -11,6 +12,7 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/doctor/DoctorEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/PatientController.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/doctor/DoctorEntityFactory.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/SsdclabsApplication.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/TestGroupEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/ReportController.java
@@ -18,6 +20,7 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestGroupRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/VisitController.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/patient/PatientEntity.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/result/ResultEntityFactory.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/config/crypto/AesAttributeConverter.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/PatientTestRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/TestEntity.java
@@ -26,4 +29,5 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/TestDefaultResultEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/PatientVisitRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/service/VisitService.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/TestEntityFactory.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/service/ReportService.java
