@@ -143,6 +143,7 @@ public class ReportService {
 
     @Transactional
     public void saveResults(List<PatientTestResultDTO> results) {
+        throw new RuntimeException("SAVE LOGIC HIT");
         if (results == null || results.isEmpty()) {
             return;
         }
@@ -226,28 +227,27 @@ public class ReportService {
                     return new ReportResult();
                 });
 
+            System.out.println("[saveResults] incoming.resultValue=" + incoming.resultValue);
+            System.out.println("[saveResults] existing.resultValue=" + result.getResultValue());
+            System.out.println("[saveResults] defaultResult=" + firstDefaultResult(param));
+
             result.setPatient(patient);
             result.setTest(test);
             result.setParameter(param);
             result.setSubTest(normalizedSubTest);
-            // 1) Resolve final value first (incoming wins, else default, else null).
-            String finalValue = resolveFinalResult(
-                incoming.resultValue,
-                firstDefaultResult(param)
-            );
-            // 2) If final value exists, always save it (overwrites stale defaults).
-            if (!isBlank(finalValue)) {
+            // Resolve final value first (incoming wins, else default, else null).
+            String defaultValue = firstDefaultResult(param);
+            String finalValue = resolveFinalResult(incoming.resultValue, defaultValue);
+            String existingValue = result.getResultValue();
+            boolean hasFinal = !isBlank(finalValue);
+            boolean hasExisting = !isBlank(existingValue);
+            if (hasFinal) {
                 result.setResultValue(finalValue);
                 toSave.add(result);
-                continue;
+            } else if (!hasExisting) {
+                result.setResultValue(null);
+                toSave.add(result);
             }
-            // 3) If final is blank, do not overwrite existing non-blank value.
-            if (result.getId() != null && !isBlank(result.getResultValue())) {
-                continue;
-            }
-            // 4) Only allow null when both incoming and default are truly missing.
-            result.setResultValue(null);
-            toSave.add(result);
         }
 
         if (!toSave.isEmpty()) {
