@@ -18,5 +18,11 @@ public interface ReportResultRepository
         String subTest
     );
 
+    Optional<ReportResult> findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
+        Long patientId,
+        Long testId,
+        Long parameterId
+    );
+
     void deleteByPatient_Id(Long patientId);
 }
