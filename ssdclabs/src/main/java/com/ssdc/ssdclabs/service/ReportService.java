@@ -143,7 +143,6 @@ public class ReportService {
 
     @Transactional
     public void saveResults(List<PatientTestResultDTO> results) {
-        throw new RuntimeException("SAVE LOGIC HIT");
         if (results == null || results.isEmpty()) {
             return;
         }
