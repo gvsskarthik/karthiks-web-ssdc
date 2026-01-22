@@ -1,6 +1,7 @@
 package com.ssdc.lab.controller;
 
 import com.ssdc.lab.domain.patient.PatientTestEntity;
+import com.ssdc.lab.domain.result.ResultEntityFactory;
 import com.ssdc.lab.domain.result.TestResultEntity;
 import com.ssdc.lab.service.ReportService;
 import com.ssdc.lab.service.VisitService;
@@ -50,7 +51,7 @@ public class ReportController {
     PatientTestEntity patientTest = visitService.findPatientTestById(request.patientTestId())
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-    TestResultEntity entity = new TestResultEntity();
+    TestResultEntity entity = ResultEntityFactory.createTestResult();
     entity.setPatientTest(patientTest);
     entity.setParameterName(request.parameterName());
     entity.setResultValue(request.resultValue());

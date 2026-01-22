@@ -1,6 +1,7 @@
 package com.ssdc.lab.controller;
 
 import com.ssdc.lab.domain.test.TestEntity;
+import com.ssdc.lab.domain.test.TestEntityFactory;
 import com.ssdc.lab.domain.test.TestGroupEntity;
 import com.ssdc.lab.service.TestService;
 import org.springframework.data.domain.Page;
@@ -43,7 +44,7 @@ public class TestController {
 
   @PostMapping
   public ResponseEntity<TestDetail> createTest(@RequestBody TestRequest request) {
-    TestEntity entity = new TestEntity();
+    TestEntity entity = TestEntityFactory.createTest();
     apply(entity, request);
     TestEntity saved = testService.saveTest(entity);
     return ResponseEntity.status(HttpStatus.CREATED).body(TestDetail.fromEntity(saved));
@@ -80,7 +81,7 @@ public class TestController {
 
   @PostMapping("/groups")
   public ResponseEntity<TestGroupDetail> createGroup(@RequestBody TestGroupRequest request) {
-    TestGroupEntity entity = new TestGroupEntity();
+    TestGroupEntity entity = TestEntityFactory.createTestGroup();
     apply(entity, request);
     TestGroupEntity saved = testService.saveGroup(entity);
     return ResponseEntity.status(HttpStatus.CREATED).body(TestGroupDetail.fromEntity(saved));

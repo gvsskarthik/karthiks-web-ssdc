@@ -1,6 +1,7 @@
 package com.ssdc.lab.controller;
 
 import com.ssdc.lab.domain.doctor.DoctorEntity;
+import com.ssdc.lab.domain.doctor.DoctorEntityFactory;
 import com.ssdc.lab.service.DoctorService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,7 +43,7 @@ public class DoctorController {
 
   @PostMapping
   public ResponseEntity<DoctorDetail> create(@RequestBody DoctorRequest request) {
-    DoctorEntity entity = new DoctorEntity();
+    DoctorEntity entity = DoctorEntityFactory.createDoctor();
     apply(entity, request);
     DoctorEntity saved = doctorService.save(entity);
     return ResponseEntity.status(HttpStatus.CREATED).body(DoctorDetail.fromEntity(saved));

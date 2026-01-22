@@ -2,6 +2,7 @@ package com.ssdc.lab.controller;
 
 import com.ssdc.lab.domain.doctor.DoctorEntity;
 import com.ssdc.lab.domain.patient.PatientEntity;
+import com.ssdc.lab.domain.patient.PatientEntityFactory;
 import com.ssdc.lab.domain.patient.PatientTestEntity;
 import com.ssdc.lab.domain.patient.PatientVisitEntity;
 import com.ssdc.lab.domain.test.TestEntity;
@@ -71,7 +72,7 @@ public class VisitController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    PatientVisitEntity entity = new PatientVisitEntity();
+    PatientVisitEntity entity = PatientEntityFactory.createVisit();
     entity.setPatient(patient);
     entity.setDoctor(doctor);
     apply(entity, request);
@@ -131,7 +132,7 @@ public class VisitController {
     TestEntity test = testService.findTestById(request.testId())
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-    PatientTestEntity entity = new PatientTestEntity();
+    PatientTestEntity entity = PatientEntityFactory.createPatientTest();
     entity.setVisit(visit);
     entity.setTest(test);
     entity.setPriceAtTime(request.priceAtTime());
