@@ -147,6 +147,7 @@ public class ReportService {
             return;
         }
 
+        Set<Long> touchedPatients = new HashSet<>();
         Map<Long, Patient> patientCache = new HashMap<>();
         Map<Long, Test> testCache = new HashMap<>();
         Map<Long, List<TestParameter>> paramCache = new HashMap<>();
@@ -163,6 +164,7 @@ public class ReportService {
             if (patientId == null || testId == null) {
                 continue;
             }
+            touchedPatients.add(patientId);
 
             Long safePatientId = Objects.requireNonNull(patientId, "patientId");
             Long safeTestId = Objects.requireNonNull(testId, "testId");
@@ -241,6 +243,32 @@ public class ReportService {
 
         if (!toSave.isEmpty()) {
             resultRepo.saveAll(toSave);
+        }
+
+        // Backfill defaults for any blank results on the same patients.
+        if (!touchedPatients.isEmpty()) {
+            List<ReportResult> defaultsToSave = new ArrayList<>();
+            for (Long patientId : touchedPatients) {
+                if (patientId == null) {
+                    continue;
+                }
+                List<ReportResult> existing =
+                    resultRepo.findByPatient_Id(patientId);
+                for (ReportResult result : existing) {
+                    if (result == null || !isBlank(result.getResultValue())) {
+                        continue;
+                    }
+                    String defaultValue =
+                        firstDefaultResult(result.getParameter());
+                    if (!isBlank(defaultValue)) {
+                        result.setResultValue(defaultValue);
+                        defaultsToSave.add(result);
+                    }
+                }
+            }
+            if (!defaultsToSave.isEmpty()) {
+                resultRepo.saveAll(defaultsToSave);
+            }
         }
     }
 
