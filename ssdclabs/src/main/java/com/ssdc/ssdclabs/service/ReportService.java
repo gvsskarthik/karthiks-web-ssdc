@@ -113,7 +113,15 @@ public class ReportService {
                 if (param.getId() == null) {
                     continue;
                 }
-                if (existingByParam.containsKey(param.getId())) {
+                ReportResult existing = existingByParam.get(param.getId());
+                if (existing != null) {
+                    if (isBlank(existing.getResultValue())) {
+                        String defaultValue = firstDefaultResult(param);
+                        if (!isBlank(defaultValue)) {
+                            existing.setResultValue(defaultValue);
+                            toSave.add(existing);
+                        }
+                    }
                     continue;
                 }
                 ReportResult result = new ReportResult();
