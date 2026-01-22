@@ -226,36 +226,25 @@ public class ReportService {
                     return new ReportResult();
                 });
 
-            // Preserve existing non-blank results when incoming is blank.
-            if (isBlank(incoming.resultValue)
-                    && result.getId() != null
-                    && !isBlank(result.getResultValue())) {
-                continue;
-            }
-
             result.setPatient(patient);
             result.setTest(test);
             result.setParameter(param);
             result.setSubTest(normalizedSubTest);
-            // Resolve a safe final value so we never persist null/blank
-            // when a default is available.
+            // Resolve final value first (incoming wins, else default).
             String finalValue = resolveFinalResult(
                 incoming.resultValue,
                 firstDefaultResult(param)
             );
-            // Only set the value when there is something meaningful to save.
-            // This prevents null/blank from overwriting valid data.
-            if (!isBlank(finalValue)) {
-                result.setResultValue(finalValue);
-                toSave.add(result);
-            } else if (result.getId() != null && !isBlank(result.getResultValue())) {
-                // Keep existing value untouched.
+            // If final is blank, never overwrite an existing non-blank value.
+            if (isBlank(finalValue)) {
+                if (result.getId() != null && !isBlank(result.getResultValue())) {
+                    continue;
+                }
+                // No meaningful value to save; skip persisting blank.
                 continue;
-            } else if (result.getId() != null) {
-                // Allow explicit clearing only when both incoming and default are blank.
-                result.setResultValue(null);
-                toSave.add(result);
             }
+            result.setResultValue(finalValue);
+            toSave.add(result);
         }
 
         if (!toSave.isEmpty()) {
