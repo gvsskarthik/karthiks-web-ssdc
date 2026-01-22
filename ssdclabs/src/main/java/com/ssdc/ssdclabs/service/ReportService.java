@@ -203,7 +203,14 @@ public class ReportService {
                     param.getId(),
                     normalizedSubTest
                 )
-                .orElseGet(ReportResult::new);
+                .orElseGet(() -> resultRepo
+                    .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
+                        patientId,
+                        testId,
+                        param.getId()
+                    )
+                    .orElseGet(ReportResult::new)
+                );
 
             result.setPatient(patient);
             result.setTest(test);
