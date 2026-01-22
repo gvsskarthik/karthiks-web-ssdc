@@ -216,7 +216,7 @@ public class ReportService {
                 .orElseGet(() -> {
                     if (normalizedSubTest == null) {
                         return resultRepo
-                            .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
+                            .findFirstByPatientTestParamWithEmptySubTest(
                                 patientId,
                                 testId,
                                 param.getId()
