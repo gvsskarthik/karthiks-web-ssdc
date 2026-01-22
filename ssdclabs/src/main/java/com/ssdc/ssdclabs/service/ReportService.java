@@ -226,7 +226,7 @@ public class ReportService {
                     return new ReportResult();
                 });
 
-            // Don't overwrite existing values with blank input.
+            // Preserve existing non-blank results when incoming is blank.
             if (isBlank(incoming.resultValue)
                     && result.getId() != null
                     && !isBlank(result.getResultValue())) {
@@ -237,8 +237,25 @@ public class ReportService {
             result.setTest(test);
             result.setParameter(param);
             result.setSubTest(normalizedSubTest);
-            result.setResultValue(incoming.resultValue);
-            toSave.add(result);
+            // Resolve a safe final value so we never persist null/blank
+            // when a default is available.
+            String finalValue = resolveFinalResult(
+                incoming.resultValue,
+                firstDefaultResult(param)
+            );
+            // Only set the value when there is something meaningful to save.
+            // This prevents null/blank from overwriting valid data.
+            if (!isBlank(finalValue)) {
+                result.setResultValue(finalValue);
+                toSave.add(result);
+            } else if (result.getId() != null && !isBlank(result.getResultValue())) {
+                // Keep existing value untouched.
+                continue;
+            } else if (result.getId() != null) {
+                // Allow explicit clearing only when both incoming and default are blank.
+                result.setResultValue(null);
+                toSave.add(result);
+            }
         }
 
         if (!toSave.isEmpty()) {
@@ -260,8 +277,9 @@ public class ReportService {
                     }
                     String defaultValue =
                         firstDefaultResult(result.getParameter());
-                    if (!isBlank(defaultValue)) {
-                        result.setResultValue(defaultValue);
+                    String finalValue = resolveFinalResult(null, defaultValue);
+                    if (!isBlank(finalValue)) {
+                        result.setResultValue(finalValue);
                         defaultsToSave.add(result);
                     }
                 }
@@ -381,6 +399,16 @@ public class ReportService {
             if (!isBlank(part)) {
                 return part.trim();
             }
+        }
+        return null;
+    }
+
+    private String resolveFinalResult(String incomingValue, String defaultValue) {
+        if (!isBlank(incomingValue)) {
+            return incomingValue.trim();
+        }
+        if (!isBlank(defaultValue)) {
+            return defaultValue.trim();
         }
         return null;
     }
