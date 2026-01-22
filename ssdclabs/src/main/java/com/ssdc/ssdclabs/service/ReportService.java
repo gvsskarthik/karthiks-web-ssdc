@@ -120,7 +120,7 @@ public class ReportService {
                 result.setPatient(patient);
                 result.setTest(testRef);
                 result.setParameter(param);
-                result.setResultValue(null);
+                result.setResultValue(firstDefaultResult(param));
                 toSave.add(result);
             }
         }
@@ -203,14 +203,18 @@ public class ReportService {
                     param.getId(),
                     normalizedSubTest
                 )
-                .orElseGet(() -> resultRepo
-                    .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
-                        patientId,
-                        testId,
-                        param.getId()
-                    )
-                    .orElseGet(ReportResult::new)
-                );
+                .orElseGet(() -> {
+                    if (normalizedSubTest == null) {
+                        return resultRepo
+                            .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
+                                patientId,
+                                testId,
+                                param.getId()
+                            )
+                            .orElseGet(ReportResult::new);
+                    }
+                    return new ReportResult();
+                });
 
             // Don't overwrite existing values with blank input.
             if (isBlank(incoming.resultValue)
@@ -327,5 +331,21 @@ public class ReportService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private String firstDefaultResult(TestParameter param) {
+        if (param == null) {
+            return null;
+        }
+        String stored = param.getDefaultResult();
+        if (isBlank(stored)) {
+            return null;
+        }
+        for (String part : stored.split("\\r?\\n")) {
+            if (!isBlank(part)) {
+                return part.trim();
+            }
+        }
+        return null;
     }
 }
