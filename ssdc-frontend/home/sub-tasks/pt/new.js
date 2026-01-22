@@ -29,6 +29,8 @@ const nameInput = document.getElementById("name");
 const mobileInput = document.getElementById("mobile");
 const amountInput = document.getElementById("amount");
 const discountInput = document.getElementById("discount");
+const paidInput = document.getElementById("paid");
+const dueInput = document.getElementById("due");
 const billItems = document.getElementById("billItems");
 let lastBillEdited = null;
 let isAutoBillUpdate = false;
@@ -64,6 +66,13 @@ amountInput.addEventListener("input", () => {
   }
   lastBillEdited = "total";
   updateBillFromSelection();
+});
+
+paidInput.addEventListener("input", () => {
+  if (isAutoBillUpdate) {
+    return;
+  }
+  syncDue(parseMoney(amountInput.value));
 });
 
 
@@ -271,10 +280,18 @@ function renderBillItems(){
 function syncBillTotals(baseTotal){
   let discount = parseMoney(discountInput.value);
   let total = parseMoney(amountInput.value);
+  const hasDiscountInput = discountInput.value.trim() !== "";
+  const hasTotalInput = amountInput.value.trim() !== "";
 
   if (lastBillEdited === "discount") {
     total = baseTotal - discount;
   } else if (lastBillEdited === "total") {
+    discount = baseTotal - total;
+  } else if (hasDiscountInput && !hasTotalInput) {
+    // If discount is filled, derive total from it.
+    total = baseTotal - discount;
+  } else if (hasTotalInput && !hasDiscountInput) {
+    // If total is filled, derive discount from it.
     discount = baseTotal - total;
   } else {
     discount = 0;
@@ -283,11 +300,21 @@ function syncBillTotals(baseTotal){
 
   setInputValue(discountInput, formatMoney(discount));
   setInputValue(amountInput, formatMoney(total));
+  return total;
 }
 
 function updateBillFromSelection(){
   const baseTotal = renderBillItems();
-  syncBillTotals(baseTotal);
+  const total = syncBillTotals(baseTotal);
+  syncDue(total);
+}
+
+function syncDue(totalValue){
+  const paidRaw = paidInput.value.trim();
+  const paid = parseMoney(paidRaw);
+  const hasPaid = paidRaw !== "";
+  const due = hasPaid ? (totalValue - paid) : totalValue;
+  setInputValue(dueInput, formatMoney(due));
 }
 
 /* ✅ FIXED */
@@ -301,6 +328,8 @@ function selectPatient(p){
   lastBillEdited = null;
   setInputValue(discountInput, "");
   setInputValue(amountInput, "");
+  setInputValue(paidInput, "");
+  setInputValue(dueInput, "");
   updateBillFromSelection();
 
   // Prefill only; keep visits separate

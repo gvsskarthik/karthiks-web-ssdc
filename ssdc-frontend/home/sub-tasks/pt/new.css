@@ -283,6 +283,38 @@ label {
   font-weight: 600;
 }
 
+.bill-fields {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  margin-left: auto;
+  width: 220px;
+}
+
+.bill-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.bill-field label {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--theme-muted);
+  font-weight: 600;
+  letter-spacing: .4px;
+  flex: 0 0 auto;
+}
+
+.bill-field .neo-input {
+  max-width: 120px;
+  padding: 6px 8px;
+  text-align: right;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -64,6 +64,19 @@ th {
   box-shadow: none;
 }
 
+.add-line-wrap {
+  margin-top: 6px;
+}
+
+.add-line-btn {
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--theme-line);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .normal {
   font-size: 12px;
   white-space: pre-line;

@@ -230,6 +230,12 @@ input[type="checkbox"] {
   box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.25);
 }
 
+.param-name.is-disabled {
+  background: #f2f2f2;
+  color: #777;
+  border-color: #d0d0d0;
+}
+
 .grid-2 > div, .grid-3 > div, .normal-row > * {
   min-width: 0;
 }

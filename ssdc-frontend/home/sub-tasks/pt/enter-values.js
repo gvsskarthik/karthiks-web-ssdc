@@ -108,6 +108,7 @@ loadSavedResults()
       .then(allTests => {
         const activeTests = (allTests || [])
           .filter(t => t && t.active !== false);
+        applyMultiLineConfig(activeTests);
         const selectedTests =
           activeTests.filter(t => ids.includes(t.id));
         renderTests(selectedTests);
@@ -124,6 +125,30 @@ function escapeAttr(value){
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function applyMultiLineConfig(tests){
+  const config =
+    JSON.parse(localStorage.getItem("testMultiLineConfig") || "{}");
+  tests.forEach(test => {
+    const shortcut = String(test?.shortcut || "").trim().toLowerCase();
+    if (!shortcut || !Array.isArray(test?.parameters)) {
+      return;
+    }
+    const enabledParams = config[shortcut];
+    if (!Array.isArray(enabledParams) || !enabledParams.length) {
+      return;
+    }
+    const enabledSet = new Set(
+      enabledParams.map(name => String(name || "").trim().toLowerCase())
+    );
+    test.parameters.forEach(param => {
+      const key = String(param?.name || "").trim().toLowerCase();
+      if (enabledSet.has(key)) {
+        param.allowMultiLine = true;
+      }
+    });
+  });
 }
 
 function buildResultSlots(baseName, defaultResults, savedBySub) {
@@ -211,12 +236,34 @@ function renderResultControl(testId,
   `;
 }
 
+function renderAddLineButton(testId, baseName, unit, normalText, valueType){
+  const safeBase = escapeAttr(baseName || "");
+  const safeUnit = escapeAttr(unit || "");
+  const safeNormal = escapeAttr(normalText || "");
+  const safeType = escapeAttr(valueType || "");
+  return `
+    <div class="add-line-wrap">
+      <button class="add-line-btn"
+              type="button"
+              data-testid="${testId}"
+              data-basename="${safeBase}"
+              data-unit="${safeUnit}"
+              data-normal="${safeNormal}"
+              data-valuetype="${safeType}">
+        Add line
+      </button>
+    </div>
+  `;
+}
+
 /* ================= RENDER TESTS ================= */
 function renderTests(tests) {
   const body = document.getElementById("resultBody");
   body.innerHTML = "";
   body.removeEventListener("input", markTouched);
   body.addEventListener("input", markTouched);
+  body.removeEventListener("click", handleAddLineClick);
+  body.addEventListener("click", handleAddLineClick);
 
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
@@ -251,12 +298,26 @@ function renderTests(tests) {
           ? (singleParam.defaultResults[0] || "")
           : ""
       );
+      const allowMultiLine =
+        String(singleParam.valueType || "").toUpperCase() === "TEXT"
+        && singleParam.allowMultiLine;
+      const baseName = singleParam.name || test.testName || "Result";
+      const addLineHtml = allowMultiLine
+        ? renderAddLineButton(
+            test.id,
+            baseName,
+            unit,
+            normalText || fallbackNormal,
+            singleParam.valueType || ""
+          )
+        : "";
 
       body.innerHTML += `
         <tr>
           <td><b>${test.testName}</b></td>
           <td>
             ${inputHtml}
+            ${addLineHtml}
           </td>
           <td>${unit}</td>
           <td class="normal">
@@ -324,12 +385,26 @@ function renderTests(tests) {
           slot.savedValue,
           slot.defaultValue
         );
+        const allowMultiLine =
+          String(param.valueType || "").toUpperCase() === "TEXT"
+          && param.allowMultiLine;
+        const addLineHtml =
+          allowMultiLine && slotIndex === 0
+            ? renderAddLineButton(
+                test.id,
+                param.name || test.testName || "Result",
+                resolveUnit(param),
+                param.normalText || "",
+                param.valueType || ""
+              )
+            : "";
 
         body.innerHTML += `
           <tr>
             <td class="param-indent">${slot.label}</td>
             <td>
               ${inputHtml}
+              ${addLineHtml}
             </td>
             <td>${resolveUnit(param)}</td>
             <td class="normal">
@@ -346,6 +421,51 @@ function markTouched(event) {
   if (target && target.classList.contains("result-input")) {
     target.dataset.touched = "1";
   }
+}
+
+function handleAddLineClick(event){
+  const target = event.target;
+  if (!target || !target.classList.contains("add-line-btn")) {
+    return;
+  }
+  const row = target.closest("tr");
+  if (!row) {
+    return;
+  }
+  const testId = Number(target.dataset.testid);
+  const baseName = target.dataset.basename || "Result";
+  const unit = target.dataset.unit || "";
+  const normalText = target.dataset.normal || "";
+  const valueType = target.dataset.valuetype || "";
+  const existing = [...document.querySelectorAll(".result-input")]
+    .map(input => input.dataset.sub || "")
+    .filter(sub => sub && sub.startsWith(baseName + "::"));
+  let maxIndex = 1;
+  existing.forEach(sub => {
+    const suffix = sub.split("::")[1];
+    const num = Number(suffix);
+    if (Number.isFinite(num)) {
+      maxIndex = Math.max(maxIndex, num);
+    }
+  });
+  const nextIndex = maxIndex + 1;
+  const subKey = `${baseName}::${nextIndex}`;
+  const inputHtml = renderResultControl(
+    testId,
+    `result-${testId}-${Date.now()}`,
+    subKey,
+    { valueType },
+    "",
+    ""
+  );
+  const newRow = document.createElement("tr");
+  newRow.innerHTML = `
+    <td class="param-indent"></td>
+    <td>${inputHtml}</td>
+    <td>${unit}</td>
+    <td class="normal">${normalText}</td>
+  `;
+  row.parentNode.insertBefore(newRow, row.nextSibling);
 }
 
 /* ================= COLLECT RESULTS ================= */

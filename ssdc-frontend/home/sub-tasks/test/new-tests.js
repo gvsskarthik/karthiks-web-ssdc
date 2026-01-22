@@ -4,6 +4,7 @@ const saveBtn = document.getElementById("saveBtn");
 const formMessage = document.getElementById("formMessage");
 const shortcutInput = document.getElementById("shortcut");
 const shortcutMsg = document.getElementById("shortcutMsg");
+const enableParameters = document.getElementById("enableParameters");
 
 let shortcutsLoaded = false;
 let existingShortcuts = new Set();
@@ -15,6 +16,9 @@ addParamBtn.addEventListener("click", () => addParameter());
 saveBtn.addEventListener("click", () => saveTest());
 shortcutInput.addEventListener("input", () => validateShortcut());
 shortcutInput.addEventListener("blur", () => validateShortcut());
+enableParameters.addEventListener("change", () => {
+  setParametersEnabled(enableParameters.checked);
+});
 
 function addParameter() {
   const card = document.createElement("div");
@@ -24,6 +28,7 @@ function addParameter() {
   const unitId = `${paramId}-unit`;
   const typeId = `${paramId}-type`;
   const defaultToggleId = `${paramId}-default-toggle`;
+  const multiLineToggleId = `${paramId}-multiline-toggle`;
   card.innerHTML = `
     <div class="param-header">
       <h4 class="param-title">Parameter</h4>
@@ -51,6 +56,8 @@ function addParameter() {
       <div class="param-default-toggle">
         <input id="${defaultToggleId}" type="checkbox" class="param-default-toggle-input">
         <label for="${defaultToggleId}">Default Results</label>
+        <input id="${multiLineToggleId}" type="checkbox" class="param-multiline-toggle-input">
+        <label for="${multiLineToggleId}">Add New Line</label>
       </div>
       <div class="param-default-controls hidden">
         <div class="section-row">
@@ -95,6 +102,7 @@ function addParameter() {
 
   addNormalRow(card.querySelector(".normals"));
   refreshParameterLabels();
+  setParametersEnabled(enableParameters.checked);
 }
 
 function addNormalRow(container) {
@@ -127,6 +135,15 @@ function refreshParameterLabels() {
   cards.forEach((card, index) => {
     const title = card.querySelector(".param-title");
     title.textContent = "Parameter " + (index + 1);
+  });
+}
+
+function setParametersEnabled(enabled) {
+  addParamBtn.disabled = !enabled;
+  const nameInputs = paramList.querySelectorAll(".param-name");
+  nameInputs.forEach(input => {
+    input.disabled = !enabled;
+    input.classList.toggle("is-disabled", !enabled);
   });
 }
 
@@ -240,6 +257,7 @@ function collectPayload() {
     const typeSelect = card.querySelector(".param-type");
     const defaultToggle = card.querySelector(".param-default-toggle-input");
     const defaultResultsContainer = card.querySelector(".default-results");
+    const multiLineToggle = card.querySelector(".param-multiline-toggle-input");
 
     const name = nameInput.value.trim();
     if (!typeSelect.value) {
@@ -274,6 +292,7 @@ function collectPayload() {
       name: name || `Parameter ${index + 1}`,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,
+      allowMultiLine: !!multiLineToggle.checked,
       defaultResults: defaultResults.length ? defaultResults : null,
       normalRanges: normals
     });
@@ -298,6 +317,17 @@ async function saveTest() {
   const payload = collectPayload();
   if (!payload) {
     return;
+  }
+
+  const multiLineConfig =
+    JSON.parse(localStorage.getItem("testMultiLineConfig") || "{}");
+  const shortcutKey = normalizeShortcut(payload.shortcut);
+  if (shortcutKey) {
+    multiLineConfig[shortcutKey] = (payload.parameters || [])
+      .filter(p => p && p.allowMultiLine)
+      .map(p => String(p.name || "").trim())
+      .filter(Boolean);
+    localStorage.setItem("testMultiLineConfig", JSON.stringify(multiLineConfig));
   }
 
   setMessage("Saving...", "");
@@ -331,3 +361,4 @@ async function saveTest() {
 
 addParameter();
 loadShortcuts();
+setParametersEnabled(enableParameters.checked);
