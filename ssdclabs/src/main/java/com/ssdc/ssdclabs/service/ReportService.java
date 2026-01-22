@@ -230,20 +230,23 @@ public class ReportService {
             result.setTest(test);
             result.setParameter(param);
             result.setSubTest(normalizedSubTest);
-            // Resolve final value first (incoming wins, else default).
+            // 1) Resolve final value first (incoming wins, else default, else null).
             String finalValue = resolveFinalResult(
                 incoming.resultValue,
                 firstDefaultResult(param)
             );
-            // If final is blank, never overwrite an existing non-blank value.
-            if (isBlank(finalValue)) {
-                if (result.getId() != null && !isBlank(result.getResultValue())) {
-                    continue;
-                }
-                // No meaningful value to save; skip persisting blank.
+            // 2) If final value exists, always save it (overwrites stale defaults).
+            if (!isBlank(finalValue)) {
+                result.setResultValue(finalValue);
+                toSave.add(result);
                 continue;
             }
-            result.setResultValue(finalValue);
+            // 3) If final is blank, do not overwrite existing non-blank value.
+            if (result.getId() != null && !isBlank(result.getResultValue())) {
+                continue;
+            }
+            // 4) Only allow null when both incoming and default are truly missing.
+            result.setResultValue(null);
             toSave.add(result);
         }
 
