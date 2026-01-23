@@ -5,6 +5,7 @@ com/ssdc/lab/controller/ReportController$ResultMetadata.class
 com/ssdc/lab/controller/VisitController$PatientTestSummary.class
 com/ssdc/lab/domain/test/TestEntity.class
 com/ssdc/lab/domain/doctor/DoctorEntityFactory.class
+com/ssdc/lab/controller/AccountsController.class
 com/ssdc/lab/repository/TestRepository.class
 com/ssdc/lab/domain/patient/PatientEntity$Sex.class
 com/ssdc/lab/controller/PatientController$PatientDetail.class
@@ -18,6 +19,8 @@ com/ssdc/lab/controller/TestController$TestGroupRequest.class
 com/ssdc/lab/controller/VisitController$VisitRequest.class
 com/ssdc/lab/domain/doctor/DoctorEntity.class
 com/ssdc/lab/repository/PatientTestRepository.class
+com/ssdc/lab/repository/GroupTestRepository.class
+com/ssdc/lab/controller/AccountsController$DoctorAccountSummary.class
 com/ssdc/lab/controller/VisitController$PatientTestRequest.class
 com/ssdc/lab/controller/PatientController$PatientSummary.class
 com/ssdc/lab/controller/ReportController$TestResultSummary.class
@@ -53,6 +56,7 @@ com/ssdc/lab/domain/test/GroupTestEntity.class
 com/ssdc/lab/controller/VisitController$VisitSummary.class
 com/ssdc/lab/domain/test/TestDefaultResultEntity.class
 com/ssdc/lab/service/PatientService.class
+com/ssdc/lab/controller/AccountsController$AccountDetail.class
 com/ssdc/lab/controller/DoctorController.class
 com/ssdc/lab/controller/PatientController.class
 com/ssdc/lab/domain/patient/PatientTestEntity.class

@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/reports")
 public class ReportController {
@@ -47,6 +50,16 @@ public class ReportController {
     return TestResultDetail.fromEntity(entity);
   }
 
+  @GetMapping("/results/by-visit/{visitId}")
+  @Transactional(readOnly = true)
+  public List<TestResultSummary> listResultsByVisit(@PathVariable Long visitId) {
+    List<PatientTestEntity> patientTests = visitService.findPatientTestsByVisitId(visitId);
+    List<Long> patientTestIds = patientTests.stream().map(PatientTestEntity::getId).toList();
+    return reportService.findResultsByPatientTestIds(patientTestIds).stream()
+      .map(TestResultSummary::fromEntity)
+      .toList();
+  }
+
   @PostMapping("/results")
   public ResponseEntity<TestResultDetail> createResult(@RequestBody TestResultSaveRequest request) {
     PatientTestEntity patientTest = visitService.findPatientTestById(request.patientTestId())
@@ -60,6 +73,29 @@ public class ReportController {
 
     TestResultEntity saved = reportService.saveResultValue(entity, request.resultValue());
     return ResponseEntity.status(HttpStatus.CREATED).body(TestResultDetail.fromEntity(saved));
+  }
+
+  @PostMapping("/results/bulk")
+  public List<TestResultDetail> createResults(@RequestBody List<TestResultSaveRequest> requests) {
+    if (requests == null || requests.isEmpty()) {
+      return List.of();
+    }
+    List<TestResultDetail> savedResults = new ArrayList<>();
+    for (TestResultSaveRequest request : requests) {
+      if (request == null || isBlank(request.resultValue())) {
+        continue;
+      }
+      PatientTestEntity patientTest = visitService.findPatientTestById(request.patientTestId())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+      TestResultEntity entity = ResultEntityFactory.createTestResult();
+      entity.setPatientTest(patientTest);
+      ResultMetadata metadata = resolveMetadata(patientTest);
+      entity.setParameterName(metadata.parameterName());
+      entity.setUnit(metadata.unit());
+      TestResultEntity saved = reportService.saveResultValue(entity, request.resultValue());
+      savedResults.add(TestResultDetail.fromEntity(saved));
+    }
+    return savedResults;
   }
 
   @PutMapping("/results/{id}")
@@ -83,6 +119,10 @@ public class ReportController {
     // Metadata is resolved server-side; default results are display-only and excluded for now.
     // Future parameter/default logic should be added here without touching save flow.
     return new ResultMetadata("Result", "");
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.trim().isEmpty();
   }
 
   private record ResultMetadata(

@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,6 +26,13 @@ public class ReportService {
 
   public Optional<TestResultEntity> findResultById(Long id) {
     return testResultRepository.findById(id);
+  }
+
+  public List<TestResultEntity> findResultsByPatientTestIds(Collection<Long> patientTestIds) {
+    if (patientTestIds == null || patientTestIds.isEmpty()) {
+      return List.of();
+    }
+    return testResultRepository.findByPatientTestIdIn(patientTestIds);
   }
 
   @Transactional

@@ -4,12 +4,12 @@ let editTest=null, editGroup=null;
 
 /* LOAD */
 Promise.all([
-fetch(API_BASE_URL + "/tests").then(r=>r.json()),
- fetch(API_BASE_URL + "/groups").then(r=>r.json())
-]).then(([t,g])=>{
- tests=t;
- groups=g;
- render();
+  apiList("tests?size=1000"),
+  apiList("tests/groups?size=1000")
+]).then(([t, g]) => {
+  tests = Array.isArray(t) ? t : [];
+  groups = Array.isArray(g) ? g : [];
+  render();
 });
 
 /* TABS */
@@ -102,13 +102,13 @@ function render(){
     <td class="category">${t.category || "—"}</td>
     <td class="shortcut">${t.shortcut || "—"}</td>
     <td class="normal">${renderNormalValues(t) || "—"}</td>
-    <td class="cost">${formatCost(t.cost)}</td>
+    <td class="cost">${formatCost(t.price)}</td>
       <td class="active-col">
          <label class="switch">
            <input type="checkbox"
            id="active-test-${t.id}"
            name="active-test-${t.id}"
-           ${t.active ? "checked" : ""}
+           ${t.isActive ? "checked" : ""}
            onchange="toggleActive(${t.id}, this.checked)">
             <span class="slider"></span>
          </label>
@@ -134,18 +134,8 @@ function render(){
     <td class="category">Group</td>
     <td class="shortcut">${g.shortcut || "—"}</td>
     <td class="normal">—</td>
-    <td class="cost">${formatCost(g.cost)}</td>
-
-    <td class="active-col">
-      <label class="switch">
-        <input type="checkbox"
-          id="active-group-${g.id}"
-          name="active-group-${g.id}"
-          ${(g.active === false) ? "" : "checked"}
-          onchange="toggleGroupActive(${g.id}, this.checked)">
-        <span class="slider"></span>
-      </label>
-    </td>
+    <td class="cost">${formatCost(g.price)}</td>
+    <td class="active-col">—</td>
 
     <td class="options">
      <div class="menu">
@@ -163,34 +153,41 @@ function render(){
 
 /* ===== SINGLE TEST ===== */
 function openTest(t){
- editTest=t;
- tName.value=t.testName;
- tShortcut.value=t.shortcut;
- tCategory.value=t.category;
- tCost.value=t.cost;
- nBox.innerHTML="";
- normalIdCounter = 0;
- (t.normalValues||[]).forEach(n=>{
-  const normalId = `normal-${t.id}-${normalIdCounter++}`;
-  nBox.innerHTML+=`<div class="inline"><textarea id="${normalId}" name="${normalId}">${n.normalValue}</textarea></div>`;
- });
- testModal.style.display="flex";
+ apiFetchJson(`tests/${t.id}`)
+  .then(detail => {
+    editTest = detail;
+    tName.value = detail.testName || "";
+    tShortcut.value = detail.shortcut || "";
+    tCategory.value = detail.category || "";
+    tCost.value = detail.price != null ? detail.price : "";
+    nBox.innerHTML = "";
+    normalIdCounter = 0;
+    testModal.style.display = "flex";
+  })
+  .catch(() => {
+    alert("Failed to load test details");
+  });
 }
 function addNormal(){
   const normalId = `normal-${editTest ? editTest.id : "new"}-${normalIdCounter++}`;
   nBox.innerHTML+=`<textarea id="${normalId}" name="${normalId}"></textarea>`;
 }
 function saveTest(){
- fetch(API_BASE_URL + "/tests/" + editTest.id,{
+ const payload = {
+   testName: tName.value,
+   shortcut: tShortcut.value,
+   category: tCategory.value,
+   price: +tCost.value,
+   isActive: typeof editTest.isActive === "boolean" ? editTest.isActive : true,
+   hasParameters: !!editTest.hasParameters,
+   hasDefaultResults: !!editTest.hasDefaultResults,
+   allowMultipleResults: !!editTest.allowMultipleResults
+ };
+
+ fetch(apiUrl(`tests/${editTest.id}`),{
   method:"PUT",
   headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({
-    testName:tName.value,
-    shortcut:tShortcut.value,
-    category:tCategory.value,
-    cost:+tCost.value,
-    normalValues:[...nBox.querySelectorAll("textarea")].map(t=>({normalValue:t.value}))
-  })
+  body:JSON.stringify(payload)
  }).then(()=>location.reload());
 }
 function closeTest(){testModal.style.display="none"}
@@ -200,10 +197,9 @@ function openGroup(g){
  editGroup=g;
  gName.value=g.groupName;
  gShortcut.value=g.shortcut;
- gCost.value=g.cost;
+ gCost.value=g.price;
 
- fetch(API_BASE_URL + "/groups/" + g.id)
- .then(r=>r.json())
+ apiFetchJson(`tests/groups/${g.id}`)
  .then(d=>{
   editGroup = { ...editGroup, ...d };
   groupTests.innerHTML="";
@@ -220,16 +216,15 @@ function openGroup(g){
 }
 function saveGroup(){
  const ids=[...groupTests.querySelectorAll("input:checked")].map(i=>+i.value);
- fetch(API_BASE_URL + "/groups/" + editGroup.id,{
+ fetch(apiUrl(`tests/groups/${editGroup.id}`),{
   method:"PUT",
   headers:{'Content-Type':'application/json'},
   body:JSON.stringify({
    groupName:gName.value,
    shortcut:gShortcut.value,
-   cost:+gCost.value,
+   price:+gCost.value,
    testIds:ids,
-   category: editGroup.category || undefined,
-   active: typeof editGroup.active === "boolean" ? editGroup.active : undefined
+   category: editGroup.category || ""
   })
  }).then(()=>location.reload());
 }
@@ -239,7 +234,7 @@ function closeGroup(){groupModal.style.display="none"}
 function deleteTest(id){
   if(!confirm("Delete test?")) return;
 
-  fetch(API_BASE_URL + "/tests/" + id,{
+  fetch(apiUrl(`tests/${id}`),{
     method:"DELETE"
   })
   .then(res=>{
@@ -254,42 +249,37 @@ function deleteTest(id){
 }
 function deleteGroup(id){
  if(confirm("Delete group?"))
-  fetch(API_BASE_URL + "/groups/" + id,{method:"DELETE"})
+  fetch(apiUrl(`tests/groups/${id}`),{method:"DELETE"})
    .then(()=>location.reload());
 }
 /* TOGGLE ACTIVE */
 function toggleActive(id, state){
-  fetch(`${API_BASE_URL}/tests/${id}/active`,{
-    method:"PUT",
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ active: state })
-  })
-  .then(res=>{
-    if(!res.ok){
-      alert("Failed to update test status");
-      location.reload(); // revert UI
-    }
-  })
-  .catch(()=>{
-    alert("Server error");
-    location.reload();
-  });
-}
-
-function toggleGroupActive(id, state){
-  fetch(`${API_BASE_URL}/groups/${id}/active`,{
-    method:"PUT",
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ active: state })
-  })
-  .then(res=>{
-    if(!res.ok){
-      alert("Failed to update group status");
-      location.reload(); // revert UI
-    }
-  })
-  .catch(()=>{
-    alert("Server error");
-    location.reload();
-  });
+  apiFetchJson(`tests/${id}`)
+    .then(detail => {
+      const payload = {
+        testName: detail.testName,
+        shortcut: detail.shortcut,
+        category: detail.category,
+        price: detail.price,
+        isActive: state,
+        hasParameters: !!detail.hasParameters,
+        hasDefaultResults: !!detail.hasDefaultResults,
+        allowMultipleResults: !!detail.allowMultipleResults
+      };
+      return fetch(apiUrl(`tests/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    })
+    .then(res => {
+      if (!res || !res.ok) {
+        alert("Failed to update test status");
+        location.reload();
+      }
+    })
+    .catch(() => {
+      alert("Server error");
+      location.reload();
+    });
 }

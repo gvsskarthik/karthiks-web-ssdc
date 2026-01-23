@@ -11,7 +11,6 @@ const cancelEdit = document.getElementById("cancelEdit");
 
 let doctors = [];
 let editDoctorId = null;
-let monthlyStats = new Map();
 
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");
@@ -77,24 +76,7 @@ function isCurrentMonth(date){
     && date.getUTCMonth() === now.getUTCMonth();
 }
 
-function buildMonthlyStats(rows){
-  const stats = new Map();
-  (Array.isArray(rows) ? rows : []).forEach(row => {
-    const date = parseDateValue(row?.date);
-    if (!isCurrentMonth(date)) {
-      return;
-    }
-    const key = normalizeName(row?.doctorName);
-    if (!key) {
-      return;
-    }
-    const current = stats.get(key) || { revenue: 0, commission: 0 };
-    current.revenue += parseNumber(row?.billAmount);
-    current.commission += parseNumber(row?.commissionAmount);
-    stats.set(key, current);
-  });
-  return stats;
-}
+const monthlyStats = new Map();
 
 function closeAllMenus() {
   document.querySelectorAll(".menu-list").forEach(m => {
@@ -160,47 +142,39 @@ function renderDoctors() {
 }
 
 function loadDoctors() {
-  Promise.all([
-    fetch(API_BASE_URL + "/doctors").then(res => res.json()),
-    fetch(API_BASE_URL + "/accounts/details")
-      .then(res => res.json())
-      .catch(err => {
-        console.error("Error loading account details", err);
-        return [];
-      })
-  ])
-  .then(([doctorData, detailRows]) => {
-    doctors = Array.isArray(doctorData) ? doctorData : [];
-    monthlyStats = buildMonthlyStats(detailRows);
-    renderDoctors();
-  })
-  .catch(err => {
-    console.error("Error loading doctors", err);
-    table.innerHTML = `
-      <tr>
-        <td colspan="8" class="empty-cell">
-          Failed to load doctors
-        </td>
-      </tr>
-    `;
-  });
+  apiList("doctors?size=1000")
+    .then(doctorData => {
+      doctors = Array.isArray(doctorData) ? doctorData : [];
+      renderDoctors();
+    })
+    .catch(err => {
+      console.error("Error loading doctors", err);
+      table.innerHTML = `
+        <tr>
+          <td colspan="8" class="empty-cell">
+            Failed to load doctors
+          </td>
+        </tr>
+      `;
+    });
 }
 
 function openEdit(id) {
   closeAllMenus();
-  const doctor = doctors.find(d => d.id === id);
-  if (!doctor) {
-    alert("Doctor not found");
-    return;
-  }
-  editDoctorId = id;
-  editName.value = doctor.name || "";
-  editSpecialization.value = doctor.specialization || "";
-  editPhone.value = doctor.phone || "";
-  editHospital.value = doctor.hospital || "";
-  editCommissionRate.value =
-    doctor.commissionRate == null ? "" : doctor.commissionRate;
-  editModal.style.display = "flex";
+  apiFetchJson(`doctors/${id}`)
+    .then(doctor => {
+      editDoctorId = id;
+      editName.value = doctor.name || "";
+      editSpecialization.value = doctor.specialization || "";
+      editPhone.value = doctor.phone || "";
+      editHospital.value = doctor.hospital || "";
+      editCommissionRate.value =
+        doctor.commissionPercentage == null ? "" : doctor.commissionPercentage;
+      editModal.style.display = "flex";
+    })
+    .catch(() => {
+      alert("Doctor not found");
+    });
 }
 
 function closeEditModal() {
@@ -213,7 +187,7 @@ function deleteDoctor(id) {
   closeAllMenus();
   if (!confirm("Delete doctor permanently?")) return;
 
-  fetch(`${API_BASE_URL}/doctors/${id}`, {
+  fetch(apiUrl(`doctors/${id}`), {
     method: "DELETE"
   })
   .then(res => {
@@ -236,21 +210,23 @@ editForm.addEventListener("submit", function (e) {
   if (editDoctorId == null) return;
 
   const doctor = {
-    id: editDoctorId,
     name: editName.value.trim(),
     specialization: editSpecialization.value.trim(),
     phone: editPhone.value.trim(),
-    hospital: editHospital.value.trim()
+    hospital: editHospital.value.trim(),
+    commissionPercentage: null,
+    displayName: editName.value.trim(),
+    isActive: true
   };
   const commissionRateRaw = editCommissionRate.value.trim();
   const commissionRate =
     commissionRateRaw === "" ? null : Number(commissionRateRaw);
   if (commissionRate !== null && Number.isFinite(commissionRate)) {
-    doctor.commissionRate = commissionRate;
+    doctor.commissionPercentage = commissionRate;
   }
 
-  fetch(API_BASE_URL + "/doctors", {
-    method: "POST",
+  fetch(apiUrl(`doctors/${editDoctorId}`), {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(doctor)
   })

@@ -28,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/visits")
@@ -59,6 +60,14 @@ public class VisitController {
     PatientVisitEntity entity = visitService.findVisitById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     return VisitDetail.fromEntity(entity);
+  }
+
+  @GetMapping("/{visitId}/patient-tests")
+  @Transactional(readOnly = true)
+  public List<PatientTestSummary> listPatientTestsByVisit(@PathVariable Long visitId) {
+    return visitService.findPatientTestsByVisitId(visitId).stream()
+      .map(PatientTestSummary::fromEntity)
+      .toList();
   }
 
   @PostMapping

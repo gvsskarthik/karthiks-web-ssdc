@@ -3,7 +3,6 @@ const groupName = document.getElementById("groupName");
 const shortcut = document.getElementById("shortcut");
 const category = document.getElementById("category");
 const cost = document.getElementById("cost");
-const active = document.getElementById("active");
 const slotList = document.getElementById("slotList");
 const addTestBtn = document.getElementById("addTestBtn");
 const status = document.getElementById("status");
@@ -118,7 +117,7 @@ function renderDetails(slot){
 
   const shortcutText = test.shortcut || "—";
   const categoryText = test.category || "—";
-  const activeText = test.active ? "Active" : "Inactive";
+  const activeText = test.isActive ? "Active" : "Inactive";
 
   detail.innerHTML = `
     <div class="detail-grid">
@@ -136,7 +135,7 @@ function renderDetails(slot){
       </div>
       <div>
         <div class="detail-label">Cost</div>
-        <div class="detail-value">${formatCost(test.cost)}</div>
+        <div class="detail-value">${formatCost(test.price)}</div>
       </div>
       <div>
         <div class="detail-label">Status</div>
@@ -225,7 +224,7 @@ function updateSlotSuggestions(slot){
       id: Number(test.id),
       name: test.testName || "",
       shortcut: test.shortcut || "",
-      cost: Number(test.cost) || 0,
+      cost: Number(test.price) || 0,
       rank: rankSuggestion(test, query)
     }))
     .sort((a, b) => {
@@ -251,7 +250,7 @@ function updateSlotSuggestions(slot){
           <div class="suggestion-name">${item.name || ""}</div>
           <div class="suggestion-meta">${meta}</div>
         </div>
-        <div class="suggestion-cost">₹${item.cost}</div>
+      <div class="suggestion-cost">₹${item.price}</div>
       </div>
     `;
   });
@@ -410,32 +409,23 @@ function refreshSlotTitles(){
 async function loadData(){
   setStatus("Loading tests...");
   try {
-    const testRes = await fetch(API_BASE_URL + "/tests/active");
-    if (!testRes.ok) {
-      setStatus("Failed to load tests.", "error");
-      return;
-    }
-    tests = await testRes.json();
-    tests = Array.isArray(tests) ? tests : [];
+    tests = (await apiList("tests?size=1000"))
+      .filter(t => t && t.isActive !== false);
     testMap = new Map(tests.map(t => [Number(t.id), t]));
 
     if (editId) {
-      const groupRes = await fetch(API_BASE_URL + "/groups/" + editId);
-      if (groupRes.ok) {
-        const group = await groupRes.json();
+      try {
+        const group = await apiFetchJson(`tests/groups/${editId}`);
         title.textContent = "Edit Group";
         groupName.value = group.groupName || "";
         shortcut.value = group.shortcut || "";
-        cost.value = group.cost == null ? "" : group.cost;
+        cost.value = group.price == null ? "" : group.price;
         if (group.category) {
           category.value = group.category;
         }
-        if (typeof group.active === "boolean") {
-          active.checked = group.active;
-        }
         const ids = Array.isArray(group.testIds) ? group.testIds : [];
         ids.forEach(id => addSlot(id));
-      } else {
+      } catch (err) {
         setStatus("Failed to load group.", "error");
       }
     }
@@ -490,9 +480,8 @@ async function saveGroup(){
   const payload = {
     groupName: nameValue,
     shortcut: shortcutValue,
-    category: categoryValue || null,
-    cost: costNumber,
-    active: active.checked,
+    category: categoryValue || "",
+    price: costNumber,
     testIds: uniqueIds
   };
 
@@ -501,8 +490,8 @@ async function saveGroup(){
 
   try {
     const url = editId
-      ? API_BASE_URL + "/groups/" + editId
-      : API_BASE_URL + "/groups";
+      ? apiUrl(`tests/groups/${editId}`)
+      : apiUrl("tests/groups");
     const method = editId ? "PUT" : "POST";
 
     const res = await fetch(url, {

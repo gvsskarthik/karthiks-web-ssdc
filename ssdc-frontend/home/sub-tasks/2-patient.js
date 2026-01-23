@@ -9,6 +9,8 @@ const bulkBar    = document.getElementById("bulkBar");
 const selectedCount = document.getElementById("selectedCount");
 
 let allPatients = [];
+let patientMap = new Map();
+let doctorMap = new Map();
 let selectMode = false;
 let isAutoDate = true;
 
@@ -51,10 +53,48 @@ datePicker.onchange = () => {
 scheduleMidnightUpdate();
 
 function loadByDate(date){
-  fetch(`${API_BASE_URL}/patients/by-date/${date}`)
-    .then(r=>r.json())
-    .then(d=>{ allPatients=d; renderTable(d); })
-    .catch(()=>renderEmpty());
+  Promise.all([
+    apiList("visits?size=1000"),
+    apiList("patients?size=1000"),
+    apiList("doctors?size=1000")
+  ])
+    .then(([visits, patients, doctors]) => {
+      patientMap = new Map((patients || []).map(p => [Number(p.id), p]));
+      doctorMap = new Map((doctors || []).map(d => [Number(d.id), d]));
+
+      const normalized = (visits || [])
+        .filter(v => {
+          const visitDate = String(v?.visitDate || "");
+          return visitDate.startsWith(date);
+        })
+        .map(v => {
+          const patient = patientMap.get(Number(v.patientId)) || {};
+          const doctor = doctorMap.get(Number(v.doctorId)) || {};
+          const amount =
+            (Number(v.paidAmount) || 0) + (Number(v.discountAmount) || 0);
+          return {
+            id: v.id,
+            visitId: v.id,
+            patientId: v.patientId,
+            name: patient.name || "-",
+            age: patient.age || "",
+            sex: patient.sex || "",
+            mobile: patient.mobile || "",
+            address: patient.address || "",
+            doctorId: v.doctorId,
+            doctorName: doctor.name || "SELF",
+            amount: amount,
+            status: v.status || "",
+            visitDate: v.visitDate,
+            discountAmount: v.discountAmount,
+            paidAmount: v.paidAmount
+          };
+        });
+
+      allPatients = normalized;
+      renderTable(normalized);
+    })
+    .catch(() => renderEmpty());
 }
 
 function searchPatient(){
@@ -98,7 +138,7 @@ function renderTable(data){
       </td>
       <td class="${snoClass}">${i+1}</td>
       <td class="name">${p.name || "-"}</td>
-      <td class="doctor">${p.doctor||'-'}</td>
+      <td class="doctor">${p.doctorName||'-'}</td>
       <td class="amount">₹${p.amount}</td>
       <td class="status-col"><span class="status">${p.status}</span></td>
       <td class="options">
@@ -177,17 +217,17 @@ function updateCount(){
 function deleteOne(id){
   if(!confirm("Delete patient and all related data?")) return;
 
-  fetch(`${API_BASE_URL}/patients/${id}`, {
+  fetch(apiUrl(`visits/${id}`), {
     method: "DELETE"
   })
   .then(() => {
 
-    // 🔥 clear localStorage if this patient was open
+    // 🔥 clear localStorage if this visit was open
     const current =
-      JSON.parse(localStorage.getItem("currentPatient") || "{}");
+      JSON.parse(localStorage.getItem("currentVisit") || "{}");
 
-    if(current.id === id){
-      localStorage.removeItem("currentPatient");
+    if(current.visitId === id){
+      localStorage.removeItem("currentVisit");
       localStorage.removeItem("selectedTests");
       localStorage.removeItem("patientResults");
     }
@@ -213,19 +253,19 @@ function deleteSelected(){
 
   Promise.all(
     ids.map(id =>
-      fetch(`${API_BASE_URL}/patients/${id}`, {
+      fetch(apiUrl(`visits/${id}`), {
         method: "DELETE"
       })
     )
   )
   .then(() => {
 
-    // 🔥 clear localStorage if deleted patient was active
+    // 🔥 clear localStorage if deleted visit was active
     const current =
-      JSON.parse(localStorage.getItem("currentPatient") || "{}");
+      JSON.parse(localStorage.getItem("currentVisit") || "{}");
 
-    if(ids.includes(current.id)){
-      localStorage.removeItem("currentPatient");
+    if(ids.includes(current.visitId)){
+      localStorage.removeItem("currentVisit");
       localStorage.removeItem("selectedTests");
       localStorage.removeItem("patientResults");
     }
@@ -249,7 +289,21 @@ function openBill(patient){
     return;
   }
 
-  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.setItem("currentVisit", JSON.stringify({
+    visitId: patient.visitId || patient.id,
+    patientId: patient.patientId,
+    doctorId: patient.doctorId || null,
+    name: patient.name,
+    age: patient.age,
+    sex: patient.sex,
+    mobile: patient.mobile,
+    address: patient.address,
+    doctorName: patient.doctorName || "SELF",
+    visitDate: patient.visitDate,
+    discountAmount: patient.discountAmount,
+    paidAmount: patient.paidAmount,
+    status: patient.status
+  }));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
 

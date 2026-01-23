@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -47,6 +48,10 @@ public class VisitService {
 
   public Optional<PatientTestEntity> findPatientTestById(Long id) {
     return patientTestRepository.findById(id);
+  }
+
+  public List<PatientTestEntity> findPatientTestsByVisitId(Long visitId) {
+    return patientTestRepository.findByVisitId(visitId);
   }
 
   @Transactional

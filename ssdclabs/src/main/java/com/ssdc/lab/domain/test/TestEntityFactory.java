@@ -11,4 +11,8 @@ public final class TestEntityFactory {
   public static TestGroupEntity createTestGroup() {
     return new TestGroupEntity();
   }
+
+  public static GroupTestEntity createGroupTest() {
+    return new GroupTestEntity();
+  }
 }

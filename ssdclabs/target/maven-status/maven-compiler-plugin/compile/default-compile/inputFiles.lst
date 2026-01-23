@@ -1,5 +1,6 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/service/PatientService.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/DoctorRepository.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/AccountsController.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/result/TestResultEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/PatientRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/patient/PatientEntityFactory.java
@@ -10,6 +11,7 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/GroupTestEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/service/DoctorService.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/doctor/DoctorEntity.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/GroupTestRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/PatientController.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/doctor/DoctorEntityFactory.java

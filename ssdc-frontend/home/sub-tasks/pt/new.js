@@ -1,5 +1,5 @@
 /**
- * @typedef {{id:number,testName:string,shortcut?:string,cost?:number}} TestItem
+ * @typedef {{id:number,testName:string,shortcut?:string,price?:number}} TestItem
  */
 
 const patientForm = document.getElementById("patientForm");
@@ -25,6 +25,9 @@ let groupOrderCounter = 0;
 let suggestionItems = [];
 let activeSuggestionIndex = -1;
 const existingList = [];
+let allPatients = [];
+let selectedPatient = null;
+let doctorsById = new Map();
 const nameInput = document.getElementById("name");
 const mobileInput = document.getElementById("mobile");
 const amountInput = document.getElementById("amount");
@@ -43,12 +46,14 @@ selectedList.addEventListener("change", handleSelectedChange);
 savePatientBtn.addEventListener("click", () => patientForm.requestSubmit());
 
 nameInput.addEventListener("input", () => {
-  localStorage.removeItem("currentPatient");
+  selectedPatient = null;
+  localStorage.removeItem("currentVisit");
   applyPatientFilter();
 });
 
 mobileInput.addEventListener("input", () => {
-  localStorage.removeItem("currentPatient");
+  selectedPatient = null;
+  localStorage.removeItem("currentVisit");
   applyPatientFilter();
 });
 
@@ -77,26 +82,26 @@ paidInput.addEventListener("input", () => {
 
 
 /* LOAD DOCTORS */
-fetch(API_BASE_URL + "/doctors")
-.then(r=>r.json())
-.then(list => {
-  const seen = new Set(["self"]);
-  (list || []).forEach(x => {
-    const name = String(x?.name || "").trim();
-    if (!name) {
-      return;
-    }
-    const key = name.toLowerCase();
-    if (key === "self" || seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    doctor.innerHTML += `<option>${name}</option>`;
-  });
-});
+apiList("doctors?size=1000")
+  .then(list => {
+    doctorsById = new Map();
+    doctor.innerHTML = `<option value="">SELF</option>`;
+    (list || []).forEach(x => {
+      if (!x || x.id == null) {
+        return;
+      }
+      const name = String(x.name || "").trim();
+      if (!name) {
+        return;
+      }
+      doctorsById.set(Number(x.id), x);
+      doctor.innerHTML += `<option value="${x.id}">${name}</option>`;
+    });
+  })
+  .catch(() => {});
 
-/* LOAD EXISTING PATIENTS (DB SEARCH) */
-applyPatientFilter();
+/* LOAD EXISTING PATIENTS */
+loadPatients();
 
 function renderExistingPatients(list){
   existingPatients.innerHTML = "";
@@ -114,8 +119,20 @@ function renderExistingPatients(list){
   });
 }
 
+function loadPatients(){
+  apiList("patients?size=1000")
+    .then(list => {
+      allPatients = Array.isArray(list) ? list : [];
+      applyPatientFilter();
+    })
+    .catch(() => {
+      allPatients = [];
+      applyPatientFilter();
+    });
+}
+
 function applyPatientFilter(){
-  const nameQuery = nameInput.value.trim();
+  const nameQuery = String(nameInput.value || "").trim().toLowerCase();
   const mobileQuery = normalizeDigits(mobileInput.value.trim());
 
   if (searchTimer) {
@@ -123,21 +140,42 @@ function applyPatientFilter(){
   }
 
   searchTimer = setTimeout(() => {
-    const params = new URLSearchParams();
-    params.set("name", nameQuery);
-    params.set("mobile", mobileQuery);
-
-    fetch(`${API_BASE_URL}/patients/search?${params.toString()}`)
-    .then(r=>r.json())
-    .then(list=>{
-      existingList.splice(0, existingList.length, ...list);
-      renderExistingPatients(list);
+    const filtered = allPatients.filter(p => {
+      const name = String(p?.name || "").toLowerCase();
+      const mobile = normalizeDigits(p?.mobile || "");
+      const nameMatch = !nameQuery || name.includes(nameQuery);
+      const mobileMatch = !mobileQuery || mobile.includes(mobileQuery);
+      return nameMatch && mobileMatch;
     });
-  }, 250);
+    existingList.splice(0, existingList.length, ...filtered);
+    renderExistingPatients(filtered);
+  }, 150);
 }
 
 function normalizeDigits(value){
   return String(value || "").replace(/\D/g, "");
+}
+
+function toSexEnum(value){
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw.startsWith("male")) {
+    return "MALE";
+  }
+  if (raw.startsWith("female")) {
+    return "FEMALE";
+  }
+  return "OTHER";
+}
+
+function fromSexEnum(value){
+  const raw = String(value || "").trim().toUpperCase();
+  if (raw === "MALE") {
+    return "Male";
+  }
+  if (raw === "FEMALE") {
+    return "Female";
+  }
+  return "Other";
 }
 
 function parseMoney(value){
@@ -150,14 +188,14 @@ function formatMoney(value){
 }
 
 function resolveGroupCost(group){
-  const cost = Number(group.cost);
+  const cost = Number(group.price);
   if (Number.isFinite(cost)) {
     return cost;
   }
   let sum = 0;
   (group.testIds || []).forEach(id => {
     const testInfo = testInfoMap.get(id);
-    sum += Number(testInfo?.cost) || 0;
+    sum += Number(testInfo?.price) || 0;
   });
   return Math.round(sum * 100) / 100;
 }
@@ -244,7 +282,7 @@ function buildBillLines(){
     });
 
   rows.forEach(item => {
-    const cost = Number(item.cost) || 0;
+    const cost = Number(item.price) || 0;
     lines.push({ label: item.name, cost });
     baseTotal += cost;
   });
@@ -319,12 +357,13 @@ function syncDue(totalValue){
 
 /* ✅ FIXED */
 function selectPatient(p){
+  selectedPatient = p || null;
   document.getElementById("name").value    = p.name || "";
   document.getElementById("age").value     = p.age || "";
-  document.getElementById("gender").value  = p.gender || "Male";
+  document.getElementById("gender").value  = fromSexEnum(p.sex);
   document.getElementById("mobile").value  = p.mobile || "";
   document.getElementById("address").value = p.address || "";
-  document.getElementById("doctor").value  = p.doctor || "SELF";
+  document.getElementById("doctor").value  = "";
   lastBillEdited = null;
   setInputValue(discountInput, "");
   setInputValue(amountInput, "");
@@ -334,7 +373,7 @@ function selectPatient(p){
 
   // Prefill only; keep visits separate
   localStorage.setItem("prefillPatient", JSON.stringify(p));
-  localStorage.removeItem("currentPatient");
+  localStorage.removeItem("currentVisit");
   localStorage.removeItem("patientResults");
   localStorage.removeItem("selectedTests");
   applyPatientFilter();
@@ -342,15 +381,15 @@ function selectPatient(p){
 /* TEST LIST */
 
 Promise.all([
-  fetch(API_BASE_URL + "/tests/active").then(r => r.json()),
-  fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
+  apiList("tests?size=1000"),
+  apiList("tests/groups?size=1000").catch(() => [])
 ])
 .then(([testList, groupList]) => initTests(testList, groupList));
 
 /** @param {TestItem[]} list */
 function initTests(list, groupList){
   const tests = (Array.isArray(list) ? list : [])
-    .filter(test => test && test.active !== false);
+    .filter(test => test && test.isActive !== false);
   const incomingGroups = Array.isArray(groupList) ? groupList : [];
   const ordered = [...tests].sort((a, b) => {
     const left = Number(a && a.id) || 0;
@@ -376,7 +415,7 @@ function initTests(list, groupList){
     testInfoMap.set(test.id, {
       name,
       shortcut,
-      cost: Number(test.cost) || 0
+      price: Number(test.price) || 0
     });
     if (!testOrderMap.has(test.id)) {
       testOrderMap.set(test.id, testOrderCounter++);
@@ -384,7 +423,7 @@ function initTests(list, groupList){
   });
 
   groups
-    .filter(group => group && group.active !== false)
+    .filter(group => group)
     .map(group => {
       const ids = Array.isArray(group.testIds) ? group.testIds : [];
       const testIds = ids
@@ -516,7 +555,7 @@ function renderSelectedList(){
               <input class="selected-checkbox" data-type="test" type="checkbox" checked value="${item.id}">
               ${item.name}${itemShortcut}
             </label>
-            <div class="selected-cost">₹${formatMoney(Number(item.cost) || 0)}</div>
+            <div class="selected-cost">₹${formatMoney(Number(item.price) || 0)}</div>
           </div>
         `;
       });
@@ -530,7 +569,7 @@ function renderSelectedList(){
           <input class="selected-checkbox" data-type="test" type="checkbox" checked value="${item.id}">
           ${item.name}${shortcut}
         </label>
-        <div class="selected-cost">₹${formatMoney(Number(item.cost) || 0)}</div>
+        <div class="selected-cost">₹${formatMoney(Number(item.price) || 0)}</div>
       </div>
     `;
   });
@@ -656,7 +695,7 @@ function updateSuggestions(){
       id: test.id,
       name: test.testName || "",
       shortcut: test.shortcut || "",
-      cost: Number(test.cost) || 0,
+      cost: Number(test.price) || 0,
       rank: rankSuggestion(test, query)
     }))
   ];
@@ -675,7 +714,7 @@ function updateSuggestions(){
 
   suggestionItems.forEach((item, index) => {
     const shortcut = item.shortcut ? item.shortcut : "";
-    const price = formatMoney(Number(item.cost) || 0);
+    const price = formatMoney(Number(item.price) || 0);
     const activeClass = index === activeSuggestionIndex ? " active" : "";
     const meta = item.type === "group"
       ? `Group${shortcut ? " · " + shortcut : ""}`
@@ -773,7 +812,7 @@ function handleSuggestionKeys(event){
 }
 
 /* SUBMIT */
-patientForm.addEventListener("submit", e => {
+patientForm.addEventListener("submit", async e => {
   e.preventDefault();
 
   if (!selected.size) {
@@ -781,44 +820,99 @@ patientForm.addEventListener("submit", e => {
     return;
   }
 
-  const current =
-    JSON.parse(localStorage.getItem("currentPatient") || "null");
   localStorage.removeItem("prefillPatient");
 
-  const payload = {
-    name: document.getElementById("name").value.trim(),
-    age: Number(document.getElementById("age").value),
-    gender: document.getElementById("gender").value,
-    mobile: document.getElementById("mobile").value.trim(),
-    address: document.getElementById("address").value.trim(),
-    doctor: document.getElementById("doctor").value || "SELF",
-    visitDate: document.getElementById("visitDate").value,
-    amount: parseMoney(amountInput.value),
-    discount: parseMoney(discountInput.value),
-    status: "NOT COMPLETE"
-  };
+  const name = document.getElementById("name").value.trim();
+  const ageValue = Number(document.getElementById("age").value);
+  const sexValue = toSexEnum(document.getElementById("gender").value);
+  const mobile = document.getElementById("mobile").value.trim();
+  const address = document.getElementById("address").value.trim();
+  const doctorIdRaw = document.getElementById("doctor").value;
+  const doctorId = doctorIdRaw ? Number(doctorIdRaw) : null;
+  const visitDateRaw = document.getElementById("visitDate").value;
+  const visitDate = visitDateRaw ? `${visitDateRaw}T00:00:00` : new Date().toISOString();
+  const discountAmount = parseMoney(discountInput.value);
+  const paidAmount = parseMoney(paidInput.value);
 
-  // ✅ EXISTING PATIENT → no save
-  if (current && current.id) {
-    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    parent.loadPage("home/sub-tasks/pt/enter-values.html");
-    return;
-  }
+  let patientId = selectedPatient && selectedPatient.id ? selectedPatient.id : null;
 
-  // ✅ NEW PATIENT → save
-  fetch(API_BASE_URL + "/patients", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(p => {
-    localStorage.setItem("currentPatient", JSON.stringify(p));
-    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    parent.loadPage("home/sub-tasks/pt/enter-values.html");
-  })
-  .catch(err => {
+  try {
+    if (!patientId) {
+      const patientPayload = {
+        patientCode: `P-${Date.now()}`,
+        name,
+        age: Number.isFinite(ageValue) ? ageValue : 0,
+        sex: sexValue,
+        mobile,
+        address
+      };
+      const createdPatient = await apiFetchJson("patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patientPayload)
+      });
+      patientId = createdPatient.id;
+    }
+
+    const visitPayload = {
+      patientId,
+      doctorId: doctorId || null,
+      visitDate,
+      labName: "",
+      discountAmount,
+      paidAmount,
+      status: "REGISTERED"
+    };
+
+    const visit = await apiFetchJson("visits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(visitPayload)
+    });
+
+    const testIds = [...selected];
+    const createRequests = testIds.map(testId => {
+      const testInfo = testInfoMap.get(testId) || {};
+      const payload = {
+        visitId: visit.id,
+        testId: testId,
+        priceAtTime: Number(testInfo.price) || 0
+      };
+      return apiFetchJson("visits/patient-tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch(() => null);
+    });
+
+    await Promise.all(createRequests);
+
+    const doctorInfo = doctorId ? doctorsById.get(doctorId) : null;
+    const currentVisit = {
+      visitId: visit.id,
+      patientId,
+      doctorId,
+      name,
+      age: Number.isFinite(ageValue) ? ageValue : 0,
+      sex: sexValue,
+      mobile,
+      address,
+      doctorName: doctorInfo?.name || "SELF",
+      visitDate: visit.visitDate || visitDate,
+      discountAmount,
+      paidAmount,
+      status: visit.status || "REGISTERED"
+    };
+
+    localStorage.setItem("currentVisit", JSON.stringify(currentVisit));
+    localStorage.setItem("selectedTests", JSON.stringify(testIds));
+    if (parent?.loadPage) {
+      parent.loadPage("home/sub-tasks/pt/enter-values.html", "patient");
+    } else {
+      window.location.href = "enter-values.html";
+    }
+  } catch (err) {
     console.error(err);
-    alert("Failed to save patient");
-  });
+    alert("Failed to save visit");
+  }
 });

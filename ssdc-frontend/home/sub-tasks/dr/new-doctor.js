@@ -9,13 +9,16 @@ document.getElementById("doctorForm").addEventListener("submit", function(e) {
     name: document.getElementById("name").value,
     specialization: document.getElementById("specialization").value,
     phone: document.getElementById("phone").value,
-    hospital: document.getElementById("hospital").value
+    hospital: document.getElementById("hospital").value,
+    commissionPercentage: null,
+    displayName: document.getElementById("name").value,
+    isActive: true
   };
   if (commissionRate !== null && Number.isFinite(commissionRate)) {
-    doctor.commissionRate = commissionRate;
+    doctor.commissionPercentage = commissionRate;
   }
 
-  fetch(API_BASE_URL + "/doctors", {
+  fetch(apiUrl("doctors"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(doctor)

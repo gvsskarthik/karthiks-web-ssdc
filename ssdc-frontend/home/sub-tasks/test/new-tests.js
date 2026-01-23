@@ -163,11 +163,7 @@ function normalizeShortcut(value) {
 
 async function loadShortcuts() {
   try {
-    const res = await fetch(API_BASE_URL + "/tests");
-    if (!res.ok) {
-      return;
-    }
-    const list = await res.json();
+    const list = await apiList("tests?size=1000");
     existingShortcuts = new Set(
       (list || [])
         .map(t => normalizeShortcut(t.shortcut))
@@ -307,9 +303,11 @@ function collectPayload() {
     testName: testName.value.trim(),
     shortcut: shortcut.value.trim(),
     category: category.value.trim(),
-    cost: costValue,
-    active: active.checked,
-    parameters: parameters
+    price: costValue,
+    isActive: active.checked,
+    hasParameters: enableParameters.checked && parameters.length > 0,
+    hasDefaultResults: parameters.some(param => Array.isArray(param.defaultResults) && param.defaultResults.length),
+    allowMultipleResults: parameters.some(param => param.allowMultiLine)
   };
 }
 
@@ -334,7 +332,7 @@ async function saveTest() {
   saveBtn.disabled = true;
 
   try {
-    const res = await fetch(API_BASE_URL + "/tests", {
+    const res = await fetch(apiUrl("tests"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)

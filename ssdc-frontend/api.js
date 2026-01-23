@@ -56,6 +56,30 @@
       : window.API_BASE_URL + "/" + path;
   };
 
+  window.apiFetchJson = function (path, init) {
+    const url = window.apiUrl(path);
+    return window.fetch(url, init).then((response) => {
+      if (!response.ok) {
+        return response.text().then((text) => {
+          throw new Error(text || "Request failed");
+        });
+      }
+      return response.json();
+    });
+  };
+
+  window.apiList = function (path, init) {
+    return window.apiFetchJson(path, init).then((data) => {
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data && Array.isArray(data.content)) {
+        return data.content;
+      }
+      return [];
+    });
+  };
+
   if (!window.fetch) {
     return;
   }

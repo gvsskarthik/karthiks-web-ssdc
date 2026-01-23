@@ -41,10 +41,36 @@ reportDate.addEventListener("change", () => {
 scheduleMidnightUpdate();
 
 function loadByDate(date){
-  fetch(`${API_BASE_URL}/patients/by-date/${date}`)
-    .then(res=>res.json())
-    .then(data=>renderTable(data))
-    .catch(()=>{
+  Promise.all([
+    apiList("visits?size=1000"),
+    apiList("patients?size=1000"),
+    apiList("doctors?size=1000")
+  ])
+    .then(([visits, patients, doctors]) => {
+      const patientMap = new Map((patients || []).map(p => [Number(p.id), p]));
+      const doctorMap = new Map((doctors || []).map(d => [Number(d.id), d]));
+      const rows = (visits || [])
+        .filter(v => String(v?.visitDate || "").startsWith(date))
+        .map(v => {
+          const patient = patientMap.get(Number(v.patientId)) || {};
+          const doctor = doctorMap.get(Number(v.doctorId)) || {};
+          return {
+            visitId: v.id,
+            patientId: v.patientId,
+            name: patient.name || "-",
+            age: patient.age || "",
+            sex: patient.sex || "",
+            mobile: patient.mobile || "",
+            address: patient.address || "",
+            doctorId: v.doctorId,
+            doctorName: doctor.name || "SELF",
+            visitDate: v.visitDate,
+            status: v.status || ""
+          };
+        });
+      renderTable(rows);
+    })
+    .catch(() => {
       table.innerHTML =
         `<tr><td colspan="5" class="no-data">No data</td></tr>`;
     });
@@ -72,7 +98,7 @@ function renderTable(data){
           </a>
         </td>
 
-        <td class="doctor">${p.doctor || "SELF"}</td>
+        <td class="doctor">${p.doctorName || "SELF"}</td>
         <td class="status-col"><span class="status">${p.status}</span></td>
 
         <!-- VIEW FINAL REPORT -->
@@ -90,7 +116,7 @@ function renderTable(data){
 /* ✅ ENTER VALUES PAGE */
 /* ENTER VALUES */
 function openPatient(patient){
-  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.setItem("currentVisit", JSON.stringify(patient));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
 
@@ -102,7 +128,7 @@ function openPatient(patient){
 
 /* FINAL REPORT */
 function openReport(patient){
-  localStorage.setItem("currentPatient", JSON.stringify(patient));
+  localStorage.setItem("currentVisit", JSON.stringify(patient));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
 

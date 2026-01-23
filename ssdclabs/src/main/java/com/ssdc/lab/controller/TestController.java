@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tests")
@@ -69,14 +71,23 @@ public class TestController {
 
   @GetMapping("/groups")
   public Page<TestGroupSummary> listGroups(Pageable pageable) {
-    return testService.findAllGroups(pageable).map(TestGroupSummary::fromEntity);
+    Page<TestGroupEntity> page = testService.findAllGroups(pageable);
+    List<Long> groupIds = page.getContent().stream()
+      .map(TestGroupEntity::getId)
+      .toList();
+    Map<Long, List<Long>> groupTestIds = testService.findGroupTestIds(groupIds);
+    return page.map(entity ->
+      TestGroupSummary.fromEntity(entity, groupTestIds.getOrDefault(entity.getId(), List.of()))
+    );
   }
 
   @GetMapping("/groups/{id}")
   public TestGroupDetail getGroup(@PathVariable Long id) {
     TestGroupEntity entity = testService.findGroupById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    return TestGroupDetail.fromEntity(entity);
+    Map<Long, List<Long>> groupTestIds = testService.findGroupTestIds(List.of(entity.getId()));
+    List<Long> testIds = groupTestIds.getOrDefault(entity.getId(), List.of());
+    return TestGroupDetail.fromEntity(entity, testIds);
   }
 
   @PostMapping("/groups")
@@ -84,7 +95,12 @@ public class TestController {
     TestGroupEntity entity = TestEntityFactory.createTestGroup();
     apply(entity, request);
     TestGroupEntity saved = testService.saveGroup(entity);
-    return ResponseEntity.status(HttpStatus.CREATED).body(TestGroupDetail.fromEntity(saved));
+    List<Long> testIds = request.testIds();
+    if (testIds != null && !testIds.isEmpty()) {
+      testService.replaceGroupTests(saved, testService.findTestsByIds(testIds));
+    }
+    return ResponseEntity.status(HttpStatus.CREATED)
+      .body(TestGroupDetail.fromEntity(saved, testIds == null ? List.of() : testIds));
   }
 
   @PutMapping("/groups/{id}")
@@ -93,7 +109,11 @@ public class TestController {
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     apply(entity, request);
     TestGroupEntity saved = testService.saveGroup(entity);
-    return TestGroupDetail.fromEntity(saved);
+    List<Long> testIds = request.testIds();
+    if (testIds != null) {
+      testService.replaceGroupTests(saved, testService.findTestsByIds(testIds));
+    }
+    return TestGroupDetail.fromEntity(saved, testIds == null ? List.of() : testIds);
   }
 
   @DeleteMapping("/groups/{id}")
@@ -138,7 +158,8 @@ public class TestController {
     String groupName,
     String shortcut,
     String category,
-    BigDecimal price
+    BigDecimal price,
+    List<Long> testIds
   ) {
   }
 
@@ -193,15 +214,17 @@ public class TestController {
     String groupName,
     String shortcut,
     String category,
-    BigDecimal price
+    BigDecimal price,
+    List<Long> testIds
   ) {
-    public static TestGroupSummary fromEntity(TestGroupEntity entity) {
+    public static TestGroupSummary fromEntity(TestGroupEntity entity, List<Long> testIds) {
       return new TestGroupSummary(
         entity.getId(),
         entity.getGroupName(),
         entity.getShortcut(),
         entity.getCategory(),
-        entity.getPrice()
+        entity.getPrice(),
+        testIds
       );
     }
   }
@@ -211,15 +234,17 @@ public class TestController {
     String groupName,
     String shortcut,
     String category,
-    BigDecimal price
+    BigDecimal price,
+    List<Long> testIds
   ) {
-    public static TestGroupDetail fromEntity(TestGroupEntity entity) {
+    public static TestGroupDetail fromEntity(TestGroupEntity entity, List<Long> testIds) {
       return new TestGroupDetail(
         entity.getId(),
         entity.getGroupName(),
         entity.getShortcut(),
         entity.getCategory(),
-        entity.getPrice()
+        entity.getPrice(),
+        testIds
       );
     }
   }
