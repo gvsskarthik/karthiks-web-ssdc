@@ -1,9 +1,14 @@
 package com.ssdc.lab.controller;
 
+import com.ssdc.lab.domain.test.TestDefaultResultEntity;
 import com.ssdc.lab.domain.test.TestEntity;
 import com.ssdc.lab.domain.test.TestEntityFactory;
 import com.ssdc.lab.domain.test.TestGroupEntity;
+import com.ssdc.lab.domain.test.TestParameterEntity;
 import com.ssdc.lab.service.TestService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -20,12 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tests")
 public class TestController {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final TestService testService;
 
   public TestController(TestService testService) {
@@ -41,7 +48,9 @@ public class TestController {
   public TestDetail getTest(@PathVariable Long id) {
     TestEntity entity = testService.findTestById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    return TestDetail.fromEntity(entity);
+    List<TestParameterEntity> parameters = testService.findParametersByTestId(entity.getId());
+    List<TestDefaultResultEntity> defaults = testService.findDefaultResultsByTestId(entity.getId());
+    return TestDetail.fromEntity(entity, parameters, defaults);
   }
 
   @PostMapping
@@ -54,7 +63,10 @@ public class TestController {
     TestEntity entity = TestEntityFactory.createTest();
     apply(entity, normalized);
     TestEntity saved = testService.saveTest(entity);
-    return ResponseEntity.status(HttpStatus.CREATED).body(TestDetail.fromEntity(saved));
+    persistParametersAndDefaults(saved, normalized);
+    List<TestParameterEntity> parameters = testService.findParametersByTestId(saved.getId());
+    List<TestDefaultResultEntity> defaults = testService.findDefaultResultsByTestId(saved.getId());
+    return ResponseEntity.status(HttpStatus.CREATED).body(TestDetail.fromEntity(saved, parameters, defaults));
   }
 
   @PutMapping("/{id}")
@@ -68,7 +80,10 @@ public class TestController {
     }
     apply(entity, normalized);
     TestEntity saved = testService.saveTest(entity);
-    return TestDetail.fromEntity(saved);
+    persistParametersAndDefaults(saved, normalized);
+    List<TestParameterEntity> parameters = testService.findParametersByTestId(saved.getId());
+    List<TestDefaultResultEntity> defaults = testService.findDefaultResultsByTestId(saved.getId());
+    return TestDetail.fromEntity(saved, parameters, defaults);
   }
 
   @DeleteMapping("/{id}")
@@ -145,6 +160,20 @@ public class TestController {
     entity.setAllowMultipleResults(request.allowMultipleResults());
   }
 
+  private void persistParametersAndDefaults(TestEntity saved, TestRequest request) {
+    if (saved == null || request == null) {
+      return;
+    }
+    if (request.parameters() == null) {
+      return;
+    }
+    List<NormalizedParameter> normalizedParameters = normalizeParameters(request.parameters());
+    List<TestParameterEntity> parameterEntities = toParameterEntities(normalizedParameters);
+    List<TestDefaultResultEntity> defaultEntities = toDefaultEntities(normalizedParameters);
+    testService.replaceParameters(saved, parameterEntities);
+    testService.replaceDefaultResults(saved, defaultEntities);
+  }
+
   private static TestRequest normalize(TestRequest request) {
     if (request == null) {
       return null;
@@ -157,7 +186,8 @@ public class TestController {
       request.isActive(),
       request.hasParameters(),
       request.hasDefaultResults(),
-      request.allowMultipleResults()
+      request.allowMultipleResults(),
+      request.parameters()
     );
   }
 
@@ -180,6 +210,17 @@ public class TestController {
     if (request.price().signum() < 0) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price must be zero or greater.");
     }
+    if (request.hasParameters() && request.parameters() != null) {
+      List<TestParameterRequest> params = request.parameters();
+      if (params == null || params.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parameters are required.");
+      }
+      for (TestParameterRequest param : params) {
+        if (param == null || isBlank(param.valueType())) {
+          throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Value type is required.");
+        }
+      }
+    }
   }
 
   private static String normalizeText(String value) {
@@ -188,6 +229,135 @@ public class TestController {
 
   private static boolean isBlank(String value) {
     return value == null || value.trim().isEmpty();
+  }
+
+  private static List<NormalizedParameter> normalizeParameters(List<TestParameterRequest> parameters) {
+    if (parameters == null || parameters.isEmpty()) {
+      return List.of();
+    }
+    List<NormalizedParameter> normalized = new ArrayList<>();
+    int index = 1;
+    for (TestParameterRequest request : parameters) {
+      if (request == null) {
+        continue;
+      }
+      String name = normalizeText(request.name());
+      if (isBlank(name)) {
+        name = "Parameter " + index;
+      }
+      String unit = normalizeText(request.unit());
+      if (unit == null) {
+        unit = "";
+      }
+      TestParameterEntity.ValueType valueType = parseValueType(request.valueType());
+      List<String> defaultResults = normalizeStringList(request.defaultResults());
+      normalized.add(new NormalizedParameter(name, unit, valueType, defaultResults));
+      index++;
+    }
+    return normalized;
+  }
+
+  private static List<TestParameterEntity> toParameterEntities(List<NormalizedParameter> parameters) {
+    if (parameters == null || parameters.isEmpty()) {
+      return List.of();
+    }
+    List<TestParameterEntity> entities = new ArrayList<>();
+    for (NormalizedParameter param : parameters) {
+      TestParameterEntity entity = TestEntityFactory.createTestParameter();
+      entity.setParameterName(param.name());
+      entity.setUnit(param.unit());
+      entity.setValueType(param.valueType());
+      entities.add(entity);
+    }
+    return entities;
+  }
+
+  private static List<TestDefaultResultEntity> toDefaultEntities(List<NormalizedParameter> parameters) {
+    if (parameters == null || parameters.isEmpty()) {
+      return List.of();
+    }
+    List<TestDefaultResultEntity> defaults = new ArrayList<>();
+    for (NormalizedParameter param : parameters) {
+      if (param.defaultResults() == null || param.defaultResults().isEmpty()) {
+        continue;
+      }
+      for (String value : param.defaultResults()) {
+        if (isBlank(value)) {
+          continue;
+        }
+        TestDefaultResultEntity entity = TestEntityFactory.createTestDefaultResult();
+        entity.setDefaultValue(encodeDefaultValue(param.name(), value.trim()));
+        defaults.add(entity);
+      }
+    }
+    return defaults;
+  }
+
+  private static List<String> normalizeStringList(List<String> values) {
+    if (values == null || values.isEmpty()) {
+      return List.of();
+    }
+    List<String> cleaned = new ArrayList<>();
+    for (String value : values) {
+      String trimmed = normalizeText(value);
+      if (!isBlank(trimmed)) {
+        cleaned.add(trimmed);
+      }
+    }
+    return cleaned;
+  }
+
+  private static TestParameterEntity.ValueType parseValueType(String value) {
+    if (isBlank(value)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Value type is required.");
+    }
+    try {
+      return TestParameterEntity.ValueType.valueOf(value.trim().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid value type.");
+    }
+  }
+
+  private static String encodeDefaultValue(String parameterName, String value) {
+    if (isBlank(parameterName)) {
+      return value;
+    }
+    try {
+      var node = OBJECT_MAPPER.createObjectNode();
+      node.put("param", parameterName);
+      node.put("value", value);
+      return OBJECT_MAPPER.writeValueAsString(node);
+    } catch (JsonProcessingException ex) {
+      return value;
+    }
+  }
+
+  private static TestDefaultResultDetail decodeDefaultValue(TestDefaultResultEntity entity) {
+    if (entity == null || entity.getDefaultValue() == null) {
+      return null;
+    }
+    String raw = entity.getDefaultValue().trim();
+    if (raw.startsWith("{") && raw.endsWith("}")) {
+      try {
+        JsonNode node = OBJECT_MAPPER.readTree(raw);
+        String value = node.path("value").asText(null);
+        String param = node.path("param").asText(null);
+        if (value != null) {
+          return new TestDefaultResultDetail(isBlank(param) ? null : param, value);
+        }
+      } catch (Exception ignored) {
+        // Fall back to raw value.
+      }
+    }
+    return new TestDefaultResultDetail(null, raw);
+  }
+
+  private record NormalizedParameter(
+    String name,
+    String unit,
+    TestParameterEntity.ValueType valueType,
+    List<String> defaultResults
+  ) {
   }
 
   private static void apply(TestGroupEntity entity, TestGroupRequest request) {
@@ -205,7 +375,23 @@ public class TestController {
     boolean isActive,
     boolean hasParameters,
     boolean hasDefaultResults,
-    boolean allowMultipleResults
+    boolean allowMultipleResults,
+    List<TestParameterRequest> parameters
+  ) {
+  }
+
+  public record TestParameterRequest(
+    String name,
+    String unit,
+    String valueType,
+    boolean allowMultiLine,
+    List<String> defaultResults,
+    List<NormalRangeRequest> normalRanges
+  ) {
+  }
+
+  public record NormalRangeRequest(
+    String textValue
   ) {
   }
 
@@ -247,9 +433,20 @@ public class TestController {
     boolean isActive,
     boolean hasParameters,
     boolean hasDefaultResults,
-    boolean allowMultipleResults
+    boolean allowMultipleResults,
+    List<TestParameterDetail> parameters,
+    List<TestDefaultResultDetail> defaultResults
   ) {
-    public static TestDetail fromEntity(TestEntity entity) {
+    public static TestDetail fromEntity(TestEntity entity,
+                                        List<TestParameterEntity> parameters,
+                                        List<TestDefaultResultEntity> defaults) {
+      List<TestParameterDetail> paramDetails = parameters == null ? List.of() :
+        parameters.stream().map(TestParameterDetail::fromEntity).toList();
+      List<TestDefaultResultDetail> defaultDetails = defaults == null ? List.of() :
+        defaults.stream()
+          .map(TestController::decodeDefaultValue)
+          .filter(java.util.Objects::nonNull)
+          .toList();
       return new TestDetail(
         entity.getId(),
         entity.getTestName(),
@@ -259,9 +456,33 @@ public class TestController {
         entity.isActive(),
         entity.isHasParameters(),
         entity.isHasDefaultResults(),
-        entity.isAllowMultipleResults()
+        entity.isAllowMultipleResults(),
+        paramDetails,
+        defaultDetails
       );
     }
+  }
+
+  public record TestParameterDetail(
+    Long id,
+    String name,
+    String unit,
+    String valueType
+  ) {
+    public static TestParameterDetail fromEntity(TestParameterEntity entity) {
+      return new TestParameterDetail(
+        entity.getId(),
+        entity.getParameterName(),
+        entity.getUnit(),
+        entity.getValueType() == null ? null : entity.getValueType().name()
+      );
+    }
+  }
+
+  public record TestDefaultResultDetail(
+    String parameterName,
+    String value
+  ) {
   }
 
   public record TestGroupSummary(

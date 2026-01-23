@@ -63,7 +63,7 @@ function loadByDate(date){
             mobile: patient.mobile || "",
             address: patient.address || "",
             doctorId: v.doctorId,
-            doctorName: doctor.name || "SELF",
+            doctorName: doctor.displayName || doctor.name || "SELF",
             visitDate: v.visitDate,
             status: v.status || ""
           };

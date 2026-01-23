@@ -140,10 +140,12 @@ function refreshParameterLabels() {
 
 function setParametersEnabled(enabled) {
   addParamBtn.disabled = !enabled;
-  const nameInputs = paramList.querySelectorAll(".param-name");
-  nameInputs.forEach(input => {
-    input.disabled = !enabled;
-    input.classList.toggle("is-disabled", !enabled);
+  const controls = paramList.querySelectorAll("input, select, textarea, button");
+  controls.forEach(control => {
+    control.disabled = !enabled;
+    if (control.tagName === "INPUT" || control.tagName === "TEXTAREA" || control.tagName === "SELECT") {
+      control.classList.toggle("is-disabled", !enabled);
+    }
   });
 }
 
@@ -258,57 +260,60 @@ function collectPayload() {
 
   const parameters = [];
   const cards = [...document.querySelectorAll(".param-card")];
+  const parametersEnabled = enableParameters.checked;
 
-  if (cards.length === 0) {
+  if (parametersEnabled && cards.length === 0) {
     errors.push("Add at least one parameter.");
   }
 
-  cards.forEach((card, index) => {
-    const nameInput = card.querySelector(".param-name");
-    const unitInput = card.querySelector(".param-unit");
-    const typeSelect = card.querySelector(".param-type");
-    const defaultToggle = card.querySelector(".param-default-toggle-input");
-    const defaultResultsContainer = card.querySelector(".default-results");
-    const multiLineToggle = card.querySelector(".param-multiline-toggle-input");
+  if (parametersEnabled) {
+    cards.forEach((card, index) => {
+      const nameInput = card.querySelector(".param-name");
+      const unitInput = card.querySelector(".param-unit");
+      const typeSelect = card.querySelector(".param-type");
+      const defaultToggle = card.querySelector(".param-default-toggle-input");
+      const defaultResultsContainer = card.querySelector(".default-results");
+      const multiLineToggle = card.querySelector(".param-multiline-toggle-input");
 
-    const name = nameInput.value.trim();
-    if (!typeSelect.value) {
-      typeSelect.classList.add("error");
-      errors.push("Value type is required.");
-      return;
-    }
-
-    const normals = [];
-    const normalRows = [...card.querySelectorAll(".normal-row")];
-
-    normalRows.forEach(row => {
-      const textValueRaw = normalizeNormalText(
-        row.querySelector(".normal-text").value
-      );
-      if (!textValueRaw) {
+      const name = nameInput.value.trim();
+      if (!typeSelect.value) {
+        typeSelect.classList.add("error");
+        errors.push("Value type is required.");
         return;
       }
 
-      normals.push({
-        textValue: textValueRaw
+      const normals = [];
+      const normalRows = [...card.querySelectorAll(".normal-row")];
+
+      normalRows.forEach(row => {
+        const textValueRaw = normalizeNormalText(
+          row.querySelector(".normal-text").value
+        );
+        if (!textValueRaw) {
+          return;
+        }
+
+        normals.push({
+          textValue: textValueRaw
+        });
+      });
+
+      const defaultResults = defaultToggle.checked
+        ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
+            .map(input => input.value.trim())
+            .filter(Boolean)
+        : [];
+
+      parameters.push({
+        name: name || `Parameter ${index + 1}`,
+        unit: unitInput.value.trim() || "",
+        valueType: typeSelect.value,
+        allowMultiLine: !!multiLineToggle.checked,
+        defaultResults: defaultResults.length ? defaultResults : [],
+        normalRanges: normals
       });
     });
-
-    const defaultResults = defaultToggle.checked
-      ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
-          .map(input => input.value.trim())
-          .filter(Boolean)
-      : [];
-
-    parameters.push({
-      name: name || `Parameter ${index + 1}`,
-      unit: unitInput.value.trim() || null,
-      valueType: typeSelect.value,
-      allowMultiLine: !!multiLineToggle.checked,
-      defaultResults: defaultResults.length ? defaultResults : null,
-      normalRanges: normals
-    });
-  });
+  }
 
   if (errors.length) {
     setMessage("Please fix the highlighted errors.", "error");
@@ -321,9 +326,10 @@ function collectPayload() {
     category: category.value.trim(),
     price: costValue,
     isActive: active.checked,
-    hasParameters: enableParameters.checked && parameters.length > 0,
+    hasParameters: parametersEnabled && parameters.length > 0,
     hasDefaultResults: parameters.some(param => Array.isArray(param.defaultResults) && param.defaultResults.length),
-    allowMultipleResults: parameters.some(param => param.allowMultiLine)
+    allowMultipleResults: parameters.some(param => param.allowMultiLine),
+    parameters
   };
 }
 

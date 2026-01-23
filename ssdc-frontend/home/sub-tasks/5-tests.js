@@ -182,7 +182,7 @@ function saveTest(){
    hasParameters: !!editTest.hasParameters,
    hasDefaultResults: !!editTest.hasDefaultResults,
    allowMultipleResults: !!editTest.allowMultipleResults
- };
+  };
 
  fetch(apiUrl(`tests/${editTest.id}`),{
   method:"PUT",

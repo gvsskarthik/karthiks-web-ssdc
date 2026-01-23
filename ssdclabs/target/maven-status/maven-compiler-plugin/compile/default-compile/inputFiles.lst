@@ -8,8 +8,10 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/TestController.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/patient/PatientTestEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestResultRepository.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestDefaultResultRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/GroupTestEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/service/DoctorService.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestParameterRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/doctor/DoctorEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/GroupTestRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/TestRepository.java

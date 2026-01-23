@@ -7,13 +7,16 @@ document.getElementById("doctorForm").addEventListener("submit", function(e) {
 
   const doctor = {
     name: document.getElementById("name").value,
+    displayName: document.getElementById("displayName").value,
     specialization: document.getElementById("specialization").value,
     phone: document.getElementById("phone").value,
     hospital: document.getElementById("hospital").value,
     commissionPercentage: null,
-    displayName: document.getElementById("name").value,
     isActive: true
   };
+  if (!doctor.displayName || !doctor.displayName.trim()) {
+    doctor.displayName = doctor.name;
+  }
   if (commissionRate !== null && Number.isFinite(commissionRate)) {
     doctor.commissionPercentage = commissionRate;
   }

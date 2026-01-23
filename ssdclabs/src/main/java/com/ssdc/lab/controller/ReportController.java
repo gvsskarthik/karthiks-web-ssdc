@@ -67,7 +67,7 @@ public class ReportController {
 
     TestResultEntity entity = ResultEntityFactory.createTestResult();
     entity.setPatientTest(patientTest);
-    ResultMetadata metadata = resolveMetadata(patientTest);
+    ResultMetadata metadata = resolveMetadata(patientTest, request);
     entity.setParameterName(metadata.parameterName());
     entity.setUnit(metadata.unit());
 
@@ -81,20 +81,47 @@ public class ReportController {
       return List.of();
     }
     List<TestResultDetail> savedResults = new ArrayList<>();
+    record Key(Long patientTestId, String parameterName) {}
+
+    var grouped = new java.util.LinkedHashMap<Key, List<TestResultSaveRequest>>();
     for (TestResultSaveRequest request : requests) {
-      if (request == null || isBlank(request.resultValue())) {
+      if (request == null || request.patientTestId() == null) {
         continue;
       }
-      PatientTestEntity patientTest = visitService.findPatientTestById(request.patientTestId())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-      TestResultEntity entity = ResultEntityFactory.createTestResult();
-      entity.setPatientTest(patientTest);
-      ResultMetadata metadata = resolveMetadata(patientTest);
-      entity.setParameterName(metadata.parameterName());
-      entity.setUnit(metadata.unit());
-      TestResultEntity saved = reportService.saveResultValue(entity, request.resultValue());
-      savedResults.add(TestResultDetail.fromEntity(saved));
+      String parameterName = normalizeText(request.parameterName());
+      if (isBlank(parameterName)) {
+        parameterName = "Result";
+      }
+      Key key = new Key(request.patientTestId(), parameterName);
+      grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(request);
     }
+
+    for (var entry : grouped.entrySet()) {
+      Key key = entry.getKey();
+      List<TestResultSaveRequest> group = entry.getValue();
+      PatientTestEntity patientTest = visitService.findPatientTestById(key.patientTestId())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+      String unit = "";
+      List<String> values = new ArrayList<>();
+      for (TestResultSaveRequest request : group) {
+        if (unit.isEmpty() && !isBlank(request.unit())) {
+          unit = normalizeText(request.unit());
+        }
+        if (!isBlank(request.resultValue())) {
+          values.add(request.resultValue().trim());
+        }
+      }
+      if (values.isEmpty()) {
+        continue;
+      }
+      TestResultEntity template = ResultEntityFactory.createTestResult();
+      template.setPatientTest(patientTest);
+      template.setParameterName(key.parameterName());
+      template.setUnit(unit);
+      reportService.replaceResults(template, values)
+        .forEach(result -> savedResults.add(TestResultDetail.fromEntity(result)));
+    }
+
     return savedResults;
   }
 
@@ -115,10 +142,19 @@ public class ReportController {
     reportService.deleteResult(entity);
   }
 
-  private ResultMetadata resolveMetadata(PatientTestEntity patientTest) {
+  private ResultMetadata resolveMetadata(PatientTestEntity patientTest, TestResultSaveRequest request) {
+    String parameterName = request != null ? normalizeText(request.parameterName()) : null;
+    String unit = request != null ? normalizeText(request.unit()) : null;
+    if (!isBlank(parameterName)) {
+      return new ResultMetadata(parameterName, unit == null ? "" : unit);
+    }
     // Metadata is resolved server-side; default results are display-only and excluded for now.
     // Future parameter/default logic should be added here without touching save flow.
     return new ResultMetadata("Result", "");
+  }
+
+  private String normalizeText(String value) {
+    return value == null ? null : value.trim();
   }
 
   private boolean isBlank(String value) {

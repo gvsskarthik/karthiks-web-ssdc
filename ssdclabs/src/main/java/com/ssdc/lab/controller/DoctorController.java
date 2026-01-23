@@ -72,7 +72,11 @@ public class DoctorController {
     entity.setPhone(request.phone());
     entity.setHospital(request.hospital());
     entity.setCommissionPercentage(request.commissionPercentage());
-    entity.setDisplayName(request.displayName());
+    String displayName = request.displayName();
+    if (displayName == null || displayName.isBlank()) {
+      displayName = request.name();
+    }
+    entity.setDisplayName(displayName);
     entity.setActive(request.isActive());
   }
 
@@ -92,6 +96,8 @@ public class DoctorController {
     String name,
     String specialization,
     String phone,
+    String hospital,
+    String displayName,
     boolean isActive
   ) {
     public static DoctorSummary fromEntity(DoctorEntity entity) {
@@ -100,6 +106,8 @@ public class DoctorController {
         entity.getName(),
         entity.getSpecialization(),
         entity.getPhone(),
+        entity.getHospital(),
+        entity.getDisplayName(),
         entity.isActive()
       );
     }

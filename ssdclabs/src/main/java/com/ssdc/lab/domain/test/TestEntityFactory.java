@@ -15,4 +15,12 @@ public final class TestEntityFactory {
   public static GroupTestEntity createGroupTest() {
     return new GroupTestEntity();
   }
+
+  public static TestParameterEntity createTestParameter() {
+    return new TestParameterEntity();
+  }
+
+  public static TestDefaultResultEntity createTestDefaultResult() {
+    return new TestDefaultResultEntity();
+  }
 }

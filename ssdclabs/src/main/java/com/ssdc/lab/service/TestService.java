@@ -4,8 +4,12 @@ import com.ssdc.lab.domain.test.GroupTestEntity;
 import com.ssdc.lab.domain.test.TestEntity;
 import com.ssdc.lab.domain.test.TestEntityFactory;
 import com.ssdc.lab.domain.test.TestGroupEntity;
+import com.ssdc.lab.domain.test.TestDefaultResultEntity;
+import com.ssdc.lab.domain.test.TestParameterEntity;
+import com.ssdc.lab.repository.TestDefaultResultRepository;
 import com.ssdc.lab.repository.GroupTestRepository;
 import com.ssdc.lab.repository.TestGroupRepository;
+import com.ssdc.lab.repository.TestParameterRepository;
 import com.ssdc.lab.repository.TestRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +28,19 @@ public class TestService {
   private final TestRepository testRepository;
   private final TestGroupRepository testGroupRepository;
   private final GroupTestRepository groupTestRepository;
+  private final TestParameterRepository testParameterRepository;
+  private final TestDefaultResultRepository testDefaultResultRepository;
 
   public TestService(TestRepository testRepository,
                      TestGroupRepository testGroupRepository,
-                     GroupTestRepository groupTestRepository) {
+                     GroupTestRepository groupTestRepository,
+                     TestParameterRepository testParameterRepository,
+                     TestDefaultResultRepository testDefaultResultRepository) {
     this.testRepository = testRepository;
     this.testGroupRepository = testGroupRepository;
     this.groupTestRepository = groupTestRepository;
+    this.testParameterRepository = testParameterRepository;
+    this.testDefaultResultRepository = testDefaultResultRepository;
   }
 
   public Page<TestEntity> findAllTests(Pageable pageable) {
@@ -39,6 +49,20 @@ public class TestService {
 
   public Optional<TestEntity> findTestById(Long id) {
     return testRepository.findById(id);
+  }
+
+  public List<TestParameterEntity> findParametersByTestId(Long testId) {
+    if (testId == null) {
+      return List.of();
+    }
+    return testParameterRepository.findByTestId(testId);
+  }
+
+  public List<TestDefaultResultEntity> findDefaultResultsByTestId(Long testId) {
+    if (testId == null) {
+      return List.of();
+    }
+    return testDefaultResultRepository.findByTestId(testId);
   }
 
   public boolean existsByShortcutIgnoreCase(String shortcut) {
@@ -70,6 +94,36 @@ public class TestService {
   @Transactional
   public void deleteTest(TestEntity entity) {
     testRepository.delete(entity);
+  }
+
+  @Transactional
+  public void replaceParameters(TestEntity test, List<TestParameterEntity> parameters) {
+    if (test == null || test.getId() == null) {
+      return;
+    }
+    testParameterRepository.deleteByTestId(test.getId());
+    if (parameters == null || parameters.isEmpty()) {
+      return;
+    }
+    for (TestParameterEntity parameter : parameters) {
+      parameter.setTest(test);
+      testParameterRepository.save(parameter);
+    }
+  }
+
+  @Transactional
+  public void replaceDefaultResults(TestEntity test, List<TestDefaultResultEntity> defaults) {
+    if (test == null || test.getId() == null) {
+      return;
+    }
+    testDefaultResultRepository.deleteByTestId(test.getId());
+    if (defaults == null || defaults.isEmpty()) {
+      return;
+    }
+    for (TestDefaultResultEntity def : defaults) {
+      def.setTest(test);
+      testDefaultResultRepository.save(def);
+    }
   }
 
   public Page<TestGroupEntity> findAllGroups(Pageable pageable) {

@@ -64,6 +64,17 @@ th {
   box-shadow: none;
 }
 
+.result-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.param-label {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--theme-muted);
+}
+
 .add-line-wrap {
   margin-top: 6px;
 }

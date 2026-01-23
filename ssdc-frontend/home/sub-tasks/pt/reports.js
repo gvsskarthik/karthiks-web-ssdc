@@ -22,6 +22,15 @@ function formatAgeSex(age, sex){
   return `${safeAge}${safeSex}`;
 }
 
+function escapeHtml(value){
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 setText("pName", visit.name);
 setText("pAddress", visit.address);
 setText("pAgeSex", formatAgeSex(visit.age, visit.sex));
@@ -41,12 +50,19 @@ function loadPatientTests(){
     });
 }
 
-function loadTests(){
-  return apiList("tests?size=1000")
-    .then(list => {
-      const tests = Array.isArray(list) ? list : [];
-      testsById = new Map(tests.map(t => [Number(t.id), t]));
-      return tests;
+function loadTestDetails(){
+  const ids = [...new Set(patientTests.map(item => Number(item.testId)).filter(Number.isFinite))];
+  if (!ids.length) {
+    testsById = new Map();
+    return Promise.resolve([]);
+  }
+  return Promise.all(ids.map(id =>
+    apiFetchJson(`tests/${id}`).catch(() => null)
+  ))
+    .then(details => {
+      const clean = details.filter(Boolean);
+      testsById = new Map(clean.map(t => [Number(t.id), t]));
+      return clean;
     });
 }
 
@@ -56,7 +72,20 @@ function loadResults(){
       resultsByPatientTestId = new Map();
       (Array.isArray(list) ? list : []).forEach(r => {
         if (r && r.patientTestId != null) {
-          resultsByPatientTestId.set(Number(r.patientTestId), r);
+          const patientTestId = Number(r.patientTestId);
+          const parameterName = r.parameterName || "Result";
+          if (!resultsByPatientTestId.has(patientTestId)) {
+            resultsByPatientTestId.set(patientTestId, new Map());
+          }
+          const paramMap = resultsByPatientTestId.get(patientTestId);
+          if (!paramMap.has(parameterName)) {
+            paramMap.set(parameterName, { values: [], unit: r.unit || "" });
+          }
+          const entry = paramMap.get(parameterName);
+          entry.values.push(r.resultValue || "");
+          if (!entry.unit && r.unit) {
+            entry.unit = r.unit;
+          }
         }
       });
       return list;
@@ -74,19 +103,48 @@ function render(){
 
   patientTests.forEach(item => {
     const test = testsById.get(Number(item.testId)) || {};
-    const result = resultsByPatientTestId.get(Number(item.id));
-    body.innerHTML += `
-      <tr>
-        <td>${test.testName || "Test"}</td>
-        <td>${result?.resultValue || ""}</td>
-        <td>${result?.unit || ""}</td>
-        <td></td>
-      </tr>
-    `;
+    const paramMap = resultsByPatientTestId.get(Number(item.id)) || new Map();
+    const parameters = Array.isArray(test.parameters) && test.parameters.length
+      ? test.parameters.map(param => param.name || "Result")
+      : Array.from(paramMap.keys());
+
+    if (!parameters.length) {
+      parameters.push("Result");
+    }
+
+    parameters.forEach(paramName => {
+      const entry = paramMap.get(paramName) || { values: [], unit: "" };
+      const valueText = entry.values.length
+        ? entry.values.map(value => escapeHtml(value)).join("<br>")
+        : "";
+      const testLabel = parameters.length > 1
+        ? `${escapeHtml(test.testName || "Test")}<div class="param-label">${escapeHtml(paramName)}</div>`
+        : escapeHtml(test.testName || "Test");
+
+      body.innerHTML += `
+        <tr>
+          <td>${testLabel}</td>
+          <td>${valueText}</td>
+          <td>${escapeHtml(entry.unit || "")}</td>
+          <td></td>
+        </tr>
+      `;
+    });
   });
 }
 
-Promise.all([loadPatientTests(), loadTests(), loadResults()])
+function goPatients(){
+  if (parent?.loadPage) {
+    parent.loadPage("home/sub-tasks/2-patient.html", "patient");
+  } else {
+    location.href = "../2-patient.html";
+  }
+}
+
+window.goPatients = goPatients;
+
+loadPatientTests()
+  .then(() => Promise.all([loadTestDetails(), loadResults()]))
   .then(() => render())
   .catch(() => {
     const body = document.getElementById("reportBody");

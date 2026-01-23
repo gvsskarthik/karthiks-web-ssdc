@@ -3,6 +3,7 @@ const searchInput = document.getElementById("searchInput");
 const editModal = document.getElementById("editModal");
 const editForm = document.getElementById("editForm");
 const editName = document.getElementById("editName");
+const editDisplayName = document.getElementById("editDisplayName");
 const editSpecialization = document.getElementById("editSpecialization");
 const editPhone = document.getElementById("editPhone");
 const editHospital = document.getElementById("editHospital");
@@ -115,12 +116,13 @@ function renderDoctors() {
   table.innerHTML = "";
   doctors.forEach((d, i) => {
     const key = normalizeName(d.name);
+    const displayName = d.displayName || d.name || "-";
     const stats = key ? (monthlyStats.get(key) || { revenue: 0, commission: 0 }) : { revenue: 0, commission: 0 };
     const profit = stats.revenue - stats.commission;
     table.innerHTML += `
       <tr>
         <td class="sno">${i + 1}</td>
-        <td class="name">${d.name || "-"}</td>
+        <td class="name">${displayName}</td>
         <td class="specialization">${d.specialization || "-"}</td>
         <td class="hospital">${d.hospital || "-"}</td>
         <td class="phone">${d.phone || "-"}</td>
@@ -165,6 +167,7 @@ function openEdit(id) {
     .then(doctor => {
       editDoctorId = id;
       editName.value = doctor.name || "";
+      editDisplayName.value = doctor.displayName || doctor.name || "";
       editSpecialization.value = doctor.specialization || "";
       editPhone.value = doctor.phone || "";
       editHospital.value = doctor.hospital || "";
@@ -211,13 +214,16 @@ editForm.addEventListener("submit", function (e) {
 
   const doctor = {
     name: editName.value.trim(),
+    displayName: editDisplayName.value.trim(),
     specialization: editSpecialization.value.trim(),
     phone: editPhone.value.trim(),
     hospital: editHospital.value.trim(),
     commissionPercentage: null,
-    displayName: editName.value.trim(),
     isActive: true
   };
+  if (!doctor.displayName) {
+    doctor.displayName = doctor.name;
+  }
   const commissionRateRaw = editCommissionRate.value.trim();
   const commissionRate =
     commissionRateRaw === "" ? null : Number(commissionRateRaw);

@@ -1,4 +1,5 @@
 com/ssdc/lab/repository/TestResultRepository.class
+com/ssdc/lab/controller/TestController$NormalizedParameter.class
 com/ssdc/lab/domain/patient/PatientEntityFactory.class
 com/ssdc/lab/config/crypto/AesAttributeConverter.class
 com/ssdc/lab/controller/ReportController$ResultMetadata.class
@@ -8,6 +9,7 @@ com/ssdc/lab/domain/doctor/DoctorEntityFactory.class
 com/ssdc/lab/controller/AccountsController.class
 com/ssdc/lab/repository/TestRepository.class
 com/ssdc/lab/domain/patient/PatientEntity$Sex.class
+com/ssdc/lab/controller/TestController$NormalRangeRequest.class
 com/ssdc/lab/controller/PatientController$PatientDetail.class
 com/ssdc/lab/service/VisitService.class
 com/ssdc/lab/controller/TestController$TestRequest.class
@@ -15,6 +17,7 @@ com/ssdc/lab/domain/test/TestGroupEntity.class
 com/ssdc/lab/service/ReportService.class
 com/ssdc/lab/controller/PatientController$PatientRequest.class
 com/ssdc/lab/domain/test/TestEntityFactory.class
+com/ssdc/lab/repository/TestDefaultResultRepository.class
 com/ssdc/lab/controller/TestController$TestGroupRequest.class
 com/ssdc/lab/controller/VisitController$VisitRequest.class
 com/ssdc/lab/domain/doctor/DoctorEntity.class
@@ -26,6 +29,8 @@ com/ssdc/lab/controller/PatientController$PatientSummary.class
 com/ssdc/lab/controller/ReportController$TestResultSummary.class
 com/ssdc/lab/domain/test/TestParameterEntity.class
 com/ssdc/lab/service/TestService.class
+com/ssdc/lab/repository/TestParameterRepository.class
+com/ssdc/lab/controller/TestController$TestDefaultResultDetail.class
 com/ssdc/lab/controller/TestController$TestGroupDetail.class
 com/ssdc/lab/controller/VisitController$PatientTestDetail.class
 com/ssdc/lab/repository/DoctorRepository.class
@@ -45,9 +50,11 @@ com/ssdc/lab/repository/PatientVisitRepository.class
 com/ssdc/lab/repository/PatientRepository.class
 com/ssdc/lab/service/DoctorService.class
 com/ssdc/lab/controller/TestController$TestGroupSummary.class
+com/ssdc/lab/controller/TestController$TestParameterDetail.class
 com/ssdc/lab/domain/test/TestParameterEntity$ValueType.class
 com/ssdc/lab/controller/VisitController$VisitDetail.class
 com/ssdc/lab/controller/ReportController$TestResultDetail.class
+com/ssdc/lab/controller/TestController$TestParameterRequest.class
 com/ssdc/lab/controller/TestController.class
 com/ssdc/lab/domain/patient/PatientEntity.class
 com/ssdc/lab/domain/patient/PatientVisitEntity$Status.class
@@ -58,5 +65,6 @@ com/ssdc/lab/domain/test/TestDefaultResultEntity.class
 com/ssdc/lab/service/PatientService.class
 com/ssdc/lab/controller/AccountsController$AccountDetail.class
 com/ssdc/lab/controller/DoctorController.class
+com/ssdc/lab/controller/ReportController$1Key.class
 com/ssdc/lab/controller/PatientController.class
 com/ssdc/lab/domain/patient/PatientTestEntity.class

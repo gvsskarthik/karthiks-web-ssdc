@@ -37,6 +37,12 @@ th,td{
   padding-left: 20px;
 }
 
+.param-label{
+  margin-top: 2px;
+  font-size: 9px;
+  color: var(--theme-muted);
+}
+
 .is-abnormal{
   color: var(--theme-danger);
 }

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -41,6 +42,30 @@ public class ReportService {
     String finalValue = selectFinalValue(entity.getResultValue(), resolvedValue);
     entity.setResultValue(finalValue);
     return testResultRepository.save(entity);
+  }
+
+  @Transactional
+  public List<TestResultEntity> replaceResults(TestResultEntity template, List<String> values) {
+    if (template == null || template.getPatientTest() == null) {
+      return List.of();
+    }
+    if (values == null || values.isEmpty()) {
+      return List.of();
+    }
+    testResultRepository.deleteByPatientTestIdAndParameterName(
+      template.getPatientTest().getId(),
+      template.getParameterName()
+    );
+    List<TestResultEntity> saved = new ArrayList<>();
+    for (String value : values) {
+      TestResultEntity entity = com.ssdc.lab.domain.result.ResultEntityFactory.createTestResult();
+      entity.setPatientTest(template.getPatientTest());
+      entity.setParameterName(template.getParameterName());
+      entity.setUnit(template.getUnit());
+      entity.setResultValue(value);
+      saved.add(testResultRepository.save(entity));
+    }
+    return saved;
   }
 
   @Transactional

@@ -45,7 +45,9 @@ public class AccountsController {
       .sorted(Comparator.comparing(DoctorEntity::getName))
       .map(doctor -> new DoctorAccountSummary(
         doctor.getId(),
-        doctor.getName(),
+        doctor.getDisplayName() != null && !doctor.getDisplayName().isBlank()
+          ? doctor.getDisplayName()
+          : doctor.getName(),
         doctor.getCommissionPercentage()
       ))
       .toList();
@@ -103,11 +105,17 @@ public class AccountsController {
           ? visit.getVisitDate().toLocalDate()
           : null;
 
+        String doctorName = doctor != null
+          ? (doctor.getDisplayName() != null && !doctor.getDisplayName().isBlank()
+            ? doctor.getDisplayName()
+            : doctor.getName())
+          : "SELF";
+
         return new AccountDetail(
           date != null ? date.toString() : "",
           visit.getId(),
           patient != null ? patient.getName() : "",
-          doctor != null ? doctor.getName() : "SELF",
+          doctorName,
           billAmount,
           commissionAmount,
           visit.getDiscountAmount()

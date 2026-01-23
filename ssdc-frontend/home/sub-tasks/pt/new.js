@@ -5,6 +5,9 @@
 const patientForm = document.getElementById("patientForm");
 const visitDate = document.getElementById("visitDate");
 const doctor = document.getElementById("doctor");
+const labToggle = document.getElementById("labToggle");
+const labNameWrap = document.getElementById("labNameWrap");
+const labNameInput = document.getElementById("labName");
 const existingPatients = document.getElementById("existingPatients");
 const selectedList = document.getElementById("selectedTests");
 const noResult = document.getElementById("noResult");
@@ -44,6 +47,16 @@ searchInput.addEventListener("keydown", handleSuggestionKeys);
 suggestions.addEventListener("click", handleSuggestionClick);
 selectedList.addEventListener("change", handleSelectedChange);
 savePatientBtn.addEventListener("click", () => patientForm.requestSubmit());
+
+if (labToggle && labNameWrap) {
+  labToggle.addEventListener("change", () => {
+    const isChecked = labToggle.checked;
+    labNameWrap.classList.toggle("hidden", !isChecked);
+    if (!isChecked && labNameInput) {
+      labNameInput.value = "";
+    }
+  });
+}
 
 nameInput.addEventListener("input", () => {
   selectedPatient = null;
@@ -90,7 +103,7 @@ apiList("doctors?size=1000")
       if (!x || x.id == null) {
         return;
       }
-      const name = String(x.name || "").trim();
+      const name = String(x.displayName || x.name || "").trim();
       if (!name) {
         return;
       }
@@ -833,6 +846,9 @@ patientForm.addEventListener("submit", async e => {
   const visitDate = visitDateRaw ? `${visitDateRaw}T00:00:00` : new Date().toISOString();
   const discountAmount = parseMoney(discountInput.value);
   const paidAmount = parseMoney(paidInput.value);
+  const labName = labToggle && labToggle.checked
+    ? String(labNameInput?.value || "").trim()
+    : "";
 
   let patientId = selectedPatient && selectedPatient.id ? selectedPatient.id : null;
 
@@ -858,7 +874,7 @@ patientForm.addEventListener("submit", async e => {
       patientId,
       doctorId: doctorId || null,
       visitDate,
-      labName: "",
+      labName: labName || null,
       discountAmount,
       paidAmount,
       status: "REGISTERED"
@@ -897,7 +913,8 @@ patientForm.addEventListener("submit", async e => {
       sex: sexValue,
       mobile,
       address,
-      doctorName: doctorInfo?.name || "SELF",
+      doctorName: doctorInfo?.displayName || doctorInfo?.name || "SELF",
+      labName: labName || "",
       visitDate: visit.visitDate || visitDate,
       discountAmount,
       paidAmount,

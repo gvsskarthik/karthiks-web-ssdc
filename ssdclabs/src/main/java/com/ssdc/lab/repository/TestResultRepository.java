@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface TestResultRepository extends JpaRepository<TestResultEntity, Long> {
   List<TestResultEntity> findByPatientTestIdIn(Collection<Long> patientTestIds);
+  List<TestResultEntity> findByPatientTestIdAndParameterName(Long patientTestId, String parameterName);
+  void deleteByPatientTestIdAndParameterName(Long patientTestId, String parameterName);
 }
