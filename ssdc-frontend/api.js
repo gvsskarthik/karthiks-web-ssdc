@@ -6,14 +6,47 @@
     stored = window.localStorage.getItem("SSDC_API_BASE_URL");
   }
 
-  if (stored) {
-    stored = stored.trim();
+  function normalizeApiBase(input) {
+    const raw = (input || "").trim();
+    if (!raw) {
+      return defaultBase;
+    }
+
+    const isAbsolute = /^https?:\/\//i.test(raw);
+    if (isAbsolute) {
+      try {
+        const url = new URL(raw);
+        const path = (url.pathname || "/").replace(/\/$/, "");
+        const needsApi = path === "" || path === "/" || path.indexOf("/api") !== 0;
+        url.pathname = needsApi ? (path === "" || path === "/" ? "/api" : path + "/api") : path;
+        return url.toString().replace(/\/$/, "");
+      } catch (err) {
+        return defaultBase;
+      }
+    }
+
+    if (raw.indexOf("/api") === 0) {
+      return raw.replace(/\/$/, "");
+    }
+
+    if (raw.charAt(0) === "/") {
+      return raw.replace(/\/$/, "") + "/api";
+    }
+
+    return defaultBase;
   }
 
-  const isAbsoluteApiBase = stored && /^https?:\/\//i.test(stored);
-  const isValidRelativeApiBase = stored && stored.indexOf("/api") === 0;
-  window.API_BASE_URL =
-    isAbsoluteApiBase || isValidRelativeApiBase ? stored : defaultBase;
+  const normalizedBase = normalizeApiBase(stored);
+  window.API_BASE_URL = normalizedBase;
+  if (stored && window.localStorage) {
+    try {
+      if (stored.trim() !== normalizedBase) {
+        window.localStorage.setItem("SSDC_API_BASE_URL", normalizedBase);
+      }
+    } catch (err) {
+      // Ignore storage write errors.
+    }
+  }
   window.apiUrl = function (path) {
     if (!path) {
       return window.API_BASE_URL;
