@@ -152,6 +152,22 @@ function setMessage(text, type) {
   formMessage.className = "message" + (type ? " " + type : "");
 }
 
+function extractErrorMessage(text, status) {
+  const cleaned = String(text || "").trim();
+  if (!cleaned) {
+    return `Save failed (HTTP ${status || "error"}).`;
+  }
+  if (cleaned.startsWith("<")) {
+    return `Server error (HTTP ${status || "error"}).`;
+  }
+  try {
+    const parsed = JSON.parse(cleaned);
+    return parsed.message || parsed.detail || parsed.error || cleaned;
+  } catch (err) {
+    return cleaned;
+  }
+}
+
 function clearErrors() {
   document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
   document.querySelectorAll(".row-error").forEach(el => el.textContent = "");
@@ -340,7 +356,7 @@ async function saveTest() {
 
     if (!res.ok) {
       const errText = await res.text();
-      setMessage(errText || "Save failed.", "error");
+      setMessage(extractErrorMessage(errText, res.status), "error");
       saveBtn.disabled = false;
       return;
     }

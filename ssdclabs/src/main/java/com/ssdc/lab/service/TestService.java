@@ -41,6 +41,20 @@ public class TestService {
     return testRepository.findById(id);
   }
 
+  public boolean existsByShortcutIgnoreCase(String shortcut) {
+    if (shortcut == null || shortcut.isBlank()) {
+      return false;
+    }
+    return testRepository.existsByShortcutIgnoreCase(shortcut);
+  }
+
+  public boolean existsByShortcutIgnoreCaseAndIdNot(String shortcut, Long id) {
+    if (shortcut == null || shortcut.isBlank() || id == null) {
+      return false;
+    }
+    return testRepository.existsByShortcutIgnoreCaseAndIdNot(shortcut, id);
+  }
+
   public List<TestEntity> findTestsByIds(Collection<Long> ids) {
     if (ids == null || ids.isEmpty()) {
       return List.of();

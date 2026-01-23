@@ -46,8 +46,13 @@ public class TestController {
 
   @PostMapping
   public ResponseEntity<TestDetail> createTest(@RequestBody TestRequest request) {
+    TestRequest normalized = normalize(request);
+    validate(normalized);
+    if (testService.existsByShortcutIgnoreCase(normalized.shortcut())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Shortcut already exists.");
+    }
     TestEntity entity = TestEntityFactory.createTest();
-    apply(entity, request);
+    apply(entity, normalized);
     TestEntity saved = testService.saveTest(entity);
     return ResponseEntity.status(HttpStatus.CREATED).body(TestDetail.fromEntity(saved));
   }
@@ -56,7 +61,12 @@ public class TestController {
   public TestDetail updateTest(@PathVariable Long id, @RequestBody TestRequest request) {
     TestEntity entity = testService.findTestById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    apply(entity, request);
+    TestRequest normalized = normalize(request);
+    validate(normalized);
+    if (testService.existsByShortcutIgnoreCaseAndIdNot(normalized.shortcut(), entity.getId())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Shortcut already exists.");
+    }
+    apply(entity, normalized);
     TestEntity saved = testService.saveTest(entity);
     return TestDetail.fromEntity(saved);
   }
@@ -133,6 +143,51 @@ public class TestController {
     entity.setHasParameters(request.hasParameters());
     entity.setHasDefaultResults(request.hasDefaultResults());
     entity.setAllowMultipleResults(request.allowMultipleResults());
+  }
+
+  private static TestRequest normalize(TestRequest request) {
+    if (request == null) {
+      return null;
+    }
+    return new TestRequest(
+      normalizeText(request.testName()),
+      normalizeText(request.shortcut()),
+      normalizeText(request.category()),
+      request.price(),
+      request.isActive(),
+      request.hasParameters(),
+      request.hasDefaultResults(),
+      request.allowMultipleResults()
+    );
+  }
+
+  private static void validate(TestRequest request) {
+    if (request == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required.");
+    }
+    if (isBlank(request.testName())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Test name is required.");
+    }
+    if (isBlank(request.shortcut())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Shortcut is required.");
+    }
+    if (isBlank(request.category())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category is required.");
+    }
+    if (request.price() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price is required.");
+    }
+    if (request.price().signum() < 0) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price must be zero or greater.");
+    }
+  }
+
+  private static String normalizeText(String value) {
+    return value == null ? null : value.trim();
+  }
+
+  private static boolean isBlank(String value) {
+    return value == null || value.trim().isEmpty();
   }
 
   private static void apply(TestGroupEntity entity, TestGroupRequest request) {
