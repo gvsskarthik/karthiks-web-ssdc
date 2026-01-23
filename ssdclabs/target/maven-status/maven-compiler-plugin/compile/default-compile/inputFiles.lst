@@ -25,6 +25,7 @@
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/PatientTestRepository.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/TestEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/controller/DoctorController.java
+/srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/dto/TestResultSaveRequest.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/service/TestService.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/domain/test/TestDefaultResultEntity.java
 /srv/ssdc/ssdclabs/src/main/java/com/ssdc/lab/repository/PatientVisitRepository.java

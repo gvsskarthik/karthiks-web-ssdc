@@ -1,6 +1,7 @@
 com/ssdc/lab/repository/TestResultRepository.class
 com/ssdc/lab/domain/patient/PatientEntityFactory.class
 com/ssdc/lab/config/crypto/AesAttributeConverter.class
+com/ssdc/lab/controller/ReportController$ResultMetadata.class
 com/ssdc/lab/controller/VisitController$PatientTestSummary.class
 com/ssdc/lab/domain/test/TestEntity.class
 com/ssdc/lab/domain/doctor/DoctorEntityFactory.class
@@ -13,7 +14,6 @@ com/ssdc/lab/domain/test/TestGroupEntity.class
 com/ssdc/lab/service/ReportService.class
 com/ssdc/lab/controller/PatientController$PatientRequest.class
 com/ssdc/lab/domain/test/TestEntityFactory.class
-com/ssdc/lab/controller/ReportController$TestResultRequest.class
 com/ssdc/lab/controller/TestController$TestGroupRequest.class
 com/ssdc/lab/controller/VisitController$VisitRequest.class
 com/ssdc/lab/domain/doctor/DoctorEntity.class
@@ -33,6 +33,7 @@ com/ssdc/lab/SsdclabsApplication.class
 com/ssdc/lab/repository/TestGroupRepository.class
 com/ssdc/lab/domain/result/ResultEntityFactory.class
 com/ssdc/lab/domain/result/TestResultEntity.class
+com/ssdc/lab/dto/TestResultSaveRequest.class
 com/ssdc/lab/domain/patient/PatientVisitEntity.class
 com/ssdc/lab/controller/DoctorController$DoctorSummary.class
 com/ssdc/lab/controller/VisitController.class
