@@ -3,6 +3,7 @@ package com.ssdc.lab.controller;
 import com.ssdc.lab.domain.patient.PatientTestEntity;
 import com.ssdc.lab.domain.result.ResultEntityFactory;
 import com.ssdc.lab.domain.result.TestResultEntity;
+import com.ssdc.lab.dto.TestResultSaveRequest;
 import com.ssdc.lab.service.ReportService;
 import com.ssdc.lab.service.VisitService;
 import org.springframework.data.domain.Page;
@@ -47,33 +48,26 @@ public class ReportController {
   }
 
   @PostMapping("/results")
-  public ResponseEntity<TestResultDetail> createResult(@RequestBody TestResultRequest request) {
+  public ResponseEntity<TestResultDetail> createResult(@RequestBody TestResultSaveRequest request) {
     PatientTestEntity patientTest = visitService.findPatientTestById(request.patientTestId())
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
     TestResultEntity entity = ResultEntityFactory.createTestResult();
     entity.setPatientTest(patientTest);
-    entity.setParameterName(request.parameterName());
-    entity.setResultValue(request.resultValue());
-    entity.setUnit(request.unit());
+    ResultMetadata metadata = resolveMetadata(patientTest);
+    entity.setParameterName(metadata.parameterName());
+    entity.setUnit(metadata.unit());
 
-    TestResultEntity saved = reportService.saveResult(entity);
+    TestResultEntity saved = reportService.saveResultValue(entity, request.resultValue());
     return ResponseEntity.status(HttpStatus.CREATED).body(TestResultDetail.fromEntity(saved));
   }
 
   @PutMapping("/results/{id}")
-  public TestResultDetail updateResult(@PathVariable Long id, @RequestBody TestResultRequest request) {
+  public TestResultDetail updateResult(@PathVariable Long id, @RequestBody TestResultSaveRequest request) {
     TestResultEntity entity = reportService.findResultById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    PatientTestEntity patientTest = visitService.findPatientTestById(request.patientTestId())
-      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-    entity.setPatientTest(patientTest);
-    entity.setParameterName(request.parameterName());
-    entity.setResultValue(request.resultValue());
-    entity.setUnit(request.unit());
-
-    TestResultEntity saved = reportService.saveResult(entity);
+    TestResultEntity saved = reportService.saveResultValue(entity, request.resultValue());
     return TestResultDetail.fromEntity(saved);
   }
 
@@ -85,10 +79,14 @@ public class ReportController {
     reportService.deleteResult(entity);
   }
 
-  public record TestResultRequest(
-    Long patientTestId,
+  private ResultMetadata resolveMetadata(PatientTestEntity patientTest) {
+    // Metadata is resolved server-side; default results are display-only and excluded for now.
+    // Future parameter/default logic should be added here without touching save flow.
+    return new ResultMetadata("Result", "");
+  }
+
+  private record ResultMetadata(
     String parameterName,
-    String resultValue,
     String unit
   ) {
   }

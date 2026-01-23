@@ -27,12 +27,33 @@ public class ReportService {
   }
 
   @Transactional
-  public TestResultEntity saveResult(TestResultEntity entity) {
+  public TestResultEntity saveResultValue(TestResultEntity entity, String resultValue) {
+    String resolvedValue = resolveResultValue(resultValue);
+    String finalValue = selectFinalValue(entity.getResultValue(), resolvedValue);
+    entity.setResultValue(finalValue);
     return testResultRepository.save(entity);
   }
 
   @Transactional
   public void deleteResult(TestResultEntity entity) {
     testResultRepository.delete(entity);
+  }
+
+  private String resolveResultValue(String resultValue) {
+    // Only resultValue is trusted; checkbox/combine/clear/default/UI branching is intentionally excluded.
+    // Future result resolution rules should be added here without changing the save flow.
+    return resultValue == null ? "" : resultValue;
+  }
+
+  private String selectFinalValue(String existingValue, String resolvedValue) {
+    // Never overwrite existing non-blank results with null/blank values.
+    if (isBlank(resolvedValue) && !isBlank(existingValue)) {
+      return existingValue;
+    }
+    return resolvedValue;
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.trim().isEmpty();
   }
 }
