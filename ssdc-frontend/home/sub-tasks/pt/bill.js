@@ -57,8 +57,8 @@ function loadSelectedTests(){
       const stored =
         JSON.parse(localStorage.getItem("selectedTests") || "[]");
       return (stored || [])
-        .map(id => Number(id))
-        .filter(id => !Number.isNaN(id));
+        .map(id => ({ testId: Number(id), priceAtTime: null }))
+        .filter(item => !Number.isNaN(item.testId));
     });
 }
 

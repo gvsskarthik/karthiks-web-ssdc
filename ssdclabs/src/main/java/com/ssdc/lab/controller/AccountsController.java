@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +97,7 @@ public class AccountsController {
           ? doctor.getCommissionPercentage()
           : BigDecimal.ZERO;
         BigDecimal commissionAmount =
-          billAmount.multiply(commissionRate).divide(new BigDecimal("100"));
+          billAmount.multiply(commissionRate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
 
         LocalDate date = visit.getVisitDate() != null
           ? visit.getVisitDate().toLocalDate()
