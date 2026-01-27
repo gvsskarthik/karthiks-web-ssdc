@@ -217,6 +217,8 @@ function renderTests(tests) {
   body.innerHTML = "";
   body.removeEventListener("input", markTouched);
   body.addEventListener("input", markTouched);
+  body.removeEventListener("click", handleAddLineClick);
+  body.addEventListener("click", handleAddLineClick);
 
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
@@ -241,6 +243,11 @@ function renderTests(tests) {
           .map(n => n.normalValue)
           .join("<br>");
       const fallbackNormal = singleParam.normalText || "";
+      const allowNewLines = !!singleParam.allowNewLines;
+      const baseName =
+        (singleParam.name && singleParam.name.trim())
+          ? singleParam.name.trim()
+          : (test.testName || "");
       const inputHtml = renderResultControl(
         test.id,
         `result-${test.id}`,
@@ -257,6 +264,16 @@ function renderTests(tests) {
           <td><b>${test.testName}</b></td>
           <td>
             ${inputHtml}
+            ${allowNewLines ? `
+              <button
+                type="button"
+                class="small-btn add-line-btn"
+                data-testid="${test.id}"
+                data-base="${escapeAttr(baseName)}"
+                data-unit="${escapeAttr(unit)}"
+                data-normal="${escapeAttr(fallbackNormal || normalText || '')}"
+                data-valuetype="${escapeAttr(singleParam.valueType || '')}"
+              >Add</button>` : ""}
           </td>
           <td>${unit}</td>
           <td class="normal">
@@ -284,7 +301,8 @@ function renderTests(tests) {
         valueType: p.valueType,
         normalText: p.normalText || "",
         defaultResults: Array.isArray(p.defaultResults) ? p.defaultResults : [],
-        sectionName: p.sectionName || ""
+        sectionName: p.sectionName || "",
+        allowNewLines: !!p.allowNewLines
       }))
       : (test.units || []).map((u, i) => ({
         name: u.unit || "",
@@ -330,6 +348,16 @@ function renderTests(tests) {
             <td class="param-indent">${slot.label}</td>
             <td>
               ${inputHtml}
+              ${param.allowNewLines && slotIndex === 0 ? `
+                <button
+                  type="button"
+                  class="small-btn add-line-btn"
+                  data-testid="${test.id}"
+                  data-base="${escapeAttr(param.name || '')}"
+                  data-unit="${escapeAttr(resolveUnit(param))}"
+                  data-normal="${escapeAttr(param.normalText || '')}"
+                  data-valuetype="${escapeAttr(param.valueType || '')}"
+                >Add</button>` : ""}
             </td>
             <td>${resolveUnit(param)}</td>
             <td class="normal">
@@ -339,6 +367,68 @@ function renderTests(tests) {
       });
     });
   });
+}
+
+let extraLineCounter = 0;
+
+function handleAddLineClick(event) {
+  const btn = event.target.closest(".add-line-btn");
+  if (!btn) {
+    return;
+  }
+  const body = document.getElementById("resultBody");
+  if (!body.contains(btn)) {
+    return;
+  }
+
+  const testId = Number(btn.dataset.testid);
+  if (!testId) {
+    return;
+  }
+
+  const baseName = btn.dataset.base || "";
+  const unit = btn.dataset.unit || "";
+  const normal = btn.dataset.normal || "";
+  const valueType = btn.dataset.valuetype || "";
+
+  const row = btn.closest("tr");
+  if (!row) {
+    return;
+  }
+
+  extraLineCounter += 1;
+  const suffix = `extra-${extraLineCounter}`;
+  const subKey = baseName ? `${baseName}::${suffix}` : suffix;
+  const inputId = `result-${testId}-extra-${extraLineCounter}`;
+
+  const param = { valueType, unit, normalText: normal };
+  const inputHtml = renderResultControl(
+    testId,
+    inputId,
+    subKey,
+    param,
+    "",
+    ""
+  );
+
+  const hasParamIndent =
+    !!row.querySelector(".param-indent") &&
+    row.querySelector(".param-indent").textContent.trim() !== "";
+
+  const newRowHtml = `
+    <tr>
+      <td class="${hasParamIndent ? "param-indent" : ""}"></td>
+      <td>
+        ${inputHtml}
+      </td>
+      <td>${unit}</td>
+      <td class="normal">
+        ${normal}
+      </td>
+    </tr>
+  `;
+
+  row.insertAdjacentHTML("afterend", newRowHtml);
 }
 
 function markTouched(event) {

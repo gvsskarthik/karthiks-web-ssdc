@@ -11,4 +11,5 @@ public class TestParameterPayload {
     public ValueType valueType;
     public List<String> defaultResults;
     public List<NormalRangePayload> normalRanges;
+    public Boolean allowNewLines;
 }

@@ -1,5 +1,6 @@
 const paramList = document.getElementById("paramList");
 const addParamBtn = document.getElementById("addParamBtn");
+const hasParametersInput = document.getElementById("hasParameters");
 const saveBtn = document.getElementById("saveBtn");
 const formMessage = document.getElementById("formMessage");
 const shortcutInput = document.getElementById("shortcut");
@@ -12,9 +13,21 @@ let normalIdCounter = 0;
 let defaultIdCounter = 0;
 
 addParamBtn.addEventListener("click", () => addParameter());
+hasParametersInput.addEventListener("change", () => toggleParameters());
 saveBtn.addEventListener("click", () => saveTest());
 shortcutInput.addEventListener("input", () => validateShortcut());
 shortcutInput.addEventListener("blur", () => validateShortcut());
+
+function toggleParameters() {
+  const enabled = hasParametersInput.checked;
+  addParamBtn.disabled = !enabled;
+  paramList.classList.toggle("disabled", !enabled);
+  [...paramList.querySelectorAll("input, select, textarea, button")].forEach(el => {
+    // Keep the "Parameters" master checkbox usable (it's outside paramList anyway),
+    // and don't lose values; just disable editing.
+    el.disabled = !enabled;
+  });
+}
 
 function addParameter() {
   const card = document.createElement("div");
@@ -24,6 +37,7 @@ function addParameter() {
   const unitId = `${paramId}-unit`;
   const typeId = `${paramId}-type`;
   const defaultToggleId = `${paramId}-default-toggle`;
+  const addLineToggleId = `${paramId}-add-line-toggle`;
   card.innerHTML = `
     <div class="param-header">
       <h4 class="param-title">Parameter</h4>
@@ -58,6 +72,12 @@ function addParameter() {
           <button class="btn small add-default" type="button">Add Result</button>
         </div>
         <div class="default-results"></div>
+      </div>
+    </div>
+    <div class="section-row">
+      <div class="inline">
+        <input id="${addLineToggleId}" type="checkbox" class="param-add-line-toggle">
+        <label for="${addLineToggleId}">Allow add new line in results</label>
       </div>
     </div>
     <div class="section-row normal-section">
@@ -197,7 +217,7 @@ function collectPayload() {
   const category = document.getElementById("category");
   const cost = document.getElementById("cost");
   const active = document.getElementById("active");
-
+  const hasParameters = hasParametersInput.checked;
   if (!testName.value.trim()) {
     testName.classList.add("error");
     errors.push("Test name is required.");
@@ -227,57 +247,65 @@ function collectPayload() {
     }
   }
 
-  const parameters = [];
-  const cards = [...document.querySelectorAll(".param-card")];
+  let parameters = null;
+  if (hasParameters) {
+    const cards = [...document.querySelectorAll(".param-card")];
 
-  if (cards.length === 0) {
-    errors.push("Add at least one parameter.");
-  }
-
-  cards.forEach((card, index) => {
-    const nameInput = card.querySelector(".param-name");
-    const unitInput = card.querySelector(".param-unit");
-    const typeSelect = card.querySelector(".param-type");
-    const defaultToggle = card.querySelector(".param-default-toggle-input");
-    const defaultResultsContainer = card.querySelector(".default-results");
-
-    const name = nameInput.value.trim();
-    if (!typeSelect.value) {
-      typeSelect.classList.add("error");
-      errors.push("Value type is required.");
-      return;
+    if (cards.length === 0) {
+      errors.push("Add at least one parameter.");
     }
 
-    const normals = [];
-    const normalRows = [...card.querySelectorAll(".normal-row")];
+    const collected = [];
 
-    normalRows.forEach(row => {
-      const textValueRaw = normalizeNormalText(
-        row.querySelector(".normal-text").value
-      );
-      if (!textValueRaw) {
+    cards.forEach((card, index) => {
+      const nameInput = card.querySelector(".param-name");
+      const unitInput = card.querySelector(".param-unit");
+      const typeSelect = card.querySelector(".param-type");
+      const defaultToggle = card.querySelector(".param-default-toggle-input");
+      const defaultResultsContainer = card.querySelector(".default-results");
+      const addLineToggle = card.querySelector(".param-add-line-toggle");
+
+      const name = nameInput.value.trim();
+      if (!typeSelect.value) {
+        typeSelect.classList.add("error");
+        errors.push("Value type is required.");
         return;
       }
 
-      normals.push({
-        textValue: textValueRaw
+      const normals = [];
+      const normalRows = [...card.querySelectorAll(".normal-row")];
+
+      normalRows.forEach(row => {
+        const textValueRaw = normalizeNormalText(
+          row.querySelector(".normal-text").value
+        );
+        if (!textValueRaw) {
+          return;
+        }
+
+        normals.push({
+          textValue: textValueRaw
+        });
+      });
+
+      const defaultResults = defaultToggle.checked
+        ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
+            .map(input => input.value.trim())
+            .filter(Boolean)
+        : [];
+
+      collected.push({
+        name: name || `Parameter ${index + 1}`,
+        unit: unitInput.value.trim() || null,
+        valueType: typeSelect.value,
+        defaultResults: defaultResults.length ? defaultResults : null,
+        normalRanges: normals,
+        allowNewLines: !!(addLineToggle && addLineToggle.checked)
       });
     });
 
-    const defaultResults = defaultToggle.checked
-      ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
-          .map(input => input.value.trim())
-          .filter(Boolean)
-      : [];
-
-    parameters.push({
-      name: name || `Parameter ${index + 1}`,
-      unit: unitInput.value.trim() || null,
-      valueType: typeSelect.value,
-      defaultResults: defaultResults.length ? defaultResults : null,
-      normalRanges: normals
-    });
-  });
+    parameters = collected;
+  }
 
   if (errors.length) {
     setMessage("Please fix the highlighted errors.", "error");
@@ -330,4 +358,5 @@ async function saveTest() {
 }
 
 addParameter();
+toggleParameters();
 loadShortcuts();
