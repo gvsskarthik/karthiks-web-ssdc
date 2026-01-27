@@ -26,37 +26,258 @@ document.getElementById("pDate").innerText =
 
 /* ================= RANGE CHECK ================= */
 function isOutOfRange(value, normalText, gender){
-  if(!value || !normalText) return false;
-
-  const num = parseFloat(value);
-  if(isNaN(num)) return false;
-
-  let rangeText = normalText;
-
-  // Gender-specific normal values
-  if(
-    normalText.toLowerCase().includes("male") ||
-    normalText.toLowerCase().includes("female")
-  ){
-    const lines = normalText.split(/\n|,/);
-    const genderLine = lines.find(l =>
-      l.toLowerCase().includes(gender.toLowerCase())
-    );
-    if(genderLine) rangeText = genderLine;
+  const valueText = value == null ? "" : String(value).trim();
+  const normalValueText = normalizeNormalForDisplay(normalText);
+  if (!valueText || !normalValueText) {
+    return false;
   }
 
-  // Extract numeric range (e.g. 14-16)
-  const match = rangeText.match(/([\d.]+)\s*[-–]\s*([\d.]+)/);
-  if(!match) return false;
+  const normalizedGender = normalizeGenderLabel(gender);
+  const normalLines = splitNormalLines(normalValueText);
+  const genderLines = filterGenderLines(normalLines, normalizedGender);
 
-  const min = parseFloat(match[1]);
-  const max = parseFloat(match[2]);
+  // Numeric ranges (e.g. 13-17, <=5, >=2). If result is numeric, only use
+  // numeric comparison; do not fall back to qualitative checks.
+  const numMatch = valueText.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  if (numMatch) {
+    const num = Number(numMatch[0]);
+    if (Number.isFinite(num)) {
+      const ranges = collectNumericRanges(
+        genderLines.length ? genderLines : normalLines
+      );
+      if (!ranges.length && genderLines.length && genderLines !== normalLines) {
+        ranges.push(...collectNumericRanges(normalLines));
+      }
+      if (!ranges.length) {
+        return false;
+      }
+      return !ranges.some(range => isNumberWithinRange(num, range));
+    }
+    return false;
+  }
 
-  return num < min || num > max;
+  // Qualitative normals (e.g. Negative/Positive). Mark abnormal when value != normal.
+  const valueComparable = normalizeComparableText(valueText);
+  if (!valueComparable) {
+    return false;
+  }
+  const allowed = genderLines
+    .map(stripGenderPrefix)
+    .map(line => normalizeNormalForDisplay(line))
+    .flatMap(line => splitNormalLines(line))
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => line.length <= 40)
+    .filter(line => !/\d/.test(line))
+    .map(normalizeComparableText)
+    .filter(Boolean);
+
+  if (!allowed.length) {
+    return false;
+  }
+  if (allowed.includes("any")) {
+    return false;
+  }
+  return !allowed.includes(valueComparable);
 }
 
 function normalizeKey(value){
   return (value || "").trim().toLowerCase();
+}
+
+function normalizeGenderLabel(value){
+  const text = String(value == null ? "" : value).trim().toLowerCase();
+  if (!text) {
+    return "";
+  }
+  if (text.includes("female") || text.startsWith("f")) {
+    return "female";
+  }
+  if (text.includes("male") || text.startsWith("m")) {
+    return "male";
+  }
+  return "";
+}
+
+function isNumberWithinRange(num, range){
+  if (range == null || !Number.isFinite(num)) {
+    return false;
+  }
+  const min = range.min;
+  const max = range.max;
+
+  if (min != null && Number.isFinite(min)) {
+    if (range.minInclusive === false ? num <= min : num < min) {
+      return false;
+    }
+  }
+
+  if (max != null && Number.isFinite(max)) {
+    if (range.maxInclusive === false ? num >= max : num > max) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function collectNumericRanges(lines){
+  const list = Array.isArray(lines) ? lines : [];
+  const ranges = [];
+  const seen = new Set();
+
+  list.forEach(line => {
+    const segments = String(line == null ? "" : line)
+      .split(/\s+\/\s+/)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    segments.forEach(segment => {
+      const stripped = stripGenderPrefix(segment);
+      const tail = stripped.split(":").slice(-1)[0] || stripped;
+      const parsed = parseNormalRanges(tail).length
+        ? parseNormalRanges(tail)
+        : parseNormalRanges(stripped);
+
+      parsed.forEach(range => {
+        const min = range.min;
+        const max = range.max;
+        if (min != null && !Number.isFinite(min)) {
+          return;
+        }
+        if (max != null && !Number.isFinite(max)) {
+          return;
+        }
+
+        const key = `${min ?? ""}|${max ?? ""}|${range.minInclusive === false ? 0 : 1}|${range.maxInclusive === false ? 0 : 1}`;
+        if (seen.has(key)) {
+          return;
+        }
+        seen.add(key);
+        ranges.push(range);
+      });
+    });
+  });
+
+  return ranges;
+}
+
+function splitNormalLines(value){
+  return String(value == null ? "" : value)
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+}
+
+function stripGenderPrefix(value){
+  return String(value == null ? "" : value)
+    .replace(/^\s*[\[\(\{]*\s*(m\b|male\b|f\b|female\b)\s*:?\s*/i, "")
+    .trim();
+}
+
+function normalizeComparableText(value){
+  return String(value == null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function filterGenderLines(lines, gender){
+  const list = Array.isArray(lines) ? lines : [];
+  const hasGenderLines = list.some(line => {
+    const text = String(line == null ? "" : line);
+    return (
+      /\b(male|female)\b/i.test(text)
+      || /^\s*[\[\(\{]*\s*(m\b|m\s*:|f\b|f\s*:)/i.test(text)
+    );
+  });
+  if (!hasGenderLines || !gender) {
+    return list;
+  }
+  const pattern = gender === "female"
+    ? /^\s*[\[\(\{]*\s*(f\b|f\s*:|female\b)/i
+    : /^\s*[\[\(\{]*\s*(m\b|m\s*:|male\b)/i;
+  const filtered = list.filter(line =>
+    pattern.test(line) || new RegExp(`\\b${gender}\\b`, "i").test(line)
+  );
+  return filtered.length ? filtered : list;
+}
+
+function pickGenderNormalLine(normalText, gender){
+  const lines = String(normalText == null ? "" : normalText)
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+  if (!lines.length) {
+    return "";
+  }
+
+  const findLine = (pattern) => lines.find(line => pattern.test(line));
+  if (gender === "male") {
+    return (
+      findLine(/^\s*(m\b|m\s*:|male\b)/i) ||
+      findLine(/\bmale\b/i) ||
+      lines[0]
+    );
+  }
+  if (gender === "female") {
+    return (
+      findLine(/^\s*(f\b|f\s*:|female\b)/i) ||
+      findLine(/\bfemale\b/i) ||
+      lines[0]
+    );
+  }
+
+  return lines[0];
+}
+
+function parseNormalRange(text){
+  const ranges = parseNormalRanges(text);
+  return ranges.length ? ranges[0] : null;
+}
+
+function parseNormalRanges(text){
+  const rawText = String(text == null ? "" : text);
+  // Remove thousands separators inside numbers (e.g. 11,000 -> 11000) but keep
+  // commas used as separators between different normal values.
+  const withoutThousands = rawText.replace(/(\d),(?=\d)/g, "$1");
+  const raw = withoutThousands.replace(/,/g, " ");
+  const cleaned = raw.replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return [];
+  }
+
+  const ranges = [];
+
+  const betweenRe =
+    /(-?\d+(?:\.\d+)?)\s*(?:-|–|to)\s*(-?\d+(?:\.\d+)?)/gi;
+  let match;
+  while ((match = betweenRe.exec(cleaned)) !== null) {
+    ranges.push({
+      min: Number(match[1]),
+      max: Number(match[2]),
+      minInclusive: true,
+      maxInclusive: true
+    });
+  }
+
+  const opRe =
+    /(<=|>=|≤|≥|<|>)\s*(-?\d+(?:\.\d+)?)/g;
+  while ((match = opRe.exec(cleaned)) !== null) {
+    const op = match[1];
+    const num = Number(match[2]);
+    if (op === "<=" || op === "≤") {
+      ranges.push({ max: num, maxInclusive: true });
+    } else if (op === "<") {
+      ranges.push({ max: num, maxInclusive: false });
+    } else if (op === ">=" || op === "≥") {
+      ranges.push({ min: num, minInclusive: true });
+    } else if (op === ">") {
+      ranges.push({ min: num, minInclusive: false });
+    }
+  }
+
+  return ranges;
 }
 
 function normalizeText(value){
@@ -64,6 +285,15 @@ function normalizeText(value){
     return "";
   }
   return String(value).trim();
+}
+
+function normalizeNormalForDisplay(value){
+  const text = normalizeText(value);
+  if (!text) {
+    return "";
+  }
+  // Backend joins multiple normal values with " / ". Show them on new lines.
+  return text.replace(/\s+\/\s+/g, "\n");
 }
 
 function escapeHtml(value){
@@ -149,12 +379,14 @@ function formatNormalRanges(ranges){
     })
     .filter(Boolean);
 
-  return parts.join(" / ");
+  return parts.join("\n");
 }
 
 function resolveNormalText(test, param, index){
   const direct =
-    normalizeText(param?.normalText || param?.normal_text || param?.normal);
+    normalizeNormalForDisplay(
+      param?.normalText || param?.normal_text || param?.normal
+    );
   if (direct) {
     return direct;
   }
@@ -162,20 +394,21 @@ function resolveNormalText(test, param, index){
   const fromRanges =
     formatNormalRanges(param?.normalRanges || param?.normal_ranges);
   if (fromRanges) {
-    return fromRanges;
+    return normalizeNormalForDisplay(fromRanges);
   }
 
   const testNormals = asArray(test?.normalValues || test?.normal_values)
     .map(readNormalEntry)
+    .map(normalizeNormalForDisplay)
     .filter(Boolean);
   if (testNormals.length) {
     if (typeof index === "number" && testNormals[index]) {
       return testNormals[index];
     }
-    return testNormals.join("\n");
+    return normalizeNormalForDisplay(testNormals.join("\n"));
   }
 
-  return normalizeText(test?.normalValue || test?.normal_value);
+  return normalizeNormalForDisplay(test?.normalValue || test?.normal_value);
 }
 
 function buildResultSlots(param, normalizedItems) {
