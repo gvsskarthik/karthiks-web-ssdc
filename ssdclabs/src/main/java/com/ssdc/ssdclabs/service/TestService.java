@@ -190,6 +190,11 @@ public class TestService {
             param.setDefaultResult(
                 serializeDefaultResults(payloadParam.defaultResults)
             );
+            param.setAllowNewLines(
+                payloadParam.allowNewLines != null
+                    ? payloadParam.allowNewLines
+                    : Boolean.FALSE
+            );
 
             List<NormalRange> ranges = new ArrayList<>();
             if (payloadParam.normalRanges != null) {
@@ -501,7 +506,8 @@ public class TestService {
                 param.getUnit(),
                 valueType,
                 formatNormalRanges(param.getNormalRanges()),
-                parseDefaultResults(param.getDefaultResult())
+                parseDefaultResults(param.getDefaultResult()),
+                param.getAllowNewLines()
             ));
         }
 

@@ -53,6 +53,9 @@ public class TestParameter {
     @JsonManagedReference("parameter-ranges")
     private List<NormalRange> normalRanges;
 
+    @Column(name = "allow_new_lines")
+    private Boolean allowNewLines;
+
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -77,6 +80,11 @@ public class TestParameter {
     public List<NormalRange> getNormalRanges() { return normalRanges; }
     public void setNormalRanges(List<NormalRange> normalRanges) {
         this.normalRanges = normalRanges;
+    }
+
+    public Boolean getAllowNewLines() { return allowNewLines; }
+    public void setAllowNewLines(Boolean allowNewLines) {
+        this.allowNewLines = allowNewLines;
     }
 
 }
