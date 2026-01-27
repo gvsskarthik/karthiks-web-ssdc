@@ -70,13 +70,50 @@ public class TestService {
     @Transactional
     public @NonNull TestViewDTO updateTest(@NonNull Long id,
                                            @NonNull TestPayload payload) {
+        // #region agent log
+        try {
+            java.nio.file.Files.writeString(
+                java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
+                "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H1\",\"location\":\"TestService.updateTest\",\"message\":\"enter updateTest\",\"data\":{\"id\":" + id + "},\"timestamp\":" + System.currentTimeMillis() + "}\n",
+                java.nio.file.StandardOpenOption.CREATE,
+                java.nio.file.StandardOpenOption.APPEND
+            );
+        } catch (Exception ignored) {}
+        // #endregion
+
         Test test = testRepo.findById(Objects.requireNonNull(id, "id"))
             .orElseThrow(() -> new RuntimeException("Test not found"));
         List<TestParameter> existingParams =
             paramRepo.findByTest_IdOrderByIdAsc(test.getId());
         applyPayload(test, payload, existingParams);
-        Test saved = testRepo.save(test);
-        return toView(saved);
+        try {
+            Test saved = testRepo.save(test);
+            // #region agent log
+            try {
+                java.nio.file.Files.writeString(
+                    java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
+                    "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H3\",\"location\":\"TestService.updateTest\",\"message\":\"save ok\",\"data\":{\"id\":" + id + "},\"timestamp\":" + System.currentTimeMillis() + "}\n",
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.APPEND
+                );
+            } catch (Exception ignoredInner) {}
+            // #endregion
+            return toView(saved);
+        } catch (Exception ex) {
+            // #region agent log
+            try {
+                String msg = ex.getClass().getSimpleName() + \":\" + String.valueOf(ex.getMessage());
+                String json = "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H4\",\"location\":\"TestService.updateTest\",\"message\":\"exception during save\",\"data\":{\"id\":" + id + ",\"error\":\"" + msg.replace(\"\\\"\", \"'\") + "\"},\"timestamp\":" + System.currentTimeMillis() + "}\n";
+                java.nio.file.Files.writeString(
+                    java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
+                    json,
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.APPEND
+                );
+            } catch (Exception ignoredInner) {}
+            // #endregion
+            throw ex;
+        }
     }
 
     @Transactional

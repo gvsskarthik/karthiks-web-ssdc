@@ -63,6 +63,13 @@ input[type="checkbox"] {
   gap: 16px;
 }
 
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .grid-3 {
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr;
