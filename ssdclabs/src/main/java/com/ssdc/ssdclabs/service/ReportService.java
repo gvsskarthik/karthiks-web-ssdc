@@ -222,12 +222,22 @@ public class ReportService {
             } else {
                 // Base slot: prefer the canonical row where sub_test is null/empty.
                 result = resultRepo
-                    .findFirstByPatientTestParamWithEmptySubTest(
+                    .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
                         patientId,
                         testId,
                         param.getId()
                     )
                     .orElse(null);
+                if (result == null) {
+                    result = resultRepo
+                        .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
+                            patientId,
+                            testId,
+                            param.getId(),
+                            ""
+                        )
+                        .orElse(null);
+                }
                 // Backward-compatible: some rows may have sub_test stored as the
                 // parameter name (what the UI sends for multi-parameter tests).
                 if (result == null && normalizedSubTest != null) {
@@ -375,7 +385,14 @@ public class ReportService {
             return null;
         }
         String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        // Match MySQL VARCHAR default (and avoid "Data too long" errors).
+        if (trimmed.length() > 255) {
+            return trimmed.substring(0, 255);
+        }
+        return trimmed;
     }
 
     private String extractBaseName(String subTest) {
