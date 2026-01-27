@@ -26,6 +26,25 @@ function toggleParameters() {
   [...paramList.querySelectorAll(".param-name")].forEach(input => {
     input.disabled = !enabled;
   });
+  updateRemoveButtons();
+}
+
+function updateRemoveButtons() {
+  const cards = [...paramList.querySelectorAll(".param-card")];
+  const disableLastRemove = !hasParametersInput.checked && cards.length <= 1;
+  cards.forEach(card => {
+    const removeBtn = card.querySelector(".remove-param");
+    if (removeBtn) {
+      removeBtn.disabled = disableLastRemove;
+    }
+  });
+}
+
+function ensureAtLeastOneParameter() {
+  const cards = [...paramList.querySelectorAll(".param-card")];
+  if (cards.length === 0) {
+    addParameter();
+  }
 }
 
 function addParameter() {
@@ -86,6 +105,8 @@ function addParameter() {
   card.querySelector(".remove-param").addEventListener("click", () => {
     card.remove();
     refreshParameterLabels();
+    ensureAtLeastOneParameter();
+    updateRemoveButtons();
   });
   card.querySelector(".add-normal").addEventListener("click", () => {
     addNormalRow(card.querySelector(".normals"));
@@ -110,6 +131,7 @@ function addParameter() {
 
   addNormalRow(card.querySelector(".normals"));
   refreshParameterLabels();
+  toggleParameters();
 }
 
 function addNormalRow(container) {
@@ -212,7 +234,6 @@ function collectPayload() {
   const category = document.getElementById("category");
   const cost = document.getElementById("cost");
   const active = document.getElementById("active");
-  const hasParameters = hasParametersInput.checked;
   if (!testName.value.trim()) {
     testName.classList.add("error");
     errors.push("Test name is required.");
@@ -242,65 +263,60 @@ function collectPayload() {
     }
   }
 
-  let parameters = null;
-  if (hasParameters) {
-    const cards = [...document.querySelectorAll(".param-card")];
+  const cards = [...document.querySelectorAll(".param-card")];
 
-    if (cards.length === 0) {
-      errors.push("Add at least one parameter.");
+  if (cards.length === 0) {
+    errors.push("Add at least one parameter.");
+  }
+
+  const parameters = [];
+
+  cards.forEach(card => {
+    const nameInput = card.querySelector(".param-name");
+    const unitInput = card.querySelector(".param-unit");
+    const typeSelect = card.querySelector(".param-type");
+    const defaultToggle = card.querySelector(".param-default-toggle-input");
+    const defaultResultsContainer = card.querySelector(".default-results");
+    const addLineToggle = card.querySelector(".param-add-line-toggle");
+
+    if (!typeSelect.value) {
+      typeSelect.classList.add("error");
+      errors.push("Value type is required.");
+      return;
     }
 
-    const collected = [];
+    const normals = [];
+    const normalRows = [...card.querySelectorAll(".normal-row")];
 
-    cards.forEach((card, index) => {
-      const nameInput = card.querySelector(".param-name");
-      const unitInput = card.querySelector(".param-unit");
-      const typeSelect = card.querySelector(".param-type");
-      const defaultToggle = card.querySelector(".param-default-toggle-input");
-      const defaultResultsContainer = card.querySelector(".default-results");
-      const addLineToggle = card.querySelector(".param-add-line-toggle");
-
-      const name = nameInput.value.trim();
-      if (!typeSelect.value) {
-        typeSelect.classList.add("error");
-        errors.push("Value type is required.");
+    normalRows.forEach(row => {
+      const textValueRaw = normalizeNormalText(
+        row.querySelector(".normal-text").value
+      );
+      if (!textValueRaw) {
         return;
       }
 
-      const normals = [];
-      const normalRows = [...card.querySelectorAll(".normal-row")];
-
-      normalRows.forEach(row => {
-        const textValueRaw = normalizeNormalText(
-          row.querySelector(".normal-text").value
-        );
-        if (!textValueRaw) {
-          return;
-        }
-
-        normals.push({
-          textValue: textValueRaw
-        });
-      });
-
-      const defaultResults = defaultToggle.checked
-        ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
-            .map(input => input.value.trim())
-            .filter(Boolean)
-        : [];
-
-      collected.push({
-        name: name || `Parameter ${index + 1}`,
-        unit: unitInput.value.trim() || null,
-        valueType: typeSelect.value,
-        defaultResults: defaultResults.length ? defaultResults : null,
-        normalRanges: normals,
-        allowNewLines: !!(addLineToggle && addLineToggle.checked)
+      normals.push({
+        textValue: textValueRaw
       });
     });
 
-    parameters = collected;
-  }
+    const defaultResults = defaultToggle.checked
+      ? [...defaultResultsContainer.querySelectorAll(".default-result-input")]
+          .map(input => input.value.trim())
+          .filter(Boolean)
+      : [];
+
+    const nameRaw = nameInput.value.trim();
+    parameters.push({
+      name: nameRaw || null,
+      unit: unitInput.value.trim() || null,
+      valueType: typeSelect.value,
+      defaultResults: defaultResults.length ? defaultResults : null,
+      normalRanges: normals,
+      allowNewLines: !!(addLineToggle && addLineToggle.checked)
+    });
+  });
 
   if (errors.length) {
     setMessage("Please fix the highlighted errors.", "error");

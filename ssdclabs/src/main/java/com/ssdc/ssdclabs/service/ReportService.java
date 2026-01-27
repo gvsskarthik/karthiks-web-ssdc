@@ -206,34 +206,54 @@ public class ReportService {
                 continue;
             }
 
-            ReportResult result = resultRepo
-                .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
-                    patientId,
-                    testId,
-                    param.getId(),
-                    normalizedSubTest
-                )
-                .orElseGet(() -> {
-                    if (normalizedSubTest == null) {
-                        return resultRepo
-                            .findFirstByPatientTestParamWithEmptySubTest(
-                                patientId,
-                                testId,
-                                param.getId()
-                            )
-                            .orElseGet(ReportResult::new);
-                    }
-                    return new ReportResult();
-                });
+            boolean hasSuffix =
+                normalizedSubTest != null && normalizedSubTest.contains("::");
 
-            System.out.println("[saveResults] incoming.resultValue=" + incoming.resultValue);
-            System.out.println("[saveResults] existing.resultValue=" + result.getResultValue());
-            System.out.println("[saveResults] defaultResult=" + firstDefaultResult(param));
+            ReportResult result = null;
+            if (hasSuffix) {
+                result = resultRepo
+                    .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
+                        patientId,
+                        testId,
+                        param.getId(),
+                        normalizedSubTest
+                    )
+                    .orElse(null);
+            } else {
+                // Base slot: prefer the canonical row where sub_test is null/empty.
+                result = resultRepo
+                    .findFirstByPatientTestParamWithEmptySubTest(
+                        patientId,
+                        testId,
+                        param.getId()
+                    )
+                    .orElse(null);
+                // Backward-compatible: some rows may have sub_test stored as the
+                // parameter name (what the UI sends for multi-parameter tests).
+                if (result == null && normalizedSubTest != null) {
+                    result = resultRepo
+                        .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
+                            patientId,
+                            testId,
+                            param.getId(),
+                            normalizedSubTest
+                        )
+                        .orElse(null);
+                }
+            }
+
+            if (result == null) {
+                result = new ReportResult();
+            }
 
             result.setPatient(patient);
             result.setTest(test);
             result.setParameter(param);
-            result.setSubTest(normalizedSubTest);
+            if (hasSuffix) {
+                result.setSubTest(normalizedSubTest);
+            } else if (result.getId() == null) {
+                result.setSubTest("");
+            }
             // Resolve final value first (incoming wins, else default, else null).
             String defaultValue = firstDefaultResult(param);
             String finalValue = resolveFinalResult(incoming.resultValue, defaultValue);
@@ -395,12 +415,24 @@ public class ReportService {
     }
 
     private String resolveFinalResult(String incomingValue, String defaultValue) {
-        if (!isBlank(incomingValue)) {
-            return incomingValue.trim();
+        String cleanedIncoming = normalizeResultValue(incomingValue);
+        if (!isBlank(cleanedIncoming)) {
+            return cleanedIncoming;
         }
-        if (!isBlank(defaultValue)) {
-            return defaultValue.trim();
+        String cleanedDefault = normalizeResultValue(defaultValue);
+        if (!isBlank(cleanedDefault)) {
+            return cleanedDefault;
         }
         return null;
+    }
+
+    private String normalizeResultValue(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        // Remove commas used as thousands separators (e.g. 6,000 -> 6000,
+        // 1,00,000 -> 100000). Keeps commas used outside numeric contexts.
+        return trimmed.replaceAll("(?<=\\d),(?=\\d)", "");
     }
 }

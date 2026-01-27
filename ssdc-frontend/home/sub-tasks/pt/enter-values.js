@@ -125,6 +125,15 @@ function normalizeText(value){
   return String(value).trim();
 }
 
+function normalizeNormalForDisplay(value){
+  const text = normalizeText(value);
+  if (!text) {
+    return "";
+  }
+  // Backend joins multiple normal values with " / ". Show them on new lines.
+  return text.replace(/\s+\/\s+/g, "\n");
+}
+
 function escapeAttr(value){
   return String(value == null ? "" : value)
     .replace(/&/g, "&amp;")
@@ -216,12 +225,14 @@ function formatNormalRanges(ranges){
     })
     .filter(Boolean);
 
-  return parts.join(" / ");
+  return parts.join("\n");
 }
 
 function resolveNormalText(test, param, index){
   const direct =
-    normalizeText(param?.normalText || param?.normal_text || param?.normal);
+    normalizeNormalForDisplay(
+      param?.normalText || param?.normal_text || param?.normal
+    );
   if (direct) {
     return direct;
   }
@@ -229,20 +240,21 @@ function resolveNormalText(test, param, index){
   const fromRanges =
     formatNormalRanges(param?.normalRanges || param?.normal_ranges);
   if (fromRanges) {
-    return fromRanges;
+    return normalizeNormalForDisplay(fromRanges);
   }
 
   const testNormals = asArray(test?.normalValues || test?.normal_values)
     .map(readNormalEntry)
+    .map(normalizeNormalForDisplay)
     .filter(Boolean);
   if (testNormals.length) {
     if (typeof index === "number" && testNormals[index]) {
       return testNormals[index];
     }
-    return testNormals.join("\n");
+    return normalizeNormalForDisplay(testNormals.join("\n"));
   }
 
-  return normalizeText(test?.normalValue || test?.normal_value);
+  return normalizeNormalForDisplay(test?.normalValue || test?.normal_value);
 }
 
 function resolveUnitText(test, param, index){
@@ -614,19 +626,20 @@ function saveOnly() {
     return;
   }
 
-  const requests = [];
-  if (results.length) {
-    requests.push(fetch(API_BASE_URL + "/patient-tests/results", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(results)
-    }));
-  }
-
-  Promise.all(requests)
-    .then(() => finishSave())
+  fetch(API_BASE_URL + "/patient-tests/results", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(results)
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || "Failed to save results");
+      }
+      finishSave();
+    })
     .catch(err => {
       console.error(err);
-      alert("Failed to save results");
+      alert(err?.message || "Failed to save results");
     });
 }
