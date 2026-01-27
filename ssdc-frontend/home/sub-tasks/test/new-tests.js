@@ -21,11 +21,10 @@ shortcutInput.addEventListener("blur", () => validateShortcut());
 function toggleParameters() {
   const enabled = hasParametersInput.checked;
   addParamBtn.disabled = !enabled;
-  paramList.classList.toggle("disabled", !enabled);
-  [...paramList.querySelectorAll("input, select, textarea, button")].forEach(el => {
-    // Keep the "Parameters" master checkbox usable (it's outside paramList anyway),
-    // and don't lose values; just disable editing.
-    el.disabled = !enabled;
+  // Only disable parameter name inputs and adding new parameters.
+  // Other fields like unit, value type, normals should stay editable.
+  [...paramList.querySelectorAll(".param-name")].forEach(input => {
+    input.disabled = !enabled;
   });
 }
 
@@ -65,6 +64,8 @@ function addParameter() {
       <div class="param-default-toggle">
         <input id="${defaultToggleId}" type="checkbox" class="param-default-toggle-input">
         <label for="${defaultToggleId}">Default Results</label>
+        <input id="${addLineToggleId}" type="checkbox" class="param-add-line-toggle">
+        <label for="${addLineToggleId}">Add new line</label>
       </div>
       <div class="param-default-controls hidden">
         <div class="section-row">
@@ -72,12 +73,6 @@ function addParameter() {
           <button class="btn small add-default" type="button">Add Result</button>
         </div>
         <div class="default-results"></div>
-      </div>
-    </div>
-    <div class="section-row">
-      <div class="inline">
-        <input id="${addLineToggleId}" type="checkbox" class="param-add-line-toggle">
-        <label for="${addLineToggleId}">Allow add new line in results</label>
       </div>
     </div>
     <div class="section-row normal-section">

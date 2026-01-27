@@ -81,6 +81,17 @@ public class TestController {
             @PathVariable @NonNull Long id,
             @RequestBody @NonNull TestPayload incoming) {
 
+        // #region agent log
+        try {
+            java.nio.file.Files.writeString(
+                java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
+                "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H1\",\"location\":\"TestController.update\",\"message\":\"update called\",\"data\":{\"id\":" + id + "},\"timestamp\":" + System.currentTimeMillis() + "}\n",
+                java.nio.file.StandardOpenOption.CREATE,
+                java.nio.file.StandardOpenOption.APPEND
+            );
+        } catch (Exception ignored) {}
+        // #endregion
+
         if (incoming.testName != null && trimToNull(incoming.testName) == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -104,6 +115,16 @@ public class TestController {
                 && repo.findById(id)
                        .map(t -> !shortcutValue.equalsIgnoreCase(t.getShortcut()))
                        .orElse(true)) {
+            // #region agent log
+            try {
+                java.nio.file.Files.writeString(
+                    java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
+                    "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H2\",\"location\":\"TestController.update\",\"message\":\"shortcut conflict\",\"data\":{\"id\":" + id + "},\"timestamp\":" + System.currentTimeMillis() + "}\n",
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.APPEND
+                );
+            } catch (Exception ignored) {}
+            // #endregion
             return ResponseEntity.badRequest().build();
         }
 
