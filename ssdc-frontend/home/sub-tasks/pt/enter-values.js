@@ -118,12 +118,161 @@ function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
 
+function normalizeText(value){
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value).trim();
+}
+
 function escapeAttr(value){
   return String(value == null ? "" : value)
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function escapeHtml(value){
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function asArray(value){
+  return Array.isArray(value) ? value : [];
+}
+
+function formatHtmlLines(text){
+  return escapeHtml(text).replace(/\r?\n/g, "<br>");
+}
+
+function readUnitEntry(entry){
+  if (entry === null || entry === undefined) {
+    return "";
+  }
+  if (typeof entry === "string" || typeof entry === "number") {
+    return normalizeText(entry);
+  }
+  return normalizeText(entry.unit || entry.value || entry.name);
+}
+
+function readNormalEntry(entry){
+  if (entry === null || entry === undefined) {
+    return "";
+  }
+  if (typeof entry === "string" || typeof entry === "number") {
+    return normalizeText(entry);
+  }
+  return normalizeText(
+    entry.normalValue ||
+    entry.normal_value ||
+    entry.textValue ||
+    entry.text_value ||
+    entry.normalText ||
+    entry.normal_text ||
+    entry.value
+  );
+}
+
+function formatNormalRanges(ranges){
+  const parts = asArray(ranges)
+    .map(range => {
+      if (!range) {
+        return "";
+      }
+
+      const textValue =
+        normalizeText(range.textValue || range.text_value);
+      if (textValue) {
+        return textValue;
+      }
+
+      const min = range.minValue ?? range.min_value;
+      const max = range.maxValue ?? range.max_value;
+      if (min === null || min === undefined) {
+        if (max === null || max === undefined) {
+          return "";
+        }
+        return String(max);
+      }
+      if (max === null || max === undefined) {
+        return String(min);
+      }
+
+      const gender =
+        normalizeText(range.gender).toUpperCase();
+      const base = `${min}-${max}`;
+      if (gender && gender !== "ANY") {
+        const prefix =
+          gender === "MALE" ? "M"
+          : (gender === "FEMALE" ? "F" : gender);
+        return `${prefix}: ${base}`;
+      }
+      return base;
+    })
+    .filter(Boolean);
+
+  return parts.join(" / ");
+}
+
+function resolveNormalText(test, param, index){
+  const direct =
+    normalizeText(param?.normalText || param?.normal_text || param?.normal);
+  if (direct) {
+    return direct;
+  }
+
+  const fromRanges =
+    formatNormalRanges(param?.normalRanges || param?.normal_ranges);
+  if (fromRanges) {
+    return fromRanges;
+  }
+
+  const testNormals = asArray(test?.normalValues || test?.normal_values)
+    .map(readNormalEntry)
+    .filter(Boolean);
+  if (testNormals.length) {
+    if (typeof index === "number" && testNormals[index]) {
+      return testNormals[index];
+    }
+    return testNormals.join("\n");
+  }
+
+  return normalizeText(test?.normalValue || test?.normal_value);
+}
+
+function resolveUnitText(test, param, index){
+  const direct = normalizeText(param?.unit);
+  if (direct) {
+    return direct;
+  }
+
+  const legacyUnit = normalizeText(test?.unit || test?.testUnit);
+  if (legacyUnit) {
+    return legacyUnit;
+  }
+
+  const testUnits = asArray(test?.units || test?.testUnits || test?.unit)
+    .map(readUnitEntry)
+    .filter(Boolean);
+  if (testUnits.length) {
+    if (typeof index === "number" && testUnits[index]) {
+      const candidate = testUnits[index];
+      const name = normalizeText(param?.name);
+      return name && candidate === name ? "" : candidate;
+    }
+    if (testUnits[0]) {
+      const candidate = testUnits[0];
+      const name = normalizeText(param?.name);
+      return name && candidate === name ? "" : candidate;
+    }
+  }
+
+  return resolveUnit(param || {});
 }
 
 function buildResultSlots(baseName, defaultResults, savedBySub) {
@@ -224,7 +373,7 @@ function renderTests(tests) {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
     const hasParams = params.length > 0;
     const isMulti = (hasParams && params.length > 1)
-      || (!hasParams && (test.units || []).length > 1);
+      || (!hasParams && asArray(test.units || test.testUnits).length > 1);
 
     /* ===== SINGLE VALUE TEST ===== */
     if (!isMulti) {
@@ -234,15 +383,8 @@ function renderTests(tests) {
       );
 
       const singleParam = params[0] || {};
-      const unit =
-        (singleParam.unit || "").trim()
-        || test.units?.[0]?.unit
-        || "";
-      const normalText =
-        (test.normalValues || [])
-          .map(n => n.normalValue)
-          .join("<br>");
-      const fallbackNormal = singleParam.normalText || "";
+      const unit = resolveUnitText(test, singleParam, 0);
+      const normalText = resolveNormalText(test, singleParam);
       const allowNewLines = !!singleParam.allowNewLines;
       const baseName =
         (singleParam.name && singleParam.name.trim())
@@ -261,7 +403,7 @@ function renderTests(tests) {
 
       body.innerHTML += `
         <tr>
-          <td><b>${test.testName}</b></td>
+          <td><b>${escapeHtml(test.testName)}</b></td>
           <td>
             ${inputHtml}
             ${allowNewLines ? `
@@ -271,13 +413,13 @@ function renderTests(tests) {
                 data-testid="${test.id}"
                 data-base="${escapeAttr(baseName)}"
                 data-unit="${escapeAttr(unit)}"
-                data-normal="${escapeAttr(fallbackNormal || normalText || '')}"
+                data-normal="${escapeAttr(normalText || '')}"
                 data-valuetype="${escapeAttr(singleParam.valueType || '')}"
               >Add</button>` : ""}
           </td>
-          <td>${unit}</td>
+          <td>${escapeHtml(unit)}</td>
           <td class="normal">
-            ${normalText || fallbackNormal}
+            ${formatHtmlLines(normalText)}
           </td>
         </tr>`;
       return;
@@ -285,7 +427,7 @@ function renderTests(tests) {
 
     /* ===== MULTI VALUE TEST ===== */
     body.innerHTML +=
-      `<tr><td colspan="4"><b>${test.testName}</b></td></tr>`;
+      `<tr><td colspan="4"><b>${escapeHtml(test.testName)}</b></td></tr>`;
 
     const savedBySub = {};
     savedResults.forEach(r => {
@@ -304,8 +446,8 @@ function renderTests(tests) {
         sectionName: p.sectionName || "",
         allowNewLines: !!p.allowNewLines
       }))
-      : (test.units || []).map((u, i) => ({
-        name: u.unit || "",
+      : asArray(test.units || test.testUnits).map((u, i) => ({
+        name: (u && typeof u === "object") ? (u.unit || "") : String(u || ""),
         unit: "",
         valueType: null,
         normalText: test.normalValues?.[i]?.normalValue || "",
@@ -319,7 +461,7 @@ function renderTests(tests) {
         if (sectionName !== currentSection) {
           body.innerHTML += `
             <tr class="section-header">
-              <td colspan="4">${sectionName}</td>
+              <td colspan="4">${escapeHtml(sectionName)}</td>
             </tr>`;
           currentSection = sectionName;
         }
@@ -342,10 +484,12 @@ function renderTests(tests) {
           slot.savedValue,
           slot.defaultValue
         );
+        const unitText = resolveUnitText(test, param, i);
+        const normalText = resolveNormalText(test, param, i);
 
         body.innerHTML += `
           <tr>
-            <td class="param-indent">${slot.label}</td>
+            <td class="param-indent">${escapeHtml(slot.label)}</td>
             <td>
               ${inputHtml}
               ${param.allowNewLines && slotIndex === 0 ? `
@@ -354,15 +498,13 @@ function renderTests(tests) {
                   class="small-btn add-line-btn"
                   data-testid="${test.id}"
                   data-base="${escapeAttr(param.name || '')}"
-                  data-unit="${escapeAttr(resolveUnit(param))}"
-                  data-normal="${escapeAttr(param.normalText || '')}"
+                  data-unit="${escapeAttr(unitText)}"
+                  data-normal="${escapeAttr(normalText)}"
                   data-valuetype="${escapeAttr(param.valueType || '')}"
                 >Add</button>` : ""}
             </td>
-            <td>${resolveUnit(param)}</td>
-            <td class="normal">
-              ${param.normalText || ""}
-            </td>
+            <td>${escapeHtml(unitText)}</td>
+            <td class="normal">${formatHtmlLines(normalText)}</td>
           </tr>`;
       });
     });
@@ -421,9 +563,9 @@ function handleAddLineClick(event) {
       <td>
         ${inputHtml}
       </td>
-      <td>${unit}</td>
+      <td>${escapeHtml(unit)}</td>
       <td class="normal">
-        ${normal}
+        ${formatHtmlLines(normal)}
       </td>
     </tr>
   `;

@@ -59,6 +59,125 @@ function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
 
+function normalizeText(value){
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value).trim();
+}
+
+function escapeHtml(value){
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatHtmlLines(text){
+  return escapeHtml(text).replace(/\r?\n/g, "<br>");
+}
+
+function asArray(value){
+  return Array.isArray(value) ? value : [];
+}
+
+function readUnitEntry(entry){
+  if (entry === null || entry === undefined) {
+    return "";
+  }
+  if (typeof entry === "string" || typeof entry === "number") {
+    return normalizeText(entry);
+  }
+  return normalizeText(entry.unit || entry.value || entry.name);
+}
+
+function readNormalEntry(entry){
+  if (entry === null || entry === undefined) {
+    return "";
+  }
+  if (typeof entry === "string" || typeof entry === "number") {
+    return normalizeText(entry);
+  }
+  return normalizeText(
+    entry.normalValue ||
+    entry.normal_value ||
+    entry.textValue ||
+    entry.text_value ||
+    entry.normalText ||
+    entry.normal_text ||
+    entry.value
+  );
+}
+
+function formatNormalRanges(ranges){
+  const parts = asArray(ranges)
+    .map(range => {
+      if (!range) {
+        return "";
+      }
+
+      const textValue =
+        normalizeText(range.textValue || range.text_value);
+      if (textValue) {
+        return textValue;
+      }
+
+      const min = range.minValue ?? range.min_value;
+      const max = range.maxValue ?? range.max_value;
+      if (min === null || min === undefined) {
+        if (max === null || max === undefined) {
+          return "";
+        }
+        return String(max);
+      }
+      if (max === null || max === undefined) {
+        return String(min);
+      }
+
+      const gender =
+        normalizeText(range.gender).toUpperCase();
+      const base = `${min}-${max}`;
+      if (gender && gender !== "ANY") {
+        const prefix =
+          gender === "MALE" ? "M"
+          : (gender === "FEMALE" ? "F" : gender);
+        return `${prefix}: ${base}`;
+      }
+      return base;
+    })
+    .filter(Boolean);
+
+  return parts.join(" / ");
+}
+
+function resolveNormalText(test, param, index){
+  const direct =
+    normalizeText(param?.normalText || param?.normal_text || param?.normal);
+  if (direct) {
+    return direct;
+  }
+
+  const fromRanges =
+    formatNormalRanges(param?.normalRanges || param?.normal_ranges);
+  if (fromRanges) {
+    return fromRanges;
+  }
+
+  const testNormals = asArray(test?.normalValues || test?.normal_values)
+    .map(readNormalEntry)
+    .filter(Boolean);
+  if (testNormals.length) {
+    if (typeof index === "number" && testNormals[index]) {
+      return testNormals[index];
+    }
+    return testNormals.join("\n");
+  }
+
+  return normalizeText(test?.normalValue || test?.normal_value);
+}
+
 function buildResultSlots(param, normalizedItems) {
   const baseName = param.name || "";
   const defaults = Array.isArray(param.defaultResults)
@@ -114,6 +233,36 @@ function resolveUnit(param){
     return "%";
   }
   return "%";
+}
+
+function resolveUnitText(test, param, index){
+  const direct = normalizeText(param?.unit);
+  if (direct) {
+    return direct;
+  }
+
+  const legacyUnit = normalizeText(test?.unit || test?.testUnit);
+  if (legacyUnit) {
+    return legacyUnit;
+  }
+
+  const testUnits = asArray(test?.units || test?.testUnits || test?.unit)
+    .map(readUnitEntry)
+    .filter(Boolean);
+  if (testUnits.length) {
+    if (typeof index === "number" && testUnits[index]) {
+      const candidate = testUnits[index];
+      const name = normalizeText(param?.name);
+      return name && candidate === name ? "" : candidate;
+    }
+    if (testUnits[0]) {
+      const candidate = testUnits[0];
+      const name = normalizeText(param?.name);
+      return name && candidate === name ? "" : candidate;
+    }
+  }
+
+  return resolveUnit(param || {});
 }
 
 function loadResults(){
@@ -205,12 +354,12 @@ Promise.all([loadResults(), loadSelectedTests()])
         const hasSubSlots = Object.keys(rawItemMap)
           .some(key => key !== "__single__");
         const isMulti = (hasParams && (params.length > 1 || hasSubSlots))
-          || (!hasParams && (test.units || []).length > 1);
+          || (!hasParams && asArray(test.units || test.testUnits).length > 1);
 
         if (isMulti) {
           body.innerHTML += `
             <tr>
-              <td colspan="4"><b>${test.testName}</b></td>
+              <td colspan="4"><b>${escapeHtml(test.testName)}</b></td>
             </tr>
           `;
 
@@ -230,8 +379,8 @@ Promise.all([loadResults(), loadSelectedTests()])
               defaultResults: Array.isArray(p.defaultResults) ? p.defaultResults : [],
               sectionName: p.sectionName || ""
             }))
-            : (test.units || []).map((u, index) => ({
-              name: u.unit || "",
+            : asArray(test.units || test.testUnits).map((u, index) => ({
+              name: (u && typeof u === "object") ? (u.unit || "") : String(u || ""),
               unit: "",
               valueType: null,
               normalText: test.normalValues?.[index]?.normalValue || "",
@@ -239,14 +388,14 @@ Promise.all([loadResults(), loadSelectedTests()])
             }));
 
           let currentSection = null;
-          rows.forEach(param => {
+          rows.forEach((param, paramIndex) => {
             const sectionName = String(param.sectionName || "").trim();
 
             if (sectionName) {
               if (sectionName !== currentSection) {
                 body.innerHTML += `
                   <tr class="section-header">
-                    <td colspan="4">${sectionName}</td>
+                    <td colspan="4">${escapeHtml(sectionName)}</td>
                   </tr>
                 `;
                 currentSection = sectionName;
@@ -257,13 +406,13 @@ Promise.all([loadResults(), loadSelectedTests()])
 
             const slots = buildResultSlots(param, normalizedItems);
             slots.forEach(slot => {
-              const normalText = param.normalText || "";
+              const normalText = resolveNormalText(test, param, paramIndex);
               const resultValue = slot.item?.resultValue || "";
               const valueForDisplay =
                 resultValue && resultValue.trim() !== ""
                   ? resultValue
                   : slot.defaultValue;
-              const unitText = resolveUnit(param);
+              const unitText = resolveUnitText(test, param, paramIndex);
               const displayValue =
                 valueForDisplay && unitText === "%"
                   ? `${valueForDisplay} %`
@@ -277,44 +426,37 @@ Promise.all([loadResults(), loadSelectedTests()])
 
               body.innerHTML += `
                 <tr>
-                  <td class="param-indent">${slot.label}</td>
+                  <td class="param-indent">${escapeHtml(slot.label)}</td>
                   <td class="${out ? "is-abnormal" : ""}">
-                    ${displayValue}
+                    ${escapeHtml(displayValue)}
                   </td>
-                  <td>${unitText}</td>
-                  <td>${normalText}</td>
+                  <td>${escapeHtml(unitText)}</td>
+                  <td>${formatHtmlLines(normalText)}</td>
                 </tr>
               `;
             });
           });
         } else {
           const item = rawItemMap["__single__"];
-          const normalText =
-            (test.normalValues || [])
-              .map(n => n.normalValue)
-              .join("<br>");
-          const fallbackNormal = params[0]?.normalText || "";
+          const normalText = resolveNormalText(test, params[0] || {});
           const resultValue = item?.resultValue || "";
 
           const out = isOutOfRange(
             resultValue,
-            normalText || fallbackNormal,
+            normalText,
             patient.gender
           );
 
-          const unit =
-            (params[0]?.unit || "").trim()
-            || test.units?.[0]?.unit
-            || "";
+          const unit = resolveUnitText(test, params[0] || {}, 0);
 
           body.innerHTML += `
             <tr>
-              <td><b>${test.testName}</b></td>
+              <td><b>${escapeHtml(test.testName)}</b></td>
               <td class="${out ? "is-abnormal" : ""}">
-                ${resultValue}
+                ${escapeHtml(resultValue)}
               </td>
-              <td>${unit}</td>
-              <td>${normalText || fallbackNormal}</td>
+              <td>${escapeHtml(unit)}</td>
+              <td>${formatHtmlLines(normalText)}</td>
             </tr>
           `;
         }

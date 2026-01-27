@@ -56,6 +56,105 @@ function normalizeText(value){
   return String(value).trim();
 }
 
+function escapeHtml(value){
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function asArray(value){
+  return Array.isArray(value) ? value : [];
+}
+
+function readNormalEntry(entry){
+  if (entry === null || entry === undefined) {
+    return "";
+  }
+  if (typeof entry === "string" || typeof entry === "number") {
+    return normalizeText(entry);
+  }
+  return normalizeText(
+    entry.normalValue ||
+    entry.normal_value ||
+    entry.textValue ||
+    entry.text_value ||
+    entry.normalText ||
+    entry.normal_text ||
+    entry.value
+  );
+}
+
+function formatNormalRanges(ranges){
+  const parts = asArray(ranges)
+    .map(range => {
+      if (!range) {
+        return "";
+      }
+
+      const textValue =
+        normalizeText(range.textValue || range.text_value);
+      if (textValue) {
+        return textValue;
+      }
+
+      const min = range.minValue ?? range.min_value;
+      const max = range.maxValue ?? range.max_value;
+      if (min === null || min === undefined) {
+        if (max === null || max === undefined) {
+          return "";
+        }
+        return String(max);
+      }
+      if (max === null || max === undefined) {
+        return String(min);
+      }
+
+      const gender =
+        normalizeText(range.gender).toUpperCase();
+      const base = `${min}-${max}`;
+      if (gender && gender !== "ANY") {
+        const prefix =
+          gender === "MALE" ? "M"
+          : (gender === "FEMALE" ? "F" : gender);
+        return `${prefix}: ${base}`;
+      }
+      return base;
+    })
+    .filter(Boolean);
+
+  return parts.join(" / ");
+}
+
+function resolveNormalText(test, param, index){
+  const direct = normalizeText(
+    param?.normalText || param?.normal_text || param?.normal
+  );
+  if (direct) {
+    return direct;
+  }
+
+  const fromRanges =
+    formatNormalRanges(param?.normalRanges || param?.normal_ranges);
+  if (fromRanges) {
+    return fromRanges;
+  }
+
+  const testNormals = asArray(test?.normalValues || test?.normal_values)
+    .map(readNormalEntry)
+    .filter(Boolean);
+  if (testNormals.length) {
+    if (typeof index === "number" && testNormals[index]) {
+      return testNormals[index];
+    }
+    return testNormals.join("\n");
+  }
+
+  return normalizeText(test?.normalValue || test?.normal_value);
+}
+
 function formatCost(value){
   if (value === null || value === undefined || value === "") {
     return "—";
@@ -68,8 +167,12 @@ function renderNormalValues(test){
  const params = Array.isArray(test.parameters) ? test.parameters : [];
  const hasMultiple = params.length > 1;
  const paramLines = params
-  .map(param => {
-    const normalText = normalizeText(param.normalText);
+  .map((param, index) => {
+    const normalText = resolveNormalText(
+      test,
+      param,
+      hasMultiple ? index : undefined
+    );
     if (!normalText) {
       return "";
     }
@@ -79,13 +182,15 @@ function renderNormalValues(test){
   .filter(Boolean);
 
  if (paramLines.length) {
-  return paramLines.join("\n");
+  return escapeHtml(paramLines.join("\n"));
  }
 
- return (test.normalValues || [])
-  .map(n => normalizeText(n.normalValue))
+ const fallback = asArray(test.normalValues || test.normal_values)
+  .map(readNormalEntry)
   .filter(Boolean)
   .join("\n");
+
+ return escapeHtml(fallback);
 }
 
 /* RENDER */
@@ -98,9 +203,9 @@ function render(){
    tbody.innerHTML+=`
    <tr>
     <td class="sno">${i++}</td>
-    <td class="name">${t.testName || "-"}</td>
-    <td class="category">${t.category || "—"}</td>
-    <td class="shortcut">${t.shortcut || "—"}</td>
+    <td class="name">${escapeHtml(t.testName || "-")}</td>
+    <td class="category">${escapeHtml(t.category || "—")}</td>
+    <td class="shortcut">${escapeHtml(t.shortcut || "—")}</td>
     <td class="normal">${renderNormalValues(t) || "—"}</td>
     <td class="cost">${formatCost(t.cost)}</td>
       <td class="active-col">
@@ -130,9 +235,9 @@ function render(){
    tbody.innerHTML+=`
    <tr>
     <td class="sno">${i++}</td>
-    <td class="name">${g.groupName || "-"}</td>
+    <td class="name">${escapeHtml(g.groupName || "-")}</td>
     <td class="category">Group</td>
-    <td class="shortcut">${g.shortcut || "—"}</td>
+    <td class="shortcut">${escapeHtml(g.shortcut || "—")}</td>
     <td class="normal">—</td>
     <td class="cost">${formatCost(g.cost)}</td>
 
