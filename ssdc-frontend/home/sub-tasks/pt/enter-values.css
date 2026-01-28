@@ -64,6 +64,21 @@ th {
   box-shadow: none;
 }
 
+.small-btn.add-line-btn,
+.small-btn.remove-line-btn {
+  margin-top: 8px;
+}
+
+.small-btn.remove-line-btn {
+  margin-left: 8px;
+  background: var(--theme-danger);
+  box-shadow: none;
+}
+
+.small-btn.remove-line-btn:hover {
+  filter: brightness(0.95);
+}
+
 .normal {
   font-size: 12px;
   white-space: pre-line;

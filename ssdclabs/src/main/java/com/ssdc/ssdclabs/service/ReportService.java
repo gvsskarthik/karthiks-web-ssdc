@@ -641,9 +641,9 @@ public class ReportService {
         if (isBlank(value)) {
             return null;
         }
-        String trimmed = value.trim();
-        // Remove commas used as thousands separators (e.g. 6,000 -> 6000,
-        // 1,00,000 -> 100000). Keeps commas used outside numeric contexts.
-        return trimmed.replaceAll("(?<=\\d),(?=\\d)", "");
+        // Preserve user-entered formatting (e.g. 4,000) so reports display
+        // the same value the lab entered. Any numeric parsing for range checks
+        // should normalize separators at the UI layer.
+        return value.trim();
     }
 }

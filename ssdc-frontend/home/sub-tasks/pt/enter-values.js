@@ -106,6 +106,12 @@ loadSavedResults()
     return fetch(API_BASE_URL + "/tests/active")
       .then(res => res.json())
       .then(allTests => {
+        try {
+          localStorage.setItem("testsActiveCache", JSON.stringify(allTests || []));
+          localStorage.setItem("testsActiveCacheAt", String(Date.now()));
+        } catch (e) {
+          // ignore storage errors
+        }
         const activeTests = (allTests || [])
           .filter(t => t && t.active !== false);
         const selectedTests =
@@ -116,6 +122,14 @@ loadSavedResults()
 
 function normalizeKey(value){
   return (value || "").trim().toLowerCase();
+}
+
+function makeGroupKey(testId, baseName){
+  const raw = normalizeKey(baseName) || "value";
+  const safe = raw
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `t${testId}-${safe || "value"}`;
 }
 
 function normalizeText(value){
@@ -423,6 +437,7 @@ function renderTests(tests) {
       const normalText = resolveNormalText(test, singleParam);
       const allowNewLines = !!singleParam.allowNewLines;
       const baseName = normalizeText(singleParam.name) || normalizeText(test.testName);
+      const groupKey = allowNewLines ? makeGroupKey(test.id, baseName) : "";
       const defaultResults = Array.isArray(singleParam.defaultResults)
         ? singleParam.defaultResults
         : [];
@@ -452,7 +467,7 @@ function renderTests(tests) {
       );
 
       body.innerHTML += `
-        <tr>
+        <tr${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
           <td><b>${escapeHtml(test.testName)}</b></td>
           <td>
             ${inputHtml}
@@ -465,7 +480,15 @@ function renderTests(tests) {
                 data-unit="${escapeAttr(unit)}"
                 data-normal="${escapeAttr(normalText || '')}"
                 data-valuetype="${escapeAttr(singleParam.valueType || '')}"
-              >Add</button>` : ""}
+                data-group="${escapeAttr(groupKey)}"
+              >Add</button>
+              <button
+                type="button"
+                class="small-btn remove-line-btn"
+                data-testid="${test.id}"
+                data-group="${escapeAttr(groupKey)}"
+                style="display:none;"
+              >Remove</button>` : ""}
           </td>
           <td>${escapeHtml(unit)}</td>
           <td class="normal">
@@ -492,7 +515,7 @@ function renderTests(tests) {
 
           rendered.add(normalizeKey(subKey));
           body.innerHTML += `
-            <tr>
+            <tr data-line-group="${escapeAttr(groupKey)}">
               <td></td>
               <td>${extraInput}</td>
               <td>${escapeHtml(unit)}</td>
@@ -526,7 +549,7 @@ function renderTests(tests) {
           );
 
           body.innerHTML += `
-            <tr>
+            <tr data-line-group="${escapeAttr(groupKey)}">
               <td></td>
               <td>${extraInput}</td>
               <td>${escapeHtml(unit)}</td>
@@ -586,6 +609,9 @@ function renderTests(tests) {
         param.defaultResults,
         savedBySub
       );
+      const groupKey = param.allowNewLines
+        ? makeGroupKey(test.id, param.name || "")
+        : "";
 
       slots.forEach((slot, slotIndex) => {
         const inputHtml = renderResultControl(
@@ -600,7 +626,7 @@ function renderTests(tests) {
         const normalText = resolveNormalText(test, param, i);
 
         body.innerHTML += `
-          <tr>
+          <tr${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
             <td class="param-indent">${escapeHtml(slot.label)}</td>
             <td>
               ${inputHtml}
@@ -613,7 +639,15 @@ function renderTests(tests) {
                   data-unit="${escapeAttr(unitText)}"
                   data-normal="${escapeAttr(normalText)}"
                   data-valuetype="${escapeAttr(param.valueType || '')}"
-                >Add</button>` : ""}
+                  data-group="${escapeAttr(groupKey)}"
+                >Add</button>
+                <button
+                  type="button"
+                  class="small-btn remove-line-btn"
+                  data-testid="${test.id}"
+                  data-group="${escapeAttr(groupKey)}"
+                  style="display:none;"
+                >Remove</button>` : ""}
             </td>
             <td>${escapeHtml(unitText)}</td>
             <td class="normal">${formatHtmlLines(normalText)}</td>
@@ -625,7 +659,50 @@ function renderTests(tests) {
 
 let dynamicLineCounter = 0;
 
+function findLastRowInGroup(body, groupKey){
+  if (!body || !groupKey) {
+    return null;
+  }
+  const rows = [...body.querySelectorAll("tr")];
+  let last = null;
+  rows.forEach(r => {
+    if (r?.dataset?.lineGroup === groupKey) {
+      last = r;
+    }
+  });
+  return last;
+}
+
+function findDynamicRowsInGroup(body, groupKey){
+  if (!body || !groupKey) {
+    return [];
+  }
+  return [...body.querySelectorAll("tr")]
+    .filter(r => r?.dataset?.lineGroup === groupKey && r?.dataset?.dynamicLine === "1");
+}
+
 function handleAddLineClick(event) {
+  const removeBtn = event.target.closest(".remove-line-btn");
+  if (removeBtn) {
+    const body = document.getElementById("resultBody");
+    if (!body || !body.contains(removeBtn)) {
+      return;
+    }
+    const groupKey = removeBtn.dataset.group || "";
+    if (!groupKey) {
+      return;
+    }
+    const dynamicRows = findDynamicRowsInGroup(body, groupKey);
+    const last = dynamicRows[dynamicRows.length - 1];
+    if (last) {
+      last.remove();
+    }
+    if (findDynamicRowsInGroup(body, groupKey).length === 0) {
+      removeBtn.style.display = "none";
+    }
+    return;
+  }
+
   const btn = event.target.closest(".add-line-btn");
   if (!btn) {
     return;
@@ -644,6 +721,7 @@ function handleAddLineClick(event) {
   const unit = btn.dataset.unit || "";
   const normal = btn.dataset.normal || "";
   const valueType = btn.dataset.valuetype || "";
+  const groupKey = btn.dataset.group || makeGroupKey(testId, baseName);
 
   const row = btn.closest("tr");
   if (!row) {
@@ -688,7 +766,7 @@ function handleAddLineClick(event) {
     row.querySelector(".param-indent").textContent.trim() !== "";
 
   const newRowHtml = `
-    <tr>
+    <tr data-line-group="${escapeAttr(groupKey)}" data-dynamic-line="1">
       <td class="${hasParamIndent ? "param-indent" : ""}"></td>
       <td>
         ${inputHtml}
@@ -700,7 +778,13 @@ function handleAddLineClick(event) {
     </tr>
   `;
 
-  row.insertAdjacentHTML("afterend", newRowHtml);
+  const insertAfter = findLastRowInGroup(body, groupKey) || row;
+  insertAfter.insertAdjacentHTML("afterend", newRowHtml);
+
+  const remove = btn.parentElement?.querySelector(".remove-line-btn");
+  if (remove) {
+    remove.style.display = "";
+  }
 }
 
 function markTouched(event) {
