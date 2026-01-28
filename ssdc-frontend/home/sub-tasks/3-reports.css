@@ -34,6 +34,29 @@ body {
   text-transform: uppercase;
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: 220px minmax(0,1fr);
+  gap: 16px;
+  align-items: end;
+  width: 100%;
+  max-width: 560px;
+  animation: fadeUp .5s ease both;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
 .date-filter {
   display: flex;
   flex-direction: column;
@@ -63,11 +86,41 @@ body {
   color: var(--muted);
 }
 
+.icon-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: color .15s ease;
+}
+
+.icon-btn:hover {
+  color: var(--accent);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid rgba(15, 118, 110, 0.35);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
 .neo-input {
   flex: 1;
   border: none;
   outline: none;
   font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .filters {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
 }
 
 .table-box {

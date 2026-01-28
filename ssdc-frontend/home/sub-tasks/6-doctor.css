@@ -69,6 +69,7 @@ body {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   animation: fadeUp .5s ease both;
+  max-width: 560px;
 }
 
 .search-box i {
