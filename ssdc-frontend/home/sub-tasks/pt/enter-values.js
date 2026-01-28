@@ -331,6 +331,28 @@ function buildResultSlots(baseName, defaultResults, savedBySub) {
   return slots;
 }
 
+function parseSuffixNumber(subTest, baseName){
+  const text = normalizeText(subTest);
+  if (!text) {
+    return null;
+  }
+  const prefix = normalizeText(baseName);
+  const match = text.match(/::\s*(.+)\s*$/);
+  if (!match) {
+    return null;
+  }
+  const suffix = match[1];
+  const asNumber = Number(suffix);
+  if (!Number.isNaN(asNumber) && Number.isFinite(asNumber)) {
+    return asNumber;
+  }
+  const extraMatch = suffix.match(/^extra-(\d+)$/i);
+  if (extraMatch) {
+    return 1000 + Number(extraMatch[1]);
+  }
+  return 2000;
+}
+
 function resolveUnit(param){
   const unit = (param.unit || "").trim();
   if (unit) {
@@ -389,19 +411,35 @@ function renderTests(tests) {
 
     /* ===== SINGLE VALUE TEST ===== */
     if (!isMulti) {
-
-      const saved = savedResults.find(
-        r => r.testId == test.id && !r.subTest
-      );
+      const savedBySub = {};
+      savedResults.forEach(r => {
+        if (r && r.testId == test.id) {
+          savedBySub[normalizeKey(r.subTest)] = r;
+        }
+      });
 
       const singleParam = params[0] || {};
       const unit = resolveUnitText(test, singleParam, 0);
       const normalText = resolveNormalText(test, singleParam);
       const allowNewLines = !!singleParam.allowNewLines;
-      const baseName =
-        (singleParam.name && singleParam.name.trim())
-          ? singleParam.name.trim()
-          : (test.testName || "");
+      const baseName = normalizeText(singleParam.name) || normalizeText(test.testName);
+      const defaultResults = Array.isArray(singleParam.defaultResults)
+        ? singleParam.defaultResults
+        : [];
+
+      const saved =
+        savedResults.find(
+          r => r && r.testId == test.id && (!r.subTest || String(r.subTest).trim() === "")
+        )
+        || (baseName
+          ? savedResults.find(
+            r =>
+              r && r.testId == test.id
+              && r.subTest
+              && !String(r.subTest).includes("::")
+              && normalizeKey(r.subTest) === normalizeKey(baseName)
+          )
+          : null);
       const inputHtml = renderResultControl(
         test.id,
         `result-${test.id}`,
@@ -434,6 +472,68 @@ function renderTests(tests) {
             ${formatHtmlLines(normalText)}
           </td>
         </tr>`;
+
+      if (allowNewLines) {
+        const rendered = new Set();
+
+        for (let i = 1; i < defaultResults.length; i++) {
+          const suffix = String(i + 1);
+          const subKey = baseName ? `${baseName}::${suffix}` : suffix;
+          const savedItem = savedBySub[normalizeKey(subKey)];
+          const inputId = `result-${test.id}-preset-${suffix}`;
+          const extraInput = renderResultControl(
+            test.id,
+            inputId,
+            subKey,
+            singleParam,
+            savedItem?.resultValue || savedItem?.value || "",
+            defaultResults[i] || ""
+          );
+
+          rendered.add(normalizeKey(subKey));
+          body.innerHTML += `
+            <tr>
+              <td></td>
+              <td>${extraInput}</td>
+              <td>${escapeHtml(unit)}</td>
+              <td class="normal">${formatHtmlLines(normalText)}</td>
+            </tr>`;
+        }
+
+        const extraSaved = savedResults
+          .filter(r =>
+            r && r.testId == test.id && r.subTest && String(r.subTest).includes("::")
+          )
+          .sort((a, b) => {
+            const aKey = parseSuffixNumber(a.subTest, baseName) ?? 0;
+            const bKey = parseSuffixNumber(b.subTest, baseName) ?? 0;
+            return aKey - bKey;
+          });
+
+        extraSaved.forEach((row, index) => {
+          const subKey = row.subTest;
+          if (rendered.has(normalizeKey(subKey))) {
+            return;
+          }
+          const inputId = `result-${test.id}-line-${index + 2}`;
+          const extraInput = renderResultControl(
+            test.id,
+            inputId,
+            subKey,
+            singleParam,
+            row?.resultValue || row?.value || "",
+            ""
+          );
+
+          body.innerHTML += `
+            <tr>
+              <td></td>
+              <td>${extraInput}</td>
+              <td>${escapeHtml(unit)}</td>
+              <td class="normal">${formatHtmlLines(normalText)}</td>
+            </tr>`;
+        });
+      }
       return;
     }
 
@@ -523,7 +623,7 @@ function renderTests(tests) {
   });
 }
 
-let extraLineCounter = 0;
+let dynamicLineCounter = 0;
 
 function handleAddLineClick(event) {
   const btn = event.target.closest(".add-line-btn");
@@ -550,10 +650,28 @@ function handleAddLineClick(event) {
     return;
   }
 
-  extraLineCounter += 1;
-  const suffix = `extra-${extraLineCounter}`;
+  const inputs = [...document.querySelectorAll(`.result-input[data-testid="${testId}"]`)];
+  const normalizedBase = normalizeKey(baseName);
+  let maxSuffix = 1;
+  inputs.forEach(input => {
+    const sub = input?.dataset?.sub;
+    if (!sub) {
+      return;
+    }
+    if (!normalizedBase || !normalizeKey(sub).startsWith(normalizedBase + "::")) {
+      return;
+    }
+    const rawSuffix = normalizeText(sub).split("::").pop();
+    const n = Number(rawSuffix);
+    if (!Number.isNaN(n) && Number.isFinite(n)) {
+      maxSuffix = Math.max(maxSuffix, n);
+    }
+  });
+  const nextSuffix = maxSuffix + 1;
+  const suffix = String(nextSuffix);
   const subKey = baseName ? `${baseName}::${suffix}` : suffix;
-  const inputId = `result-${testId}-extra-${extraLineCounter}`;
+  dynamicLineCounter += 1;
+  const inputId = `result-${testId}-dyn-${dynamicLineCounter}`;
 
   const param = { valueType, unit, normalText: normal };
   const inputHtml = renderResultControl(

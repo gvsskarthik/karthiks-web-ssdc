@@ -3,10 +3,13 @@ package com.ssdc.ssdclabs.service;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.lang.NonNull;
@@ -26,6 +29,9 @@ import com.ssdc.ssdclabs.repository.TestRepository;
 
 @Service
 public class ReportService {
+
+    private static final Pattern EXTRA_SUFFIX_PATTERN =
+        Pattern.compile("^extra-(\\d+)$", Pattern.CASE_INSENSITIVE);
 
     private final ReportResultRepository resultRepo;
     private final TestRepository testRepo;
@@ -128,6 +134,7 @@ public class ReportService {
                 result.setPatient(patient);
                 result.setTest(testRef);
                 result.setParameter(param);
+                result.setSubTest("");
                 result.setResultValue(firstDefaultResult(param));
                 toSave.add(result);
             }
@@ -153,17 +160,42 @@ public class ReportService {
         Map<Long, List<TestParameter>> paramCache = new HashMap<>();
         Map<String, TestParameter> paramByNameCache = new HashMap<>();
 
-        List<ReportResult> toSave = new ArrayList<>();
+        record GroupKey(Long patientId, Long testId, Long parameterId) {}
+        class IncomingLine {
+            final int sortKey;
+            final int seq;
+            final String value;
+            IncomingLine(int sortKey, int seq, String value) {
+                this.sortKey = sortKey;
+                this.seq = seq;
+                this.value = value;
+            }
+        }
 
+        Map<GroupKey, List<IncomingLine>> incomingByGroup = new LinkedHashMap<>();
+        Map<GroupKey, Patient> groupPatient = new HashMap<>();
+        Map<GroupKey, Test> groupTest = new HashMap<>();
+        Map<GroupKey, TestParameter> groupParam = new HashMap<>();
+
+        int seq = 0;
         for (PatientTestResultDTO incoming : results) {
             if (incoming == null) {
+                seq++;
                 continue;
             }
             Long patientId = incoming.patientId;
             Long testId = incoming.testId;
             if (patientId == null || testId == null) {
+                seq++;
                 continue;
             }
+
+            String cleanedValue = normalizeResultValue(incoming.resultValue);
+            if (isBlank(cleanedValue)) {
+                seq++;
+                continue;
+            }
+
             touchedPatients.add(patientId);
 
             Long safePatientId = Objects.requireNonNull(patientId, "patientId");
@@ -175,6 +207,7 @@ public class ReportService {
                     .orElse(null)
             );
             if (patient == null) {
+                seq++;
                 continue;
             }
             Test test = testCache.computeIfAbsent(
@@ -183,6 +216,7 @@ public class ReportService {
                     .orElse(null)
             );
             if (test == null) {
+                seq++;
                 continue;
             }
 
@@ -192,6 +226,7 @@ public class ReportService {
                     Objects.requireNonNull(id, "testId"))
             );
             if (params.isEmpty()) {
+                seq++;
                 continue;
             }
 
@@ -203,82 +238,113 @@ public class ReportService {
                 safeTestId
             );
             if (param == null || param.getId() == null) {
+                seq++;
                 continue;
             }
 
-            boolean hasSuffix =
-                normalizedSubTest != null && normalizedSubTest.contains("::");
+            GroupKey key = new GroupKey(patientId, testId, param.getId());
+            incomingByGroup.computeIfAbsent(key, k -> new ArrayList<>())
+                .add(new IncomingLine(
+                    computeLineSortKey(normalizedSubTest, seq),
+                    seq,
+                    cleanedValue
+                ));
+            groupPatient.putIfAbsent(key, patient);
+            groupTest.putIfAbsent(key, test);
+            groupParam.putIfAbsent(key, param);
+            seq++;
+        }
 
-            ReportResult result = null;
-            if (hasSuffix) {
-                result = resultRepo
-                    .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
-                        patientId,
-                        testId,
-                        param.getId(),
-                        normalizedSubTest
-                    )
-                    .orElse(null);
-            } else {
-                // Base slot: prefer the canonical row where sub_test is null/empty.
-                result = resultRepo
-                    .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTestIsNull(
-                        patientId,
-                        testId,
-                        param.getId()
-                    )
-                    .orElse(null);
-                if (result == null) {
-                    result = resultRepo
-                        .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
-                            patientId,
-                            testId,
-                            param.getId(),
-                            ""
-                        )
-                        .orElse(null);
+        if (incomingByGroup.isEmpty()) {
+            return;
+        }
+
+        Map<GroupKey, List<ReportResult>> existingByGroup = new HashMap<>();
+        for (Long patientId : touchedPatients) {
+            if (patientId == null) {
+                continue;
+            }
+            List<ReportResult> existing = resultRepo.findByPatient_Id(patientId);
+            for (ReportResult result : existing) {
+                if (result == null || result.getTest() == null
+                        || result.getParameter() == null) {
+                    continue;
                 }
-                // Backward-compatible: some rows may have sub_test stored as the
-                // parameter name (what the UI sends for multi-parameter tests).
-                if (result == null && normalizedSubTest != null) {
-                    result = resultRepo
-                        .findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
-                            patientId,
-                            testId,
-                            param.getId(),
-                            normalizedSubTest
-                        )
-                        .orElse(null);
+                Long testId = result.getTest().getId();
+                Long paramId = result.getParameter().getId();
+                if (testId == null || paramId == null) {
+                    continue;
                 }
-            }
-
-            if (result == null) {
-                result = new ReportResult();
-            }
-
-            result.setPatient(patient);
-            result.setTest(test);
-            result.setParameter(param);
-            if (hasSuffix) {
-                result.setSubTest(normalizedSubTest);
-            } else if (result.getId() == null) {
-                result.setSubTest("");
-            }
-            // Resolve final value first (incoming wins, else default, else null).
-            String defaultValue = firstDefaultResult(param);
-            String finalValue = resolveFinalResult(incoming.resultValue, defaultValue);
-            String existingValue = result.getResultValue();
-            boolean hasFinal = !isBlank(finalValue);
-            boolean hasExisting = !isBlank(existingValue);
-            if (hasFinal) {
-                result.setResultValue(finalValue);
-                toSave.add(result);
-            } else if (!hasExisting) {
-                result.setResultValue(null);
-                toSave.add(result);
+                GroupKey key = new GroupKey(patientId, testId, paramId);
+                existingByGroup
+                    .computeIfAbsent(key, k -> new ArrayList<>())
+                    .add(result);
             }
         }
 
+        List<ReportResult> toSave = new ArrayList<>();
+        List<ReportResult> toDelete = new ArrayList<>();
+
+        for (Map.Entry<GroupKey, List<IncomingLine>> entry
+                : incomingByGroup.entrySet()) {
+            GroupKey key = entry.getKey();
+            List<IncomingLine> lines = entry.getValue();
+            if (lines == null || lines.isEmpty()) {
+                continue;
+            }
+            lines.sort((a, b) -> {
+                int cmp = Integer.compare(a.sortKey, b.sortKey);
+                if (cmp != 0) {
+                    return cmp;
+                }
+                return Integer.compare(a.seq, b.seq);
+            });
+            List<String> values = new ArrayList<>();
+            for (IncomingLine line : lines) {
+                if (line == null || isBlank(line.value)) {
+                    continue;
+                }
+                values.add(line.value.trim());
+            }
+            if (values.isEmpty()) {
+                continue;
+            }
+            String combined = String.join("\n", values);
+
+            Patient patient = groupPatient.get(key);
+            Test test = groupTest.get(key);
+            TestParameter param = groupParam.get(key);
+            if (patient == null || test == null || param == null) {
+                continue;
+            }
+
+            List<ReportResult> existing = existingByGroup.getOrDefault(key, List.of());
+            ReportResult base = pickBaseResult(existing, param.getName());
+            if (base == null) {
+                base = new ReportResult();
+                base.setPatient(patient);
+                base.setTest(test);
+                base.setParameter(param);
+                base.setSubTest("");
+            }
+
+            base.setResultValue(combined);
+            toSave.add(base);
+
+            for (ReportResult result : existing) {
+                if (result == null || result == base) {
+                    continue;
+                }
+                String sub = normalizeSubTest(result.getSubTest());
+                if (sub != null && sub.contains("::")) {
+                    toDelete.add(result);
+                }
+            }
+        }
+
+        if (!toDelete.isEmpty()) {
+            resultRepo.deleteAll(toDelete);
+        }
         if (!toSave.isEmpty()) {
             resultRepo.saveAll(toSave);
         }
@@ -343,19 +409,147 @@ public class ReportService {
                 testId,
                 id -> paramRepo.findByTest_IdOrderByIdAsc(id).size()
             );
-            String subTest = normalizeSubTest(result.getSubTest());
-            if (isBlank(subTest) && count > 1) {
-                subTest = result.getParameter().getName();
+            String rawSubTest = normalizeSubTest(result.getSubTest());
+            boolean isLineRow = rawSubTest != null && rawSubTest.contains("::");
+
+            String baseSubTest = rawSubTest;
+            if (isBlank(baseSubTest) && count > 1) {
+                baseSubTest = result.getParameter().getName();
             }
-            response.add(new PatientTestResultDTO(
-                result.getId(),
-                patientId,
-                testId,
-                subTest,
-                result.getResultValue()
-            ));
+
+            List<String> lines = splitResultLines(result.getResultValue());
+            if (lines.isEmpty()) {
+                response.add(new PatientTestResultDTO(
+                    result.getId(),
+                    patientId,
+                    testId,
+                    baseSubTest,
+                    result.getResultValue()
+                ));
+                continue;
+            }
+
+            if (isLineRow) {
+                response.add(new PatientTestResultDTO(
+                    result.getId(),
+                    patientId,
+                    testId,
+                    rawSubTest,
+                    lines.get(0)
+                ));
+                continue;
+            }
+
+            String prefix = isBlank(baseSubTest)
+                ? result.getParameter().getName()
+                : baseSubTest;
+
+            for (int i = 0; i < lines.size(); i++) {
+                String value = lines.get(i);
+                String subOut;
+                if (i == 0) {
+                    subOut = baseSubTest;
+                } else if (isBlank(prefix)) {
+                    subOut = null;
+                } else {
+                    subOut = prefix + "::" + (i + 1);
+                }
+                response.add(new PatientTestResultDTO(
+                    result.getId(),
+                    patientId,
+                    testId,
+                    subOut,
+                    value
+                ));
+            }
         }
         return response;
+    }
+
+    private int computeLineSortKey(String subTest, int seq) {
+        if (subTest == null) {
+            return 0;
+        }
+        int sep = subTest.indexOf("::");
+        if (sep < 0) {
+            return 0;
+        }
+        String suffix = subTest.substring(sep + 2).trim();
+        if (suffix.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(suffix);
+        } catch (NumberFormatException ignored) {
+            Matcher matcher = EXTRA_SUFFIX_PATTERN.matcher(suffix);
+            if (matcher.matches()) {
+                try {
+                    int n = Integer.parseInt(matcher.group(1));
+                    return 1000 + n;
+                } catch (NumberFormatException ignored2) {
+                    return 2000 + seq;
+                }
+            }
+        }
+        return 2000 + seq;
+    }
+
+    private ReportResult pickBaseResult(List<ReportResult> existing,
+                                        String paramName) {
+        if (existing == null || existing.isEmpty()) {
+            return null;
+        }
+        ReportResult blank = null;
+        ReportResult named = null;
+        ReportResult firstNonLine = null;
+
+        String normalizedParam = paramName == null ? null : paramName.trim();
+        for (ReportResult result : existing) {
+            if (result == null) {
+                continue;
+            }
+            String sub = normalizeSubTest(result.getSubTest());
+            if (isBlank(sub)) {
+                blank = result;
+                break;
+            }
+            if (named == null && normalizedParam != null && sub != null
+                    && sub.equalsIgnoreCase(normalizedParam)) {
+                named = result;
+            }
+            if (firstNonLine == null && sub != null && !sub.contains("::")) {
+                firstNonLine = result;
+            }
+        }
+        if (blank != null) {
+            return blank;
+        }
+        if (named != null) {
+            return named;
+        }
+        return firstNonLine;
+    }
+
+    private List<String> splitResultLines(String stored) {
+        if (stored == null) {
+            return List.of();
+        }
+        String trimmed = stored.trim();
+        if (trimmed.isEmpty()) {
+            return List.of();
+        }
+        String[] parts = trimmed.split("\\r?\\n");
+        List<String> lines = new ArrayList<>();
+        for (String part : parts) {
+            if (part == null) {
+                continue;
+            }
+            String value = part.trim();
+            if (!value.isEmpty()) {
+                lines.add(value);
+            }
+        }
+        return lines;
     }
 
     private TestParameter resolveParameter(List<TestParameter> params,
