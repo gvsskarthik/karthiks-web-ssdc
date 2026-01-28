@@ -17,7 +17,9 @@ document.getElementById("pAgeSex").innerText =
   (patient.age || "") + " / " + (patient.gender || "");
 document.getElementById("pDoctor").innerText = patient.doctor || "";
 document.getElementById("pDate").innerText =
-  patient.visitDate || new Date().toLocaleDateString();
+  patient.visitDate || (window.formatIstDateDisplay
+    ? window.formatIstDateDisplay(new Date())
+    : new Date().toLocaleDateString());
 
 /* ================= LOAD SELECTED TEST IDS ================= */
 function loadSelectedIds(){

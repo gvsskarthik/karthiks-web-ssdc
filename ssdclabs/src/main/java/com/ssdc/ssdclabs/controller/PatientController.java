@@ -1,6 +1,7 @@
 package com.ssdc.ssdclabs.controller;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,7 +30,8 @@ public class PatientController {
     /* TODAY */
     @GetMapping("/today")
     public List<Patient> todayPatients() {
-        return service.findByDate(Objects.requireNonNull(LocalDate.now(), "today"));
+        return service.findByDate(
+            Objects.requireNonNull(LocalDate.now(ZoneId.of("Asia/Kolkata")), "today"));
     }
 
     /* BY DATE */

@@ -22,7 +22,9 @@ document.getElementById("pMobile").innerText =
   patient.mobile || "";
 
 document.getElementById("pDate").innerText =
-  patient.visitDate || new Date().toLocaleDateString();
+  patient.visitDate || (window.formatIstDateDisplay
+    ? window.formatIstDateDisplay(new Date())
+    : new Date().toLocaleDateString());
 
 /* ================= RANGE CHECK ================= */
 function isOutOfRange(value, normalText, gender){

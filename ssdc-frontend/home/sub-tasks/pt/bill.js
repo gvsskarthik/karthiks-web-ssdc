@@ -38,7 +38,12 @@ function hydratePatient(){
     age && gender ? `${age} / ${gender}` : `${age}${gender}`;
 
   setText("pName", patient.name || "");
-  setText("pDate", patient.visitDate || new Date().toLocaleDateString());
+  setText(
+    "pDate",
+    patient.visitDate || (window.formatIstDateDisplay
+      ? window.formatIstDateDisplay(new Date())
+      : new Date().toLocaleDateString())
+  );
   setText("pAddress", patient.address || "");
   setText("pAgeSex", ageSex);
   setText("pDoctor", patient.doctor || "SELF");

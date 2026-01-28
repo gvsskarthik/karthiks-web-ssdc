@@ -13,7 +13,9 @@ const exportDoctorId = exportState.doctorId || "";
 const exportDoctorName = exportState.doctorName || "All";
 
 doctorNameEl.textContent = exportDoctorName;
-generatedAtEl.textContent = new Date().toLocaleString();
+generatedAtEl.textContent = window.formatIstDateTimeDisplay
+  ? window.formatIstDateTimeDisplay(new Date())
+  : new Date().toLocaleString();
 
 let exportRows = [];
 

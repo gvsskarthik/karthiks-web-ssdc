@@ -23,6 +23,42 @@
       : window.API_BASE_URL + "/" + path;
   };
 
+  // ===== Time zone helpers (IST / Hyderabad) =====
+  // Use these for UI date/time so midnight behaves correctly in IST even if
+  // device/browser timezone is misconfigured.
+  window.IST_TIME_ZONE = "Asia/Kolkata";
+
+  window.formatIstDateDisplay = function (date) {
+    const d = date instanceof Date ? date : new Date();
+    return new Intl.DateTimeFormat("en-IN", {
+      timeZone: window.IST_TIME_ZONE
+    }).format(d);
+  };
+
+  window.formatIstDateTimeDisplay = function (date) {
+    const d = date instanceof Date ? date : new Date();
+    return new Intl.DateTimeFormat("en-IN", {
+      timeZone: window.IST_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }).format(d);
+  };
+
+  window.getIstDateInputValue = function (date) {
+    const d = date instanceof Date ? date : new Date();
+    // "en-CA" reliably produces YYYY-MM-DD.
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: window.IST_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(d);
+  };
+
   if (!window.fetch) {
     return;
   }
