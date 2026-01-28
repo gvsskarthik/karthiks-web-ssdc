@@ -375,14 +375,6 @@ public class ReportService {
                 resultRepo.saveAll(defaultsToSave);
             }
         }
-
-        // Update patient status based on whether all results are filled.
-        for (Long patientId : touchedPatients) {
-            if (patientId == null) {
-                continue;
-            }
-            updatePatientStatus(patientId);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -653,24 +645,5 @@ public class ReportService {
         // the same value the lab entered. Any numeric parsing for range checks
         // should normalize separators at the UI layer.
         return value.trim();
-    }
-
-    private void updatePatientStatus(Long patientId) {
-        Patient patient = patientRepo.findById(
-            Objects.requireNonNull(patientId, "patientId")
-        ).orElse(null);
-        if (patient == null) {
-            return;
-        }
-
-        List<ReportResult> results = resultRepo.findByPatient_Id(patientId);
-        boolean allFilled = !results.isEmpty()
-            && results.stream().allMatch(r -> r != null && !isBlank(r.getResultValue()));
-
-        String next = allFilled ? "COMPLETE" : "NOT COMPLETE";
-        if (patient.getStatus() == null || !patient.getStatus().equalsIgnoreCase(next)) {
-            patient.setStatus(next);
-            patientRepo.save(patient);
-        }
     }
 }

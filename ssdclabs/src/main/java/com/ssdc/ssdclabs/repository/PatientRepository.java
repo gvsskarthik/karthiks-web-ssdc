@@ -67,6 +67,4 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     java.util.List<DoctorBillAggregate> findDoctorBillAggregatesOrdered();
 
     long countByDoctor_Id(Long doctorId);
-
-    long countByStatusIgnoreCase(String status);
 }
