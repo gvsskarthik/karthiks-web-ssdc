@@ -22,11 +22,27 @@
       <h1>Reports</h1>
       <div class="subtitle">Daily results and report access</div>
     </div>
-    <div class="date-filter">
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
       <label for="reportDate">Date</label>
       <div class="input-wrap">
-        <i class='bx bx-calendar'></i>
+        <button class="icon-btn" type="button" id="dateToggle" aria-label="Open date">
+          <i class="bx bx-calendar"></i>
+        </button>
         <input type="date" id="reportDate" class="neo-input">
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label for="searchBox">Search</label>
+      <div class="input-wrap">
+        <button class="icon-btn" type="button" id="searchToggle" aria-label="Open search">
+          <i class="bx bx-search"></i>
+        </button>
+        <input type="text" id="searchBox" class="neo-input"
+               placeholder="Search patient...">
       </div>
     </div>
   </div>

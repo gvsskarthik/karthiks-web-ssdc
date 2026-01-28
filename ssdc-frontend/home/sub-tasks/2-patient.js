@@ -12,6 +12,35 @@ let allPatients = [];
 let selectMode = false;
 let isAutoDate = true;
 
+const PATIENTS_DATE_KEY = "SSDC_PATIENTS_SELECTED_DATE";
+
+function safeSessionGet(key){
+  try {
+    return window.sessionStorage ? window.sessionStorage.getItem(key) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function safeSessionSet(key, value){
+  try {
+    if (window.sessionStorage) {
+      window.sessionStorage.setItem(key, String(value));
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+function isBackForwardNav(){
+  try {
+    const nav = performance.getEntriesByType?.("navigation")?.[0];
+    return nav && nav.type === "back_forward";
+  } catch (e) {
+    return false;
+  }
+}
+
 function getLocalDateInputValue(date = new Date()) {
   if (window.getIstDateInputValue) {
     return window.getIstDateInputValue(date);
@@ -22,13 +51,25 @@ function getLocalDateInputValue(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-datePicker.value = getLocalDateInputValue();
+{
+  const today = getLocalDateInputValue();
+  const stored = safeSessionGet(PATIENTS_DATE_KEY);
+  const canRestore = isBackForwardNav();
+  datePicker.value =
+    canRestore && stored && /^\d{4}-\d{2}-\d{2}$/.test(stored)
+      ? stored
+      : today;
+  if (!canRestore) {
+    safeSessionSet(PATIENTS_DATE_KEY, datePicker.value);
+  }
+}
 loadByDate(datePicker.value);
 
 function setDateToToday(){
   const today = getLocalDateInputValue();
   if (datePicker.value !== today) {
     datePicker.value = today;
+    safeSessionSet(PATIENTS_DATE_KEY, today);
     loadByDate(today);
   }
 }
@@ -48,10 +89,26 @@ function scheduleMidnightUpdate(){
 
 datePicker.onchange = () => {
   isAutoDate = datePicker.value === getLocalDateInputValue();
+  safeSessionSet(PATIENTS_DATE_KEY, datePicker.value);
   loadByDate(datePicker.value);
 };
 
 scheduleMidnightUpdate();
+
+window.addEventListener("pageshow", (event) => {
+  const restore = Boolean(event?.persisted) || isBackForwardNav();
+  if (restore) {
+    const stored = safeSessionGet(PATIENTS_DATE_KEY);
+    if (stored && /^\d{4}-\d{2}-\d{2}$/.test(stored)) {
+      datePicker.value = stored;
+    }
+  } else {
+    datePicker.value = getLocalDateInputValue();
+    safeSessionSet(PATIENTS_DATE_KEY, datePicker.value);
+  }
+  isAutoDate = datePicker.value === getLocalDateInputValue();
+  loadByDate(datePicker.value);
+});
 
 function loadByDate(date){
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)
