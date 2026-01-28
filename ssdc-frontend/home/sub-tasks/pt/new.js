@@ -33,6 +33,10 @@ const billItems = document.getElementById("billItems");
 let lastBillEdited = null;
 let isAutoBillUpdate = false;
 let searchTimer = null;
+let patientSearchController = null;
+let patientSearchRequestId = 0;
+let lastPatientSearchKey = "";
+const PATIENT_SEARCH_DELAY_MS = 50;
 
 searchInput.addEventListener("input", updateSuggestions);
 searchInput.addEventListener("keydown", handleSuggestionKeys);
@@ -48,6 +52,18 @@ nameInput.addEventListener("input", () => {
 mobileInput.addEventListener("input", () => {
   localStorage.removeItem("currentPatient");
   applyPatientFilter();
+});
+
+existingPatients.addEventListener("click", (event) => {
+  const btn = event.target.closest(".select-patient-btn");
+  if (!btn) {
+    return;
+  }
+  const index = Number(btn.dataset.index);
+  const patient = existingList[index];
+  if (patient) {
+    selectPatient(patient);
+  }
 });
 
 discountInput.addEventListener("input", () => {
@@ -86,49 +102,105 @@ fetch(API_BASE_URL + "/doctors")
   });
 });
 
-/* LOAD EXISTING PATIENTS (DB SEARCH) */
-applyPatientFilter();
+/* LOAD EXISTING PATIENTS (LIVE SEARCH) */
+renderExistingPatients([], "idle");
 
-function renderExistingPatients(list){
-  existingPatients.innerHTML = "";
-  if (!list.length) {
-    existingPatients.innerHTML = `<div class="no-result">No matching patients</div>`;
-    return;
-  }
-
-  list.forEach(p=>{
-    existingPatients.innerHTML+=`
-    <div class="patient-row">
-      <div><b>${p.name}</b><br>${p.mobile}</div>
-      <button class="small-btn" onclick='selectPatient(${JSON.stringify(p)})'>SELECT</button>
-    </div>`;
-  });
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function applyPatientFilter(){
   const nameQuery = nameInput.value.trim();
   const mobileQuery = normalizeDigits(mobileInput.value.trim());
 
+  const hasQuery = !!nameQuery || !!mobileQuery;
+  if (!hasQuery) {
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+      searchTimer = null;
+    }
+    if (patientSearchController) {
+      patientSearchController.abort();
+      patientSearchController = null;
+    }
+    lastPatientSearchKey = "";
+    existingList.splice(0, existingList.length);
+    renderExistingPatients([], "idle");
+    return;
+  }
+
   if (searchTimer) {
     clearTimeout(searchTimer);
   }
 
   searchTimer = setTimeout(() => {
+    const searchKey = `${nameQuery.toLowerCase()}::${mobileQuery}`;
+    if (searchKey === lastPatientSearchKey) {
+      return;
+    }
+    lastPatientSearchKey = searchKey;
+
+    if (patientSearchController) {
+      patientSearchController.abort();
+    }
+    patientSearchController = new AbortController();
+    const requestId = ++patientSearchRequestId;
+
     const params = new URLSearchParams();
     params.set("name", nameQuery);
     params.set("mobile", mobileQuery);
 
-    fetch(`${API_BASE_URL}/patients/search?${params.toString()}`)
-    .then(r=>r.json())
-    .then(list=>{
-      existingList.splice(0, existingList.length, ...list);
-      renderExistingPatients(list);
+    fetch(`${API_BASE_URL}/patients/search?${params.toString()}`, {
+      signal: patientSearchController.signal
+    })
+    .then(r => r.json())
+    .then(list => {
+      if (requestId !== patientSearchRequestId) {
+        return;
+      }
+      const safe = Array.isArray(list) ? list : [];
+      existingList.splice(0, existingList.length, ...safe);
+      renderExistingPatients(safe);
+    })
+    .catch(err => {
+      if (err && err.name === "AbortError") {
+        return;
+      }
+      console.error(err);
     });
-  }, 250);
+  }, PATIENT_SEARCH_DELAY_MS);
 }
 
 function normalizeDigits(value){
   return String(value || "").replace(/\D/g, "");
+}
+
+function renderExistingPatients(list, mode){
+  existingPatients.innerHTML = "";
+
+  if (mode === "idle") {
+    existingPatients.innerHTML = `<div class="no-result">Type name or mobile to search</div>`;
+    return;
+  }
+
+  if (!list.length) {
+    existingPatients.innerHTML = `<div class="no-result">No matching patients</div>`;
+    return;
+  }
+
+  const html = list.map((p, index) => `
+    <div class="patient-row">
+      <div><b>${escapeHtml(p?.name || "")}</b><br>${escapeHtml(p?.mobile || "")}</div>
+      <button class="small-btn select-patient-btn" type="button" data-index="${index}">SELECT</button>
+    </div>
+  `).join("");
+
+  existingPatients.innerHTML = html;
 }
 
 function parseMoney(value){
@@ -316,7 +388,15 @@ Promise.all([
   fetch(API_BASE_URL + "/tests/active").then(r => r.json()),
   fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
 ])
-.then(([testList, groupList]) => initTests(testList, groupList));
+.then(([testList, groupList]) => {
+  try {
+    localStorage.setItem("testsActiveCache", JSON.stringify(testList || []));
+    localStorage.setItem("testsActiveCacheAt", String(Date.now()));
+  } catch (e) {
+    // ignore storage errors
+  }
+  initTests(testList, groupList);
+});
 
 /** @param {TestItem[]} list */
 function initTests(list, groupList){

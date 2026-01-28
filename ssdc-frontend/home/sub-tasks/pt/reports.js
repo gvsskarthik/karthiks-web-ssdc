@@ -546,11 +546,20 @@ function loadSelectedTests(){
       selectedTestIds = (list || [])
         .map(x => Number(x.testId))
         .filter(id => !Number.isNaN(id));
+      try {
+        localStorage.setItem("selectedTests", JSON.stringify(selectedTestIds));
+      } catch (e) {
+        // ignore storage errors
+      }
       return selectedTestIds;
     })
     .catch(() => {
-      selectedTestIds = [];
-      return [];
+      const stored =
+        JSON.parse(localStorage.getItem("selectedTests") || "[]");
+      selectedTestIds = (stored || [])
+        .map(id => Number(id))
+        .filter(id => Number.isFinite(id));
+      return selectedTestIds;
     });
 }
 
@@ -561,193 +570,284 @@ function deriveSelectedFromResults(){
   return [...ids];
 }
 
-/* ================= LOAD TEST MASTER ================= */
-Promise.all([loadResults(), loadSelectedTests()])
-  .then(([, selectedIds]) => {
-    let ids = selectedIds && selectedIds.length
-      ? selectedIds
-      : deriveSelectedFromResults();
+const TESTS_CACHE_KEY = "testsActiveCache";
+const TESTS_CACHE_AT_KEY = "testsActiveCacheAt";
 
-    if (!ids.length) {
-      document.getElementById("reportBody").innerHTML =
-        `<tr><td colspan="4">No results found</td></tr>`;
+function readStorageJson(key, fallback){
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function writeStorageJson(key, value){
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function readCachedResults(){
+  const list = readStorageJson("patientResults", []);
+  return Array.isArray(list) ? list : [];
+}
+
+function readCachedSelectedTests(){
+  const list = readStorageJson("selectedTests", []);
+  return (Array.isArray(list) ? list : [])
+    .map(id => Number(id))
+    .filter(id => Number.isFinite(id));
+}
+
+function readCachedTests(){
+  const list = readStorageJson(TESTS_CACHE_KEY, []);
+  return Array.isArray(list) ? list : [];
+}
+
+function deriveSelectedFromResultsList(list){
+  const ids = new Set(
+    (Array.isArray(list) ? list : [])
+      .map(r => Number(r?.testId))
+      .filter(id => Number.isFinite(id))
+  );
+  return [...ids];
+}
+
+function loadTestsActive(){
+  return fetch(API_BASE_URL + "/tests/active")
+    .then(res => res.json())
+    .then(list => {
+      const tests = Array.isArray(list) ? list : [];
+      writeStorageJson(TESTS_CACHE_KEY, tests);
+      try {
+        localStorage.setItem(TESTS_CACHE_AT_KEY, String(Date.now()));
+      } catch (e) {
+        // ignore
+      }
+      return tests;
+    })
+    .catch(() => readCachedTests());
+}
+
+function renderReport(tests, resultList, selectedIds){
+  const body = document.getElementById("reportBody");
+  if (!body) {
+    return;
+  }
+
+  const safeTests = Array.isArray(tests) ? tests : [];
+  const safeResults = Array.isArray(resultList) ? resultList : [];
+  const ids = (Array.isArray(selectedIds) && selectedIds.length)
+    ? selectedIds
+    : deriveSelectedFromResultsList(safeResults);
+
+  if (!ids.length) {
+    body.innerHTML = `<tr><td colspan="4">No results found</td></tr>`;
+    return;
+  }
+  if (!safeTests.length) {
+    body.innerHTML = `<tr><td colspan="4">Loading report...</td></tr>`;
+    return;
+  }
+
+  const selectedTests = safeTests.filter(t => ids.includes(Number(t?.id)));
+  if (!selectedTests.length) {
+    body.innerHTML = `<tr><td colspan="4">No tests found</td></tr>`;
+    return;
+  }
+
+  safeResults.sort((a, b) => (a?.id || 0) - (b?.id || 0));
+
+  const grouped = {};
+  safeResults.forEach(r => {
+    const tid = r?.testId;
+    if (!tid) {
+      return;
+    }
+    if(!grouped[tid]) grouped[tid] = {};
+    const key = r.subTest || "__single__";
+    grouped[tid][key] = r;
+  });
+
+  const out = [];
+
+  selectedTests.forEach(test => {
+    const params = Array.isArray(test.parameters) ? test.parameters : [];
+    const hasParams = params.length > 0;
+    const rawItemMap = grouped[test.id] || {};
+    const hasLineSlots = Object.keys(rawItemMap)
+      .some(key => key && String(key).includes("::"));
+    const isMultiParam = hasParams && params.length > 1;
+    const isMultiUnits =
+      !hasParams && asArray(test.units || test.testUnits).length > 1;
+    const isSingleWithLines = hasParams && params.length === 1 && hasLineSlots;
+
+    if (isSingleWithLines) {
+      const param = params[0] || {};
+      const unitText = resolveUnitText(test, param, 0);
+      const normalText = resolveNormalText(test, param, 0);
+
+      const lines = Object.entries(rawItemMap)
+        .filter(([, item]) => {
+          const value = item?.resultValue || "";
+          return value && value.trim() !== "";
+        })
+        .sort(([a], [b]) => lineSortKey(a) - lineSortKey(b));
+
+      lines.forEach(([, item], index) => {
+        const value = item?.resultValue || "";
+        const abnormal = isOutOfRange(value, normalText, patient.gender);
+
+        out.push(`
+          <tr>
+            <td>${index === 0 ? `<b>${escapeHtml(test.testName)}</b>` : ""}</td>
+            <td class="${abnormal ? "is-abnormal" : ""}">${escapeHtml(value)}</td>
+            <td>${escapeHtml(unitText)}</td>
+            <td>${formatHtmlLines(normalText)}</td>
+          </tr>
+        `);
+      });
       return;
     }
 
-    return fetch(API_BASE_URL + "/tests/active")
-    .then(res => res.json())
-    .then(tests => {
+    if (isMultiParam || isMultiUnits) {
+      out.push(`
+        <tr>
+          <td colspan="4"><b>${escapeHtml(test.testName)}</b></td>
+        </tr>
+      `);
 
-      const body = document.getElementById("reportBody");
-      body.innerHTML = "";
-
-      const selectedTests = tests.filter(t => ids.includes(t.id));
-      if (!selectedTests.length) {
-        body.innerHTML =
-          `<tr><td colspan="4">No tests found</td></tr>`;
-        return;
-      }
-
-      // Sort to prefer the latest entry when duplicates exist
-      results.sort((a, b) => (a.id || 0) - (b.id || 0));
-
-      // Group results by testId + subTest (keep latest)
-      const grouped = {};
-      results.forEach(r => {
-        const tid = r.testId;
-        if(!grouped[tid]) grouped[tid] = {};
-        const key = r.subTest || "__single__";
-        grouped[tid][key] = r;
+      const normalizedItems = {};
+      Object.entries(rawItemMap).forEach(([key, value]) => {
+        const normalized = normalizeKey(key === "__single__" ? "" : key);
+        normalizedItems[normalized] = value;
       });
 
-      selectedTests.forEach(test => {
-        const params = Array.isArray(test.parameters) ? test.parameters : [];
-        const hasParams = params.length > 0;
-        const rawItemMap = grouped[test.id] || {};
-        const hasLineSlots = Object.keys(rawItemMap)
-          .some(key => key && String(key).includes("::"));
-        const isMultiParam = hasParams && params.length > 1;
-        const isMultiUnits =
-          !hasParams && asArray(test.units || test.testUnits).length > 1;
-        const isSingleWithLines = hasParams && params.length === 1 && hasLineSlots;
+      const rows = isMultiParam
+        ? params.map(p => ({
+          name: p.name || "",
+          unit: p.unit || "",
+          valueType: p.valueType,
+          normalText: p.normalText || "",
+          defaultResults: Array.isArray(p.defaultResults) ? p.defaultResults : [],
+          sectionName: p.sectionName || ""
+        }))
+        : asArray(test.units || test.testUnits).map((u, index) => ({
+          name: (u && typeof u === "object") ? (u.unit || "") : String(u || ""),
+          unit: "",
+          valueType: null,
+          normalText: test.normalValues?.[index]?.normalValue || "",
+          sectionName: ""
+        }));
 
-        if (isSingleWithLines) {
-          const param = params[0] || {};
-          const unitText = resolveUnitText(test, param, 0);
-          const normalText = resolveNormalText(test, param, 0);
+      let currentSection = null;
+      rows.forEach((param, paramIndex) => {
+        const sectionName = String(param.sectionName || "").trim();
 
-          const lines = Object.entries(rawItemMap)
-            .filter(([, item]) => {
-              const value = item?.resultValue || "";
-              return value && value.trim() !== "";
-            })
-            .sort(([a], [b]) => lineSortKey(a) - lineSortKey(b));
-
-          lines.forEach(([key, item], index) => {
-            const value = item?.resultValue || "";
-            const out = isOutOfRange(value, normalText, patient.gender);
-
-            body.innerHTML += `
-              <tr>
-                <td>${index === 0 ? `<b>${escapeHtml(test.testName)}</b>` : ""}</td>
-                <td class="${out ? "is-abnormal" : ""}">${escapeHtml(value)}</td>
-                <td>${escapeHtml(unitText)}</td>
-                <td>${formatHtmlLines(normalText)}</td>
+        if (sectionName) {
+          if (sectionName !== currentSection) {
+            out.push(`
+              <tr class="section-header">
+                <td colspan="4">${escapeHtml(sectionName)}</td>
               </tr>
-            `;
-          });
-        } else if (isMultiParam || isMultiUnits) {
-          body.innerHTML += `
-            <tr>
-              <td colspan="4"><b>${escapeHtml(test.testName)}</b></td>
-            </tr>
-          `;
-
-          const normalizedItems = {};
-          Object.entries(rawItemMap).forEach(([key, value]) => {
-            const normalized = normalizeKey(key === "__single__" ? "" : key);
-            normalizedItems[normalized] = value;
-          });
-
-          const useParams = hasParams && params.length > 1;
-          const rows = useParams
-            ? params.map(p => ({
-              name: p.name || "",
-              unit: p.unit || "",
-              valueType: p.valueType,
-              normalText: p.normalText || "",
-              defaultResults: Array.isArray(p.defaultResults) ? p.defaultResults : [],
-              sectionName: p.sectionName || ""
-            }))
-            : asArray(test.units || test.testUnits).map((u, index) => ({
-              name: (u && typeof u === "object") ? (u.unit || "") : String(u || ""),
-              unit: "",
-              valueType: null,
-              normalText: test.normalValues?.[index]?.normalValue || "",
-              sectionName: ""
-            }));
-
-          let currentSection = null;
-          rows.forEach((param, paramIndex) => {
-            const sectionName = String(param.sectionName || "").trim();
-
-            if (sectionName) {
-              if (sectionName !== currentSection) {
-                body.innerHTML += `
-                  <tr class="section-header">
-                    <td colspan="4">${escapeHtml(sectionName)}</td>
-                  </tr>
-                `;
-                currentSection = sectionName;
-              }
-            } else {
-              currentSection = null;
-            }
-
-            const slots = buildResultSlots(param, normalizedItems);
-            slots.forEach(slot => {
-              const normalText = resolveNormalText(test, param, paramIndex);
-              const resultValue = slot.item?.resultValue || "";
-              const valueForDisplay =
-                resultValue && resultValue.trim() !== ""
-                  ? resultValue
-                  : slot.defaultValue;
-              const unitText = resolveUnitText(test, param, paramIndex);
-              const displayValue =
-                valueForDisplay && unitText === "%"
-                  ? `${valueForDisplay} %`
-                  : valueForDisplay;
-
-              const out = isOutOfRange(
-                valueForDisplay,
-                normalText,
-                patient.gender
-              );
-
-              body.innerHTML += `
-                <tr>
-                  <td class="param-indent">${escapeHtml(slot.label)}</td>
-                  <td class="${out ? "is-abnormal" : ""}">
-                    ${escapeHtml(displayValue)}
-                  </td>
-                  <td>${escapeHtml(unitText)}</td>
-                  <td>${formatHtmlLines(normalText)}</td>
-                </tr>
-              `;
-            });
-          });
-        } else {
-          let item = rawItemMap["__single__"];
-          if (!item) {
-            const fallbackKey = Object.keys(rawItemMap)
-              .find(k => k && !String(k).includes("::"));
-            item = fallbackKey ? rawItemMap[fallbackKey] : null;
+            `);
+            currentSection = sectionName;
           }
-          const normalText = resolveNormalText(test, params[0] || {});
-          const resultValue = item?.resultValue || "";
+        } else {
+          currentSection = null;
+        }
 
-          const out = isOutOfRange(
-            resultValue,
+        const slots = buildResultSlots(param, normalizedItems);
+        slots.forEach(slot => {
+          const normalText = resolveNormalText(test, param, paramIndex);
+          const resultValue = slot.item?.resultValue || "";
+          const valueForDisplay =
+            resultValue && resultValue.trim() !== ""
+              ? resultValue
+              : slot.defaultValue;
+          const unitText = resolveUnitText(test, param, paramIndex);
+          const displayValue =
+            valueForDisplay && unitText === "%"
+              ? `${valueForDisplay} %`
+              : valueForDisplay;
+
+          const abnormal = isOutOfRange(
+            valueForDisplay,
             normalText,
             patient.gender
           );
 
-          const unit = resolveUnitText(test, params[0] || {}, 0);
-
-          body.innerHTML += `
+          out.push(`
             <tr>
-              <td><b>${escapeHtml(test.testName)}</b></td>
-              <td class="${out ? "is-abnormal" : ""}">
-                ${escapeHtml(resultValue)}
+              <td class="param-indent">${escapeHtml(slot.label)}</td>
+              <td class="${abnormal ? "is-abnormal" : ""}">
+                ${escapeHtml(displayValue)}
               </td>
-              <td>${escapeHtml(unit)}</td>
+              <td>${escapeHtml(unitText)}</td>
               <td>${formatHtmlLines(normalText)}</td>
             </tr>
-          `;
-        }
-
+          `);
+        });
       });
-    });
+      return;
+    }
+
+    let item = rawItemMap["__single__"];
+    if (!item) {
+      const fallbackKey = Object.keys(rawItemMap)
+        .find(k => k && !String(k).includes("::"));
+      item = fallbackKey ? rawItemMap[fallbackKey] : null;
+    }
+    const normalText = resolveNormalText(test, params[0] || {});
+    const resultValue = item?.resultValue || "";
+
+    const abnormal = isOutOfRange(
+      resultValue,
+      normalText,
+      patient.gender
+    );
+
+    const unit = resolveUnitText(test, params[0] || {}, 0);
+
+    out.push(`
+      <tr>
+        <td><b>${escapeHtml(test.testName)}</b></td>
+        <td class="${abnormal ? "is-abnormal" : ""}">
+          ${escapeHtml(resultValue)}
+        </td>
+        <td>${escapeHtml(unit)}</td>
+        <td>${formatHtmlLines(normalText)}</td>
+      </tr>
+    `);
+  });
+
+  body.innerHTML = out.join("");
+}
+
+/* ================= FAST CACHE RENDER ================= */
+const cachedResults = readCachedResults();
+const cachedSelectedIds = readCachedSelectedTests();
+const cachedTests = readCachedTests();
+
+if (cachedResults.length || cachedSelectedIds.length) {
+  renderReport(cachedTests, cachedResults, cachedSelectedIds);
+} else {
+  const body = document.getElementById("reportBody");
+  if (body) {
+    body.innerHTML = `<tr><td colspan="4">Loading report...</td></tr>`;
+  }
+}
+
+/* ================= REFRESH FROM API (PARALLEL) ================= */
+Promise.all([loadResults(), loadSelectedTests(), loadTestsActive()])
+  .then(([freshResults, freshSelectedIds, freshTests]) => {
+    renderReport(freshTests, freshResults, freshSelectedIds);
   });
 
 /* ================= ACTIONS ================= */
