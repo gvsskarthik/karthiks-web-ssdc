@@ -3,6 +3,7 @@ package com.ssdc.ssdclabs.service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.time.ZoneId;
 
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class PatientService {
     /* SAVE */
     public @NonNull Patient savePatient(@NonNull Patient patient) {
         if (patient.getVisitDate() == null) {
-            patient.setVisitDate(LocalDate.now());
+            patient.setVisitDate(LocalDate.now(ZoneId.of("Asia/Kolkata")));
         }
         if (patient.getStatus() == null) {
             patient.setStatus("NOT COMPLETE");
