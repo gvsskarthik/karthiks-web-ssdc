@@ -468,6 +468,26 @@ function resolveUnit(param){
   return "%";
 }
 
+function lineSortKey(key){
+  if (!key || key === "__single__") {
+    return 0;
+  }
+  const match = String(key).match(/::\s*(.+)\s*$/);
+  if (!match) {
+    return 1;
+  }
+  const suffix = match[1];
+  const n = Number(suffix);
+  if (!Number.isNaN(n) && Number.isFinite(n)) {
+    return n;
+  }
+  const extra = String(suffix).match(/^extra-(\d+)$/i);
+  if (extra) {
+    return 1000 + Number(extra[1]);
+  }
+  return 2000;
+}
+
 function resolveUnitText(test, param, index){
   const direct = normalizeText(param?.unit);
   if (direct) {
@@ -584,12 +604,39 @@ Promise.all([loadResults(), loadSelectedTests()])
         const params = Array.isArray(test.parameters) ? test.parameters : [];
         const hasParams = params.length > 0;
         const rawItemMap = grouped[test.id] || {};
-        const hasSubSlots = Object.keys(rawItemMap)
-          .some(key => key !== "__single__");
-        const isMulti = (hasParams && (params.length > 1 || hasSubSlots))
-          || (!hasParams && asArray(test.units || test.testUnits).length > 1);
+        const hasLineSlots = Object.keys(rawItemMap)
+          .some(key => key && String(key).includes("::"));
+        const isMultiParam = hasParams && params.length > 1;
+        const isMultiUnits =
+          !hasParams && asArray(test.units || test.testUnits).length > 1;
+        const isSingleWithLines = hasParams && params.length === 1 && hasLineSlots;
 
-        if (isMulti) {
+        if (isSingleWithLines) {
+          const param = params[0] || {};
+          const unitText = resolveUnitText(test, param, 0);
+          const normalText = resolveNormalText(test, param, 0);
+
+          const lines = Object.entries(rawItemMap)
+            .filter(([, item]) => {
+              const value = item?.resultValue || "";
+              return value && value.trim() !== "";
+            })
+            .sort(([a], [b]) => lineSortKey(a) - lineSortKey(b));
+
+          lines.forEach(([key, item], index) => {
+            const value = item?.resultValue || "";
+            const out = isOutOfRange(value, normalText, patient.gender);
+
+            body.innerHTML += `
+              <tr>
+                <td>${index === 0 ? `<b>${escapeHtml(test.testName)}</b>` : ""}</td>
+                <td class="${out ? "is-abnormal" : ""}">${escapeHtml(value)}</td>
+                <td>${escapeHtml(unitText)}</td>
+                <td>${formatHtmlLines(normalText)}</td>
+              </tr>
+            `;
+          });
+        } else if (isMultiParam || isMultiUnits) {
           body.innerHTML += `
             <tr>
               <td colspan="4"><b>${escapeHtml(test.testName)}</b></td>
@@ -602,7 +649,7 @@ Promise.all([loadResults(), loadSelectedTests()])
             normalizedItems[normalized] = value;
           });
 
-          const useParams = hasParams && (params.length > 1 || hasSubSlots);
+          const useParams = hasParams && params.length > 1;
           const rows = useParams
             ? params.map(p => ({
               name: p.name || "",
@@ -670,7 +717,12 @@ Promise.all([loadResults(), loadSelectedTests()])
             });
           });
         } else {
-          const item = rawItemMap["__single__"];
+          let item = rawItemMap["__single__"];
+          if (!item) {
+            const fallbackKey = Object.keys(rawItemMap)
+              .find(k => k && !String(k).includes("::"));
+            item = fallbackKey ? rawItemMap[fallbackKey] : null;
+          }
           const normalText = resolveNormalText(test, params[0] || {});
           const resultValue = item?.resultValue || "";
 
