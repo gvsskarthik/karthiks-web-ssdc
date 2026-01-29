@@ -58,23 +58,13 @@ th {
 }
 
 .order-input{
-  width:42px;
+  width:44px;
   padding:4px 6px;
   border:1px solid var(--theme-line);
   border-radius:8px;
   background: var(--theme-field-bg);
   font-size:12px;
   text-align:center;
-}
-
-.order-input::-webkit-outer-spin-button,
-.order-input::-webkit-inner-spin-button{
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.order-input{
-  -moz-appearance: textfield;
 }
 
 .param-indent {

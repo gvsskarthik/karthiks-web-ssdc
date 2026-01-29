@@ -240,6 +240,47 @@ function formatMoney(value){
   return String(Math.round(value * 100) / 100);
 }
 
+function normalizeCategoryKey(value){
+  return String(value == null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function categoryPriority(value){
+  const key = normalizeCategoryKey(value);
+  if (key.includes("hematology")) return 0;
+  if (key.includes("biochemistry")) return 1;
+  if (key.includes("serology")) return 2;
+  if (key.includes("microbiology")) return 3;
+  if (key.includes("clinical pathology") && key.includes("urine")) return 4;
+  if (key.includes("clinical pathology")) return 4;
+  if (key.includes("endocrinology")) return 5;
+  if (key.includes("thyroid")) return 5;
+  if (key.includes("hormone")) return 5;
+  return 99;
+}
+
+function sortSelectedIdsByCategory(selectedIds){
+  const ids = Array.isArray(selectedIds) ? selectedIds : [];
+  const selectionIndex = new Map();
+  ids.forEach((id, i) => selectionIndex.set(Number(id), i));
+
+  return ids
+    .slice()
+    .sort((a, b) => {
+      const aInfo = testInfoMap.get(a) || {};
+      const bInfo = testInfoMap.get(b) || {};
+      const ar = categoryPriority(aInfo.category);
+      const br = categoryPriority(bInfo.category);
+      if (ar !== br) return ar - br;
+      const ai = selectionIndex.get(Number(a)) ?? Number.MAX_SAFE_INTEGER;
+      const bi = selectionIndex.get(Number(b)) ?? Number.MAX_SAFE_INTEGER;
+      if (ai !== bi) return ai - bi;
+      return String(aInfo.name || "").localeCompare(String(bInfo.name || ""));
+    });
+}
+
 function resolveGroupCost(group){
   const cost = Number(group.cost);
   if (Number.isFinite(cost)) {
@@ -322,15 +363,9 @@ function buildBillLines(){
     .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
     .filter(item => item && item.name)
     .sort((a, b) => {
-      const orderA = testOrderMap.has(a.id)
-        ? testOrderMap.get(a.id)
-        : Number.MAX_SAFE_INTEGER;
-      const orderB = testOrderMap.has(b.id)
-        ? testOrderMap.get(b.id)
-        : Number.MAX_SAFE_INTEGER;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
+      const ar = categoryPriority(a.category);
+      const br = categoryPriority(b.category);
+      if (ar !== br) return ar - br;
       return a.name.localeCompare(b.name);
     });
 
@@ -455,6 +490,7 @@ function initTests(list, groupList){
     testInfoMap.set(test.id, {
       name,
       shortcut,
+      category: test.category || "",
       cost: Number(test.cost) || 0
     });
     if (!testOrderMap.has(test.id)) {
@@ -554,15 +590,9 @@ function renderSelectedList(){
     .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
     .filter(item => item && item.name)
     .sort((a, b) => {
-      const orderA = testOrderMap.has(a.id)
-        ? testOrderMap.get(a.id)
-        : Number.MAX_SAFE_INTEGER;
-      const orderB = testOrderMap.has(b.id)
-        ? testOrderMap.get(b.id)
-        : Number.MAX_SAFE_INTEGER;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
+      const ar = categoryPriority(a.category);
+      const br = categoryPriority(b.category);
+      if (ar !== br) return ar - br;
       return a.name.localeCompare(b.name);
     });
 
@@ -879,7 +909,7 @@ patientForm.addEventListener("submit", e => {
 
   // ✅ EXISTING PATIENT → no save
   if (current && current.id) {
-    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
+    localStorage.setItem("selectedTests", JSON.stringify(sortSelectedIdsByCategory([...selected])));
     parent.loadPage("home/sub-tasks/pt/enter-values.html");
     return;
   }
@@ -893,7 +923,7 @@ patientForm.addEventListener("submit", e => {
   .then(res => res.json())
   .then(p => {
     localStorage.setItem("currentPatient", JSON.stringify(p));
-    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
+    localStorage.setItem("selectedTests", JSON.stringify(sortSelectedIdsByCategory([...selected])));
     parent.loadPage("home/sub-tasks/pt/enter-values.html");
   })
   .catch(err => {

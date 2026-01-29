@@ -289,6 +289,27 @@ function normalizeText(value){
   return String(value).trim();
 }
 
+function normalizeCategoryKey(value){
+  return String(value == null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function categoryPriority(value){
+  const key = normalizeCategoryKey(value);
+  if (key.includes("hematology")) return 0;
+  if (key.includes("biochemistry")) return 1;
+  if (key.includes("serology")) return 2;
+  if (key.includes("microbiology")) return 3;
+  if (key.includes("clinical pathology") && key.includes("urine")) return 4;
+  if (key.includes("clinical pathology")) return 4;
+  if (key.includes("endocrinology")) return 5;
+  if (key.includes("thyroid")) return 5;
+  if (key.includes("hormone")) return 5;
+  return 99;
+}
+
 function normalizeNormalForDisplay(value){
   const text = normalizeText(value);
   if (!text) {
@@ -309,6 +330,46 @@ function escapeHtml(value){
 
 function formatHtmlLines(text){
   return escapeHtml(text).replace(/\r?\n/g, "<br>");
+}
+
+function splitLinesForTable(text){
+  const raw = String(text == null ? "" : text);
+  const parts = raw.split(/\r?\n/).map(p => p.trimEnd());
+  const lines = parts.filter(p => p !== "");
+  return lines.length ? lines : [""];
+}
+
+function pushRowsWithNormalLines(out, opts){
+  const testId = opts?.testId;
+  const testIdAttr = testId != null ? ` data-testid="${escapeHtml(testId)}"` : "";
+  const col1Html = opts?.col1Html ?? "";
+  const col2Html = opts?.col2Html ?? "";
+  const col3Html = opts?.col3Html ?? "";
+  const col1Class = opts?.col1Class ?? "";
+  const col2Class = opts?.col2Class ?? "";
+  const col3Class = opts?.col3Class ?? "";
+  const normalText = opts?.normalText ?? "";
+
+  const normalLines = splitLinesForTable(normalText);
+  out.push(`
+    <tr${testIdAttr}>
+      <td${col1Class ? ` class="${col1Class}"` : ""}>${col1Html}</td>
+      <td${col2Class ? ` class="${col2Class}"` : ""}>${col2Html}</td>
+      <td${col3Class ? ` class="${col3Class}"` : ""}>${col3Html}</td>
+      <td>${escapeHtml(normalLines[0] || "")}</td>
+    </tr>
+  `);
+
+  for (let i = 1; i < normalLines.length; i++) {
+    out.push(`
+      <tr${testIdAttr}>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>${escapeHtml(normalLines[i] || "")}</td>
+      </tr>
+    `);
+  }
 }
 
 function asArray(value){
@@ -667,12 +728,17 @@ function renderReport(tests, resultList, selectedIds){
     return;
   }
 
-  const defaultIndexByTestId = new Map();
+  const defaultKeyByTestId = new Map();
   safeTests.forEach((t, index) => {
     const id = Number(t?.id);
-    if (Number.isFinite(id)) {
-      defaultIndexByTestId.set(id, index);
+    if (!Number.isFinite(id)) {
+      return;
     }
+    defaultKeyByTestId.set(id, {
+      categoryRank: categoryPriority(t?.category),
+      index,
+      name: String(t?.testName || "")
+    });
   });
 
   const orderByTestId = new Map();
@@ -699,14 +765,25 @@ function renderReport(tests, resultList, selectedIds){
     const aHas = Number.isFinite(ao);
     const bHas = Number.isFinite(bo);
 
+    const ak = defaultKeyByTestId.get(aId);
+    const bk = defaultKeyByTestId.get(bId);
+    const ar = ak?.categoryRank ?? 99;
+    const br = bk?.categoryRank ?? 99;
+    if (ar !== br) return ar - br;
+
+    // Same category: manual testOrder comes next (if present).
     if (!aHas && !bHas) {
-      return (defaultIndexByTestId.get(aId) ?? 0) - (defaultIndexByTestId.get(bId) ?? 0);
+      const an = ak?.name ?? "";
+      const bn = bk?.name ?? "";
+      const nameCmp = an.localeCompare(bn);
+      if (nameCmp !== 0) return nameCmp;
+      return (ak?.index ?? 0) - (bk?.index ?? 0);
     }
     if (!aHas) return 1;
     if (!bHas) return -1;
     const cmp = ao - bo;
     if (cmp !== 0) return cmp;
-    return (defaultIndexByTestId.get(aId) ?? 0) - (defaultIndexByTestId.get(bId) ?? 0);
+    return (ak?.index ?? 0) - (bk?.index ?? 0);
   });
 
   safeResults.sort((a, b) => (a?.id || 0) - (b?.id || 0));
@@ -751,12 +828,26 @@ function renderReport(tests, resultList, selectedIds){
         const value = item?.resultValue || "";
         const abnormal = isOutOfRange(value, normalText, patient.gender);
 
+        // For multi-line single tests: show normal values only once (first row),
+        // and split normal values into separate bordered rows.
+        if (index === 0) {
+          pushRowsWithNormalLines(out, {
+            testId: test.id,
+            col1Html: `<b>${escapeHtml(test.testName)}</b>`,
+            col2Html: escapeHtml(value),
+            col3Html: escapeHtml(unitText),
+            col2Class: abnormal ? "is-abnormal" : "",
+            normalText
+          });
+          return;
+        }
+
         out.push(`
-          <tr>
-            <td>${index === 0 ? `<b>${escapeHtml(test.testName)}</b>` : ""}</td>
+          <tr data-testid="${escapeHtml(test.id)}">
+            <td></td>
             <td class="${abnormal ? "is-abnormal" : ""}">${escapeHtml(value)}</td>
             <td>${escapeHtml(unitText)}</td>
-            <td>${formatHtmlLines(normalText)}</td>
+            <td></td>
           </tr>
         `);
       });
@@ -765,7 +856,7 @@ function renderReport(tests, resultList, selectedIds){
 
     if (isMultiParam || isMultiUnits) {
       out.push(`
-        <tr>
+        <tr class="test-header-row" data-testid="${escapeHtml(test.id)}">
           <td colspan="4"><b>${escapeHtml(test.testName)}</b></td>
         </tr>
       `);
@@ -800,7 +891,7 @@ function renderReport(tests, resultList, selectedIds){
         if (sectionName) {
           if (sectionName !== currentSection) {
             out.push(`
-              <tr class="section-header">
+              <tr class="section-header" data-testid="${escapeHtml(test.id)}">
                 <td colspan="4">${escapeHtml(sectionName)}</td>
               </tr>
             `);
@@ -830,16 +921,15 @@ function renderReport(tests, resultList, selectedIds){
             patient.gender
           );
 
-          out.push(`
-            <tr>
-              <td class="param-indent">${escapeHtml(slot.label)}</td>
-              <td class="${abnormal ? "is-abnormal" : ""}">
-                ${escapeHtml(displayValue)}
-              </td>
-              <td>${escapeHtml(unitText)}</td>
-              <td>${formatHtmlLines(normalText)}</td>
-            </tr>
-          `);
+          pushRowsWithNormalLines(out, {
+            testId: test.id,
+            col1Html: escapeHtml(slot.label),
+            col1Class: "param-indent",
+            col2Html: escapeHtml(displayValue),
+            col2Class: abnormal ? "is-abnormal" : "",
+            col3Html: escapeHtml(unitText),
+            normalText
+          });
         });
       });
       return;
@@ -862,16 +952,14 @@ function renderReport(tests, resultList, selectedIds){
 
     const unit = resolveUnitText(test, params[0] || {}, 0);
 
-    out.push(`
-      <tr>
-        <td><b>${escapeHtml(test.testName)}</b></td>
-        <td class="${abnormal ? "is-abnormal" : ""}">
-          ${escapeHtml(resultValue)}
-        </td>
-        <td>${escapeHtml(unit)}</td>
-        <td>${formatHtmlLines(normalText)}</td>
-      </tr>
-    `);
+    pushRowsWithNormalLines(out, {
+      testId: test.id,
+      col1Html: `<b>${escapeHtml(test.testName)}</b>`,
+      col2Html: escapeHtml(resultValue),
+      col2Class: abnormal ? "is-abnormal" : "",
+      col3Html: escapeHtml(unit),
+      normalText
+    });
   });
 
   body.innerHTML = out.join("");
@@ -1061,38 +1149,125 @@ function renderScreenPages(){
     return { tableWrap, pageBody };
   }
 
+  // Build contiguous blocks by test id so we can keep groups together.
+  const blocks = [];
+  let currentBlock = null;
+  sourceRows.forEach((srcRow) => {
+    const testId = srcRow.dataset?.testid || "";
+    if (!currentBlock || currentBlock.testId !== testId) {
+      currentBlock = {
+        testId,
+        isGroup: false,
+        rows: []
+      };
+      blocks.push(currentBlock);
+    }
+    const cloned = srcRow.cloneNode(true);
+    if (cloned.classList && cloned.classList.contains("test-header-row")) {
+      currentBlock.isGroup = true;
+    }
+    currentBlock.rows.push(cloned);
+  });
+
+  const fits = (page) =>
+    page.tableWrap.scrollHeight <= page.tableWrap.clientHeight + 1;
+
+  const appendBlock = (page, block) => {
+    block.rows.forEach(r => page.pageBody.appendChild(r));
+  };
+
+  const removeBlock = (page, block) => {
+    block.rows.forEach(r => {
+      if (r.parentNode === page.pageBody) {
+        page.pageBody.removeChild(r);
+      }
+    });
+  };
+
   let current = createPage();
-  let carry = [];
+  const pending = blocks.slice();
 
-  sourceRows.forEach(srcRow => {
-    const row = srcRow.cloneNode(true);
-    current.pageBody.appendChild(row);
+  const placeRowsAcrossPages = (rows, startPage) => {
+    let page = startPage;
+    let carry = [];
+    rows.forEach(srcRow => {
+      const row = srcRow;
+      page.pageBody.appendChild(row);
 
-    const overflow =
-      current.tableWrap.scrollHeight > current.tableWrap.clientHeight + 1;
+      const overflow = !fits(page);
+      if (overflow) {
+        page.pageBody.removeChild(row);
 
-    if (overflow) {
-      current.pageBody.removeChild(row);
+        const toMove = carry.length ? carry.slice() : [];
+        carry.length = 0;
+        toMove.forEach(node => {
+          if (node.parentNode === page.pageBody) {
+            page.pageBody.removeChild(node);
+          }
+        });
 
-      const toMove = carry.length ? carry.slice() : [];
-      carry.length = 0;
-      toMove.forEach(node => {
-        if (node.parentNode) {
-          node.parentNode.removeChild(node);
+        page = createPage();
+        toMove.forEach(node => page.pageBody.appendChild(node));
+        page.pageBody.appendChild(row);
+      }
+
+      if (isHeaderLikeRow(row)) {
+        carry.push(row);
+      } else {
+        carry.length = 0;
+      }
+    });
+    return page;
+  };
+
+  while (pending.length) {
+    const block = pending[0];
+    appendBlock(current, block);
+
+    if (fits(current)) {
+      pending.shift();
+      continue;
+    }
+
+    // Overflow
+    removeBlock(current, block);
+
+    // If page is empty, we must place it anyway (very large block); fall back to row behavior.
+    if (!current.pageBody.children.length) {
+      pending.shift();
+      current = placeRowsAcrossPages(block.rows, current);
+      current = createPage();
+      continue;
+    }
+
+    // Special rule: if a GROUP would split, move it to next page and try to fill remaining space
+    // with any later blocks that fit.
+    if (block.isGroup) {
+      const deferred = pending.shift();
+
+      let movedAny = true;
+      while (movedAny) {
+        movedAny = false;
+        for (let i = 0; i < pending.length; i++) {
+          const candidate = pending[i];
+          appendBlock(current, candidate);
+          if (fits(current)) {
+            pending.splice(i, 1);
+            movedAny = true;
+            break;
+          }
+          removeBlock(current, candidate);
         }
-      });
+      }
 
       current = createPage();
-      toMove.forEach(node => current.pageBody.appendChild(node));
-      current.pageBody.appendChild(row);
+      pending.unshift(deferred);
+      continue;
     }
 
-    if (isHeaderLikeRow(row)) {
-      carry.push(row);
-    } else {
-      carry.length = 0;
-    }
-  });
+    // Non-group: start a new page and retry.
+    current = createPage();
+  }
 }
 
 window.addEventListener("resize", () => {
