@@ -1,5 +1,61 @@
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
+let selectedTestsCache = [];
+let testOrders = {};
+
+function testOrderStorageKey(){
+  const id = patient && patient.id ? String(patient.id) : "";
+  return `testOrders:${id}`;
+}
+
+function readTestOrders(){
+  try {
+    const raw = localStorage.getItem(testOrderStorageKey());
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return {};
+}
+
+function writeTestOrders(map){
+  try {
+    localStorage.setItem(testOrderStorageKey(), JSON.stringify(map || {}));
+  } catch (e) {
+    // ignore
+  }
+}
+
+function normalizeOrderValue(value){
+  const text = String(value == null ? "" : value).trim();
+  if (!text) {
+    return null;
+  }
+  const n = Number(text);
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+  return n;
+}
+
+function getTestOrder(testId){
+  const n = normalizeOrderValue(testOrders[String(testId)]);
+  return n == null ? "" : String(n);
+}
+
+function setTestOrder(testId, value){
+  const key = String(testId);
+  const n = normalizeOrderValue(value);
+  if (n == null) {
+    delete testOrders[key];
+  } else {
+    testOrders[key] = n;
+  }
+  writeTestOrders(testOrders);
+}
 
 /* ================= LOAD PATIENT ================= */
 const patient =
@@ -9,6 +65,8 @@ if (!patient || !patient.id) {
   alert("Patient ID missing. Please open patient from Patient / Reports page.");
   throw new Error("Patient ID missing");
 }
+
+testOrders = readTestOrders();
 
 /* ================= SHOW PATIENT ================= */
 document.getElementById("pName").innerText = patient.name || "";
@@ -26,14 +84,28 @@ function loadSelectedIds(){
   const local =
     JSON.parse(localStorage.getItem("selectedTests") || "[]");
   if (local.length) {
-    saveSelectedTestsToDb(local);
+    saveSelectedTestsToDb(local, testOrders);
     return Promise.resolve(local);
   }
 
   return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
     .then(res => res.json())
     .then(list => {
-      const ids = (list || []).map(x => x.testId);
+      const rows = Array.isArray(list) ? list : [];
+      const ids = rows.map(x => x && x.testId).filter(Boolean);
+      rows.forEach(row => {
+        const tid = row && row.testId;
+        const order = row && row.testOrder;
+        if (tid == null || order == null) {
+          return;
+        }
+        const n = normalizeOrderValue(order);
+        if (n == null) {
+          return;
+        }
+        testOrders[String(tid)] = n;
+      });
+      writeTestOrders(testOrders);
       localStorage.setItem("selectedTests", JSON.stringify(ids));
       return ids;
     });
@@ -59,14 +131,17 @@ function loadSavedResults(){
     });
 }
 
-function saveSelectedTestsToDb(selectedIds){
+function saveSelectedTestsToDb(selectedIds, orders){
   if (!selectedIds.length) {
     return Promise.resolve();
   }
 
+  const orderMap =
+    orders && typeof orders === "object" ? orders : {};
   const payload = selectedIds.map(id => ({
     patientId: patient.id,
-    testId: Number(id)
+    testId: Number(id),
+    testOrder: normalizeOrderValue(orderMap[String(id)])
   }));
 
   return fetch(API_BASE_URL + "/patient-tests/select", {
@@ -87,7 +162,14 @@ function normalizeResults(list){
   ordered.forEach(r => {
     const key = `${r.testId}::${r.subTest || ""}`;
     map[key] = r;
+    if (r && r.testId != null && r.testOrder != null) {
+      const n = normalizeOrderValue(r.testOrder);
+      if (n != null && testOrders[String(r.testId)] == null) {
+        testOrders[String(r.testId)] = n;
+      }
+    }
   });
+  writeTestOrders(testOrders);
   return Object.values(map);
 }
 
@@ -118,9 +200,37 @@ loadSavedResults()
           .filter(t => t && t.active !== false);
         const selectedTests =
           activeTests.filter(t => ids.includes(t.id));
-        renderTests(selectedTests);
+        selectedTestsCache = sortTestsByOrder(selectedTests);
+        renderTests(selectedTestsCache);
       });
   });
+
+function sortTestsByOrder(tests){
+  const list = Array.isArray(tests) ? tests : [];
+  const indexById = new Map();
+  list.forEach((t, i) => indexById.set(Number(t?.id), i));
+
+  const readOrder = (testId) => {
+    const raw = testOrders[String(testId)];
+    const n = normalizeOrderValue(raw);
+    return n == null ? null : n;
+  };
+
+  return [...list].sort((a, b) => {
+    const aId = Number(a?.id);
+    const bId = Number(b?.id);
+    const ao = readOrder(aId);
+    const bo = readOrder(bId);
+    if (ao == null && bo == null) {
+      return (indexById.get(aId) ?? 0) - (indexById.get(bId) ?? 0);
+    }
+    if (ao == null) return 1;
+    if (bo == null) return -1;
+    const cmp = ao - bo;
+    if (cmp !== 0) return cmp;
+    return (indexById.get(aId) ?? 0) - (indexById.get(bId) ?? 0);
+  });
+}
 
 function normalizeKey(value){
   return (value || "").trim().toLowerCase();
@@ -418,6 +528,8 @@ function renderTests(tests) {
   body.addEventListener("input", markTouched);
   body.removeEventListener("click", handleAddLineClick);
   body.addEventListener("click", handleAddLineClick);
+  body.removeEventListener("change", handleOrderChange);
+  body.addEventListener("change", handleOrderChange);
 
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
@@ -469,8 +581,22 @@ function renderTests(tests) {
       );
 
       body.innerHTML += `
-        <tr${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
-          <td><b>${escapeHtml(test.testName)}</b></td>
+        <tr data-testgroup="${escapeAttr(test.id)}"${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
+          <td>
+            <div class="test-name-wrap">
+              <b>${escapeHtml(test.testName)}</b>
+              <input
+                class="order-input"
+                type="number"
+                inputmode="decimal"
+                step="0.1"
+                min="0"
+                max="999.9"
+                data-testid="${escapeAttr(test.id)}"
+                value="${escapeAttr(getTestOrder(test.id))}"
+              >
+            </div>
+          </td>
           <td>
             ${inputHtml}
             ${allowNewLines ? `
@@ -517,7 +643,7 @@ function renderTests(tests) {
 
           rendered.add(normalizeKey(subKey));
           body.innerHTML += `
-            <tr data-line-group="${escapeAttr(groupKey)}">
+            <tr data-testgroup="${escapeAttr(test.id)}" data-line-group="${escapeAttr(groupKey)}">
               <td></td>
               <td>${extraInput}</td>
               <td>${escapeHtml(unit)}</td>
@@ -551,7 +677,7 @@ function renderTests(tests) {
           );
 
           body.innerHTML += `
-            <tr data-line-group="${escapeAttr(groupKey)}">
+            <tr data-testgroup="${escapeAttr(test.id)}" data-line-group="${escapeAttr(groupKey)}">
               <td></td>
               <td>${extraInput}</td>
               <td>${escapeHtml(unit)}</td>
@@ -564,7 +690,23 @@ function renderTests(tests) {
 
     /* ===== MULTI VALUE TEST ===== */
     body.innerHTML +=
-      `<tr><td colspan="4"><b>${escapeHtml(test.testName)}</b></td></tr>`;
+      `<tr data-testgroup="${escapeAttr(test.id)}" class="test-header-row">
+        <td colspan="4">
+          <div class="test-name-wrap">
+            <b>${escapeHtml(test.testName)}</b>
+            <input
+              class="order-input"
+              type="number"
+              inputmode="decimal"
+              step="0.1"
+              min="0"
+              max="999.9"
+              data-testid="${escapeAttr(test.id)}"
+              value="${escapeAttr(getTestOrder(test.id))}"
+            >
+          </div>
+        </td>
+      </tr>`;
 
     const savedBySub = {};
     savedResults.forEach(r => {
@@ -597,7 +739,7 @@ function renderTests(tests) {
       if (sectionName) {
         if (sectionName !== currentSection) {
           body.innerHTML += `
-            <tr class="section-header">
+            <tr data-testgroup="${escapeAttr(test.id)}" class="section-header">
               <td colspan="4">${escapeHtml(sectionName)}</td>
             </tr>`;
           currentSection = sectionName;
@@ -628,7 +770,7 @@ function renderTests(tests) {
         const normalText = resolveNormalText(test, param, i);
 
         body.innerHTML += `
-          <tr${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
+          <tr data-testgroup="${escapeAttr(test.id)}"${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
             <td class="param-indent">${escapeHtml(slot.label)}</td>
             <td>
               ${inputHtml}
@@ -789,6 +931,47 @@ function handleAddLineClick(event) {
   }
 }
 
+function applyTestOrderToDom(){
+  const body = document.getElementById("resultBody");
+  if (!body || !Array.isArray(selectedTestsCache) || !selectedTestsCache.length) {
+    return;
+  }
+
+  const ids = selectedTestsCache
+    .map(t => Number(t?.id))
+    .filter(id => Number.isFinite(id) && id > 0);
+
+  ids.forEach(id => {
+    const rows = [...body.querySelectorAll(`tr[data-testgroup="${id}"]`)];
+    rows.forEach(row => body.appendChild(row));
+  });
+}
+
+function handleOrderChange(event){
+  const target = event.target;
+  if (!target || !target.classList || !target.classList.contains("order-input")) {
+    return;
+  }
+
+  const testId = Number(target.dataset.testid);
+  if (!Number.isFinite(testId) || testId <= 0) {
+    return;
+  }
+
+  setTestOrder(testId, target.value);
+
+  selectedTestsCache = sortTestsByOrder(selectedTestsCache);
+  applyTestOrderToDom();
+
+  // Keep all order inputs for the same test in sync.
+  const normalized = getTestOrder(testId);
+  document
+    .querySelectorAll(`.order-input[data-testid="${testId}"]`)
+    .forEach(input => {
+      input.value = normalized;
+    });
+}
+
 function markTouched(event) {
   const target = event.target;
   if (target && target.classList.contains("result-input")) {
@@ -819,6 +1002,19 @@ function collectResults() {
 function saveOnly() {
 
   const results = collectResults();
+  let selectedIds = [];
+  try {
+    selectedIds = JSON.parse(localStorage.getItem("selectedTests") || "[]");
+  } catch (e) {
+    selectedIds = [];
+  }
+  if (!Array.isArray(selectedIds) || !selectedIds.length) {
+    selectedIds = [...new Set(
+      [...document.querySelectorAll(".order-input")]
+        .map(i => Number(i?.dataset?.testid))
+        .filter(n => Number.isFinite(n) && n > 0)
+    )];
+  }
 
   const finishSave = () => {
     localStorage.setItem("patientResults", JSON.stringify(results));
@@ -830,20 +1026,23 @@ function saveOnly() {
     return;
   }
 
-  fetch(API_BASE_URL + "/patient-tests/results", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(results)
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        const msg = await res.text().catch(() => "");
-        throw new Error(msg || "Failed to save results");
-      }
-      finishSave();
-    })
-    .catch(err => {
-      console.error(err);
-      alert(err?.message || "Failed to save results");
+  Promise.resolve(saveSelectedTestsToDb(selectedIds, testOrders))
+    .finally(() => {
+      fetch(API_BASE_URL + "/patient-tests/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(results)
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const msg = await res.text().catch(() => "");
+            throw new Error(msg || "Failed to save results");
+          }
+          finishSave();
+        })
+        .catch(err => {
+          console.error(err);
+          alert(err?.message || "Failed to save results");
+        });
     });
 }

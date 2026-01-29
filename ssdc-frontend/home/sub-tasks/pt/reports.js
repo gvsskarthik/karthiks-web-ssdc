@@ -651,18 +651,63 @@ function renderReport(tests, resultList, selectedIds){
 
   if (!ids.length) {
     body.innerHTML = `<tr><td colspan="4">No results found</td></tr>`;
+    renderScreenPages();
     return;
   }
   if (!safeTests.length) {
     body.innerHTML = `<tr><td colspan="4">Loading report...</td></tr>`;
+    renderScreenPages();
     return;
   }
 
   const selectedTests = safeTests.filter(t => ids.includes(Number(t?.id)));
   if (!selectedTests.length) {
     body.innerHTML = `<tr><td colspan="4">No tests found</td></tr>`;
+    renderScreenPages();
     return;
   }
+
+  const defaultIndexByTestId = new Map();
+  safeTests.forEach((t, index) => {
+    const id = Number(t?.id);
+    if (Number.isFinite(id)) {
+      defaultIndexByTestId.set(id, index);
+    }
+  });
+
+  const orderByTestId = new Map();
+  safeResults.forEach(r => {
+    const tid = Number(r?.testId);
+    if (!Number.isFinite(tid) || orderByTestId.has(tid)) {
+      return;
+    }
+    const raw = r?.testOrder;
+    if (raw === null || raw === undefined || raw === "") {
+      return;
+    }
+    const n = Number(raw);
+    if (Number.isFinite(n)) {
+      orderByTestId.set(tid, n);
+    }
+  });
+
+  selectedTests.sort((a, b) => {
+    const aId = Number(a?.id);
+    const bId = Number(b?.id);
+    const ao = orderByTestId.get(aId);
+    const bo = orderByTestId.get(bId);
+    const aHas = Number.isFinite(ao);
+    const bHas = Number.isFinite(bo);
+
+    if (!aHas && !bHas) {
+      return (defaultIndexByTestId.get(aId) ?? 0) - (defaultIndexByTestId.get(bId) ?? 0);
+    }
+    if (!aHas) return 1;
+    if (!bHas) return -1;
+    const cmp = ao - bo;
+    if (cmp !== 0) return cmp;
+    return (defaultIndexByTestId.get(aId) ?? 0) - (defaultIndexByTestId.get(bId) ?? 0);
+  });
 
   safeResults.sort((a, b) => (a?.id || 0) - (b?.id || 0));
 
@@ -830,6 +875,7 @@ function renderReport(tests, resultList, selectedIds){
   });
 
   body.innerHTML = out.join("");
+  renderScreenPages();
 }
 
 /* ================= FAST CACHE RENDER ================= */
@@ -844,6 +890,7 @@ if (cachedResults.length || cachedSelectedIds.length) {
   if (body) {
     body.innerHTML = `<tr><td colspan="4">Loading report...</td></tr>`;
   }
+  renderScreenPages();
 }
 
 /* ================= REFRESH FROM API (PARALLEL) ================= */
@@ -886,3 +933,168 @@ Please collect your report from the lab.`;
     "_blank"
   );
 }
+
+/* ================= SCREEN (A4 NEO-CARDS) ================= */
+function isHeaderLikeRow(row){
+  if (!row || row.nodeType !== 1) {
+    return false;
+  }
+  if (row.classList.contains("section-header")) {
+    return true;
+  }
+  const tds = row.querySelectorAll("td");
+  if (tds.length === 1) {
+    const colspan = tds[0]?.getAttribute("colspan");
+    return String(colspan || "") === "4";
+  }
+  return false;
+}
+
+function buildPatientBoxHtml(){
+  const pName = document.getElementById("pName")?.textContent || "";
+  const pDate = document.getElementById("pDate")?.textContent || "";
+  const pAddress = document.getElementById("pAddress")?.textContent || "";
+  const pAgeSex = document.getElementById("pAgeSex")?.textContent || "";
+  const pDoctor = document.getElementById("pDoctor")?.textContent || "";
+  const pMobile = document.getElementById("pMobile")?.textContent || "";
+
+  return `
+    <div class="patient-box">
+      <div class="row">
+        <div><span class="label">PATIENT</span> : <span>${escapeHtml(pName)}</span></div>
+        <div><span class="label">DATE</span> : <span>${escapeHtml(pDate)}</span></div>
+      </div>
+      <div class="row">
+        <div><span class="label">ADDRESS</span> : <span>${escapeHtml(pAddress)}</span></div>
+        <div><span class="label">AGE / SEX</span> : <span>${escapeHtml(pAgeSex)}</span></div>
+      </div>
+      <div class="row">
+        <div><span class="label">REF BY Dr.</span> : <span>${escapeHtml(pDoctor)}</span></div>
+        <div><span class="label">MOBILE</span> : <span>${escapeHtml(pMobile)}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderScreenPages(){
+  const pages = document.getElementById("reportPages");
+  const tbody = document.getElementById("reportBody");
+  const printCard = document.querySelector(".report-print-card");
+
+  if (!pages || !tbody || !printCard) {
+    return;
+  }
+
+  const colsRow = printCard.querySelector(".report-table thead .report-cols");
+  const footerLegend = printCard.querySelector(".report-table tfoot .legend");
+  const footerBlock = printCard.querySelector(".report-table tfoot .report-footer");
+  const sourceRows = Array.from(tbody.querySelectorAll("tr"));
+
+  pages.innerHTML = "";
+
+  if (!sourceRows.length) {
+    return;
+  }
+
+  const headerHtml = `
+    <div class="header">
+      <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
+      <p><b>BLOOD EXAMINATION REPORT</b></p>
+    </div>
+  `;
+  const patientHtml = buildPatientBoxHtml();
+  const footerHtml = `
+    ${footerLegend ? footerLegend.outerHTML : ""}
+    ${footerBlock ? footerBlock.outerHTML : ""}
+  `;
+  const colsHtml = colsRow
+    ? colsRow.outerHTML
+    : `
+      <tr class="report-cols">
+        <th>TEST</th>
+        <th>RESULT</th>
+        <th>UNIT</th>
+        <th>NORMAL VALUES</th>
+      </tr>
+    `;
+
+  function createPage(){
+    const card = document.createElement("div");
+    card.className = "neo-card report-page-card";
+
+    const content = document.createElement("div");
+    content.className = "report-page-content";
+
+    const head = document.createElement("div");
+    head.innerHTML = headerHtml;
+
+    const patient = document.createElement("div");
+    patient.innerHTML = patientHtml;
+
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "report-page-table-wrap";
+
+    const table = document.createElement("table");
+    table.className = "report-table";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = colsHtml;
+
+    const pageBody = document.createElement("tbody");
+
+    table.appendChild(thead);
+    table.appendChild(pageBody);
+    tableWrap.appendChild(table);
+
+    const footer = document.createElement("div");
+    footer.className = "report-page-footer";
+    footer.innerHTML = footerHtml;
+
+    content.appendChild(head);
+    content.appendChild(patient);
+    content.appendChild(tableWrap);
+    content.appendChild(footer);
+
+    card.appendChild(content);
+    pages.appendChild(card);
+
+    return { tableWrap, pageBody };
+  }
+
+  let current = createPage();
+  let carry = [];
+
+  sourceRows.forEach(srcRow => {
+    const row = srcRow.cloneNode(true);
+    current.pageBody.appendChild(row);
+
+    const overflow =
+      current.tableWrap.scrollHeight > current.tableWrap.clientHeight + 1;
+
+    if (overflow) {
+      current.pageBody.removeChild(row);
+
+      const toMove = carry.length ? carry.slice() : [];
+      carry.length = 0;
+      toMove.forEach(node => {
+        if (node.parentNode) {
+          node.parentNode.removeChild(node);
+        }
+      });
+
+      current = createPage();
+      toMove.forEach(node => current.pageBody.appendChild(node));
+      current.pageBody.appendChild(row);
+    }
+
+    if (isHeaderLikeRow(row)) {
+      carry.push(row);
+    } else {
+      carry.length = 0;
+    }
+  });
+}
+
+window.addEventListener("resize", () => {
+  renderScreenPages();
+});
