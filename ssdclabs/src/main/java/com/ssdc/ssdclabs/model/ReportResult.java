@@ -1,5 +1,7 @@
 package com.ssdc.ssdclabs.model;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -43,6 +45,9 @@ public class ReportResult {
     @Column(name = "result_value", columnDefinition = "TEXT")
     private String resultValue;
 
+    @Column(name = "test_order", precision = 6, scale = 2)
+    private BigDecimal testOrder;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -64,5 +69,10 @@ public class ReportResult {
     public String getResultValue() { return resultValue; }
     public void setResultValue(String resultValue) {
         this.resultValue = resultValue;
+    }
+
+    public BigDecimal getTestOrder() { return testOrder; }
+    public void setTestOrder(BigDecimal testOrder) {
+        this.testOrder = testOrder;
     }
 }

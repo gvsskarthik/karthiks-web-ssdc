@@ -3,22 +3,63 @@ body{
   background:#ffffff;
 }
 
-#report{
-  background:#ffffff;
+/* ================= SCREEN (A4 NEO-CARDS) ================= */
+.report-pages{
+  display:block;
+  padding:14px 0;
+}
+
+.neo-card.report-page-card{
+  width:210mm;
+  height:297mm;
+  max-width:none;
+  margin:14px auto;
+  padding:10mm;
+  box-sizing:border-box;
+  background:#fff;
   box-shadow:none;
+}
+
+.report-page-content{
+  height:calc(297mm - 20mm); /* page height - padding */
+  display:grid;
+  grid-template-rows:auto auto 1fr auto;
+  gap:10px;
+  overflow:hidden;
+}
+
+.report-page-table-wrap{
+  overflow:hidden;
+}
+
+.report-print-card{
+  display:none;
+}
+
+/* TABLE (shared) */
+.report-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.report-table .report-meta-row td{
+  border:none;
+  padding:0;
 }
 
 table th{
   background:#ffffff;
 }
 
-/* TABLE */
-table{
+.report-table tbody,
+.report-table .report-cols{
   font-size:10px;
 }
+
 th,td{
   padding:4px;
 }
+
 .save{background:#27ae60;color:#fff}
 .download{background:#8e44ad;color:#fff}
 .whatsapp{background:#25d366;color:#fff}
@@ -48,13 +89,20 @@ th,td{
 }
 
 .report-footer{
-  margin-top:18px;
   display:flex;
   flex-direction:column;
   gap:0px;
   font-size:11px;
   font-weight:700;
   letter-spacing:0.3px;
+}
+
+.report-table tfoot .legend{
+  margin-top:10px;
+}
+
+.report-table tfoot .report-footer{
+  margin-top:8px;
 }
 
 .report-signature{
@@ -64,4 +112,43 @@ th,td{
 
 .report-clinical{
   text-align:left;
+}
+
+@media print{
+  html,body{
+    background:#fff;
+    color:#000;
+  }
+
+  /* Print keeps existing (single) print card */
+  .report-pages{
+    display:none !important;
+  }
+
+  .report-print-card{
+    display:block !important;
+  }
+
+  @page{
+    size:A4;
+    margin:10mm;
+  }
+
+  body{
+    margin:0;
+    padding:0;
+  }
+
+  .report-table thead{
+    display:table-header-group;
+  }
+
+  .report-table tfoot{
+    display:table-footer-group;
+  }
+
+  .report-table tr{
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
 }

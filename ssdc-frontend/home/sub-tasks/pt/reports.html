@@ -14,36 +14,55 @@
 
 <body>
 
-<div class="neo-card" id="report">
+<div id="report">
+  <!-- SCREEN (A4 PAGES) -->
+  <div id="reportPages" class="report-pages"></div>
 
-  <div class="header">
-    <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
-    <p><b>BLOOD EXAMINATION REPORT</b></p>
-  </div>
+  <!-- PRINT SOURCE (kept as-is for correct print) -->
+  <div class="neo-card report-print-card">
+    <table class="report-table">
+      <thead>
+        <tr class="report-meta-row">
+          <td colspan="4">
+            <div class="header">
+              <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
+              <p><b>BLOOD EXAMINATION REPORT</b></p>
+            </div>
+          </td>
+        </tr>
 
-  <!-- PATIENT -->
-  <div id="patient-info"></div>
+        <tr class="report-meta-row">
+          <td colspan="4">
+            <!-- PATIENT -->
+            <div id="patient-info"></div>
+          </td>
+        </tr>
 
-  <!-- TABLE -->
-  <table>
-    <thead>
-      <tr>
-        <th>TEST</th>
-        <th>RESULT</th>
-        <th>UNIT</th>
-        <th>NORMAL VALUES</th>
-      </tr>
-    </thead>
-    <tbody id="reportBody"></tbody>
-  </table>
+        <tr class="report-cols">
+          <th>TEST</th>
+          <th>RESULT</th>
+          <th>UNIT</th>
+          <th>NORMAL VALUES</th>
+        </tr>
+      </thead>
 
-  <div class="legend">
-    <span class="legend-abnormal">Red</span> = Abnormal value
-  </div>
+      <tbody id="reportBody"></tbody>
 
-  <div class="report-footer">
-    <div class="report-signature">SIGNATURE</div>
-    <div class="report-clinical">SUGGESTED CLINICAL CORRELATION</div>
+      <tfoot>
+        <tr class="report-meta-row">
+          <td colspan="4">
+            <div class="legend">
+              <span class="legend-abnormal">Red</span> = Abnormal value
+            </div>
+
+            <div class="report-footer">
+              <div class="report-signature">SIGNATURE</div>
+              <div class="report-clinical">SUGGESTED CLINICAL CORRELATION</div>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 
   <!-- ACTIONS -->

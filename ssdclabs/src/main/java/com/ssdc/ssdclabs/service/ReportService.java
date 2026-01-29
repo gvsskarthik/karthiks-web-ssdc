@@ -1,5 +1,6 @@
 package com.ssdc.ssdclabs.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,6 +74,15 @@ public class ReportService {
             return;
         }
 
+        Map<Long, BigDecimal> orderByTestId = selections.stream()
+            .filter(Objects::nonNull)
+            .filter(s -> s.testId != null && s.testOrder != null)
+            .collect(Collectors.toMap(
+                s -> s.testId,
+                s -> s.testOrder,
+                (a, b) -> a
+            ));
+
         List<ReportResult> existingResults =
             resultRepo.findByPatient_Id(patientId);
 
@@ -114,6 +124,7 @@ public class ReportService {
             Map<Long, ReportResult> existingByParam =
                 byTestParam.getOrDefault(safeTestId, Map.of());
             Test testRef = testRepo.getReferenceById(safeTestId);
+            BigDecimal testOrder = orderByTestId.get(safeTestId);
 
             for (TestParameter param : params) {
                 if (param.getId() == null) {
@@ -121,12 +132,22 @@ public class ReportService {
                 }
                 ReportResult existing = existingByParam.get(param.getId());
                 if (existing != null) {
+                    boolean orderChanged = false;
+                    if (testOrder != null) {
+                        BigDecimal prev = existing.getTestOrder();
+                        orderChanged = (prev == null) || (prev.compareTo(testOrder) != 0);
+                        existing.setTestOrder(testOrder);
+                    }
                     if (isBlank(existing.getResultValue())) {
                         String defaultValue = firstDefaultResult(param);
                         if (!isBlank(defaultValue)) {
                             existing.setResultValue(defaultValue);
                             toSave.add(existing);
+                        } else if (orderChanged) {
+                            toSave.add(existing);
                         }
+                    } else if (orderChanged) {
+                        toSave.add(existing);
                     }
                     continue;
                 }
@@ -136,6 +157,7 @@ public class ReportService {
                 result.setParameter(param);
                 result.setSubTest("");
                 result.setResultValue(firstDefaultResult(param));
+                result.setTestOrder(testOrder);
                 toSave.add(result);
             }
         }
@@ -381,13 +403,59 @@ public class ReportService {
     public List<PatientTestSelectionDTO> getSelectedTests(@NonNull Long patientId) {
         List<ReportResult> results = resultRepo.findByPatient_Id(
             Objects.requireNonNull(patientId, "patientId"));
+        Map<Long, BigDecimal> orderByTest = new HashMap<>();
         Set<Long> testIds = results.stream()
             .map(r -> r.getTest() == null ? null : r.getTest().getId())
             .filter(Objects::nonNull)
             .collect(Collectors.toCollection(HashSet::new));
-        return testIds.stream()
-            .map(id -> new PatientTestSelectionDTO(patientId, id))
+
+        for (ReportResult result : results) {
+            if (result == null || result.getTest() == null) {
+                continue;
+            }
+            Long testId = result.getTest().getId();
+            if (testId == null) {
+                continue;
+            }
+            if (orderByTest.containsKey(testId)) {
+                continue;
+            }
+            if (result.getTestOrder() != null) {
+                orderByTest.put(testId, result.getTestOrder());
+            }
+        }
+
+        List<PatientTestSelectionDTO> list = testIds.stream()
+            .map(id -> new PatientTestSelectionDTO(patientId, id, orderByTest.get(id)))
             .collect(Collectors.toList());
+        list.sort((a, b) -> {
+            if (a == null || b == null) {
+                return 0;
+            }
+            BigDecimal ao = a.testOrder;
+            BigDecimal bo = b.testOrder;
+            if (ao == null && bo == null) {
+                return Long.compare(
+                    a.testId == null ? 0L : a.testId,
+                    b.testId == null ? 0L : b.testId
+                );
+            }
+            if (ao == null) {
+                return 1;
+            }
+            if (bo == null) {
+                return -1;
+            }
+            int cmp = ao.compareTo(bo);
+            if (cmp != 0) {
+                return cmp;
+            }
+            return Long.compare(
+                a.testId == null ? 0L : a.testId,
+                b.testId == null ? 0L : b.testId
+            );
+        });
+        return list;
     }
 
     @Transactional(readOnly = true)
@@ -424,7 +492,8 @@ public class ReportService {
                     patientId,
                     testId,
                     baseSubTest,
-                    result.getResultValue()
+                    result.getResultValue(),
+                    result.getTestOrder()
                 ));
                 continue;
             }
@@ -435,7 +504,8 @@ public class ReportService {
                     patientId,
                     testId,
                     rawSubTest,
-                    lines.get(0)
+                    lines.get(0),
+                    result.getTestOrder()
                 ));
                 continue;
             }
@@ -459,7 +529,8 @@ public class ReportService {
                     patientId,
                     testId,
                     subOut,
-                    value
+                    value,
+                    result.getTestOrder()
                 ));
             }
         }
