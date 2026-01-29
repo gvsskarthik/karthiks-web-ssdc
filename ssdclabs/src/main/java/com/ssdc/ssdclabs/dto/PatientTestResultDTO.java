@@ -18,6 +18,14 @@ public class PatientTestResultDTO {
                                 Long patientId,
                                 Long testId,
                                 String subTest,
+                                String resultValue) {
+        this(id, patientId, testId, subTest, resultValue, null);
+    }
+
+    public PatientTestResultDTO(Long id,
+                                Long patientId,
+                                Long testId,
+                                String subTest,
                                 String resultValue,
                                 BigDecimal testOrder) {
         this.id = id;
