@@ -30,20 +30,27 @@ function writeTestOrders(map){
 }
 
 function normalizeOrderValue(value){
-  const text = String(value == null ? "" : value).trim();
-  if (!text) {
+  const raw = String(value == null ? "" : value).trim();
+  if (!raw) {
     return null;
   }
-  const n = Number(text);
-  if (!Number.isFinite(n)) {
+
+  // Accept: 1, 1.2, 1.23. Normalize to 2 decimal places (scale=2).
+  // Reject more than 2 decimals to avoid ambiguous ordering.
+  const m = raw.match(/^(\d+)(?:\.(\d{1,2}))?$/);
+  if (!m) {
     return null;
   }
-  return n;
+
+  const intPart = m[1];
+  const frac = m[2] || "";
+  const frac2 = frac.length === 0 ? "00" : (frac.length === 1 ? `${frac}0` : frac);
+  return `${intPart}.${frac2}`;
 }
 
 function getTestOrder(testId){
   const n = normalizeOrderValue(testOrders[String(testId)]);
-  return n == null ? "" : String(n);
+  return n == null ? "" : n;
 }
 
 function setTestOrder(testId, value){
@@ -202,6 +209,8 @@ loadSavedResults()
           activeTests.filter(t => ids.includes(t.id));
         selectedTestsCache = sortTestsByOrder(selectedTests);
         renderTests(selectedTestsCache);
+        scheduleAutoPaginate();
+        scheduleAfterFonts();
       });
   });
 
@@ -209,16 +218,21 @@ function sortTestsByOrder(tests){
   const list = Array.isArray(tests) ? tests : [];
   const indexById = new Map();
   list.forEach((t, i) => indexById.set(Number(t?.id), i));
+  const categoryById = new Map();
+  list.forEach(t => categoryById.set(Number(t?.id), t?.category || ""));
 
   const readOrder = (testId) => {
     const raw = testOrders[String(testId)];
     const n = normalizeOrderValue(raw);
-    return n == null ? null : n;
+    return n == null ? null : Number(n);
   };
 
   return [...list].sort((a, b) => {
     const aId = Number(a?.id);
     const bId = Number(b?.id);
+    const ar = categoryPriority(categoryById.get(aId));
+    const br = categoryPriority(categoryById.get(bId));
+    if (ar !== br) return ar - br;
     const ao = readOrder(aId);
     const bo = readOrder(bId);
     if (ao == null && bo == null) {
@@ -234,6 +248,27 @@ function sortTestsByOrder(tests){
 
 function normalizeKey(value){
   return (value || "").trim().toLowerCase();
+}
+
+function normalizeCategoryKey(value){
+  return String(value == null ? "" : value)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function categoryPriority(value){
+  const key = normalizeCategoryKey(value);
+  if (key.includes("hematology")) return 0;
+  if (key.includes("biochemistry")) return 1;
+  if (key.includes("serology")) return 2;
+  if (key.includes("microbiology")) return 3;
+  if (key.includes("clinical pathology") && key.includes("urine")) return 4;
+  if (key.includes("clinical pathology")) return 4;
+  if (key.includes("endocrinology")) return 5;
+  if (key.includes("thyroid")) return 5;
+  if (key.includes("hormone")) return 5;
+  return 99;
 }
 
 function makeGroupKey(testId, baseName){
@@ -530,6 +565,8 @@ function renderTests(tests) {
   body.addEventListener("click", handleAddLineClick);
   body.removeEventListener("change", handleOrderChange);
   body.addEventListener("change", handleOrderChange);
+  body.removeEventListener("change", handleResultChange);
+  body.addEventListener("change", handleResultChange);
 
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
@@ -584,17 +621,14 @@ function renderTests(tests) {
         <tr data-testgroup="${escapeAttr(test.id)}"${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
           <td>
             <div class="test-name-wrap">
-              <b>${escapeHtml(test.testName)}</b>
               <input
                 class="order-input"
-                type="number"
+                type="text"
                 inputmode="decimal"
-                step="0.1"
-                min="0"
-                max="999.9"
                 data-testid="${escapeAttr(test.id)}"
                 value="${escapeAttr(getTestOrder(test.id))}"
               >
+              <b>${escapeHtml(test.testName)}</b>
             </div>
           </td>
           <td>
@@ -693,17 +727,14 @@ function renderTests(tests) {
       `<tr data-testgroup="${escapeAttr(test.id)}" class="test-header-row">
         <td colspan="4">
           <div class="test-name-wrap">
-            <b>${escapeHtml(test.testName)}</b>
             <input
               class="order-input"
-              type="number"
+              type="text"
               inputmode="decimal"
-              step="0.1"
-              min="0"
-              max="999.9"
               data-testid="${escapeAttr(test.id)}"
               value="${escapeAttr(getTestOrder(test.id))}"
             >
+            <b>${escapeHtml(test.testName)}</b>
           </div>
         </td>
       </tr>`;
@@ -832,6 +863,7 @@ function handleAddLineClick(event) {
     if (!body || !body.contains(removeBtn)) {
       return;
     }
+    const testId = Number(removeBtn.dataset.testid);
     const groupKey = removeBtn.dataset.group || "";
     if (!groupKey) {
       return;
@@ -844,6 +876,12 @@ function handleAddLineClick(event) {
     if (findDynamicRowsInGroup(body, groupKey).length === 0) {
       removeBtn.style.display = "none";
     }
+    if (Number.isFinite(testId) && testId > 0) {
+      invalidateBlockHeight(testId);
+    } else {
+      blockHeightCache.clear();
+    }
+    scheduleAutoPaginate();
     return;
   }
 
@@ -929,6 +967,9 @@ function handleAddLineClick(event) {
   if (remove) {
     remove.style.display = "";
   }
+
+  invalidateBlockHeight(testId);
+  scheduleAutoPaginate();
 }
 
 function applyTestOrderToDom(){
@@ -958,24 +999,510 @@ function handleOrderChange(event){
     return;
   }
 
+  const normalized = normalizeOrderValue(target.value);
+  if (target.value && !normalized) {
+    alert("Invalid order. Use numbers like 1, 1.20, 2.05");
+    target.value = getTestOrder(testId);
+    return;
+  }
+
   setTestOrder(testId, target.value);
 
+  // Apply user ordering immediately, then auto-repaginate for A4 and renumber.
   selectedTestsCache = sortTestsByOrder(selectedTestsCache);
   applyTestOrderToDom();
-
-  // Keep all order inputs for the same test in sync.
-  const normalized = getTestOrder(testId);
-  document
-    .querySelectorAll(`.order-input[data-testid="${testId}"]`)
-    .forEach(input => {
-      input.value = normalized;
-    });
+  scheduleAutoPaginate();
 }
 
 function markTouched(event) {
   const target = event.target;
   if (target && target.classList.contains("result-input")) {
     target.dataset.touched = "1";
+  }
+}
+
+function handleResultChange(event){
+  const target = event.target;
+  if (!target || !target.classList || !target.classList.contains("result-input")) {
+    return;
+  }
+  const testId = Number(target.dataset.testid);
+  if (!Number.isFinite(testId) || testId <= 0) {
+    return;
+  }
+  invalidateBlockHeight(testId);
+  scheduleAutoPaginate();
+}
+
+let paginateQueued = false;
+let paginateBusy = false;
+let paginateTimer = null;
+let measurePage = null;
+const blockHeightCache = new Map();
+let fontsSettled = false;
+
+function scheduleAutoPaginate(){
+  if (paginateTimer) {
+    clearTimeout(paginateTimer);
+  }
+  paginateTimer = setTimeout(() => {
+    paginateTimer = null;
+    if (paginateQueued) {
+      return;
+    }
+    paginateQueued = true;
+    requestAnimationFrame(() => {
+      paginateQueued = false;
+      autoPaginateAndNumber();
+    });
+  }, 60);
+}
+
+function scheduleAfterFonts(){
+  if (fontsSettled) {
+    return;
+  }
+  const fonts = document.fonts;
+  if (fonts && typeof fonts.ready?.then === "function") {
+    fonts.ready
+      .catch(() => {})
+      .then(() => {
+        if (fontsSettled) {
+          return;
+        }
+        fontsSettled = true;
+        blockHeightCache.clear();
+        scheduleAutoPaginate();
+      });
+    return;
+  }
+
+  // Fallback for browsers without Font Loading API.
+  setTimeout(() => {
+    if (fontsSettled) {
+      return;
+    }
+    fontsSettled = true;
+    blockHeightCache.clear();
+    scheduleAutoPaginate();
+  }, 400);
+}
+
+function buildReportPatientBoxHtml(){
+  const pName = document.getElementById("pName")?.textContent || "";
+  const pDate = document.getElementById("pDate")?.textContent || "";
+  const pAddress = document.getElementById("pAddress")?.textContent || "";
+  const pAgeSex = document.getElementById("pAgeSex")?.textContent || "";
+  const pDoctor = document.getElementById("pDoctor")?.textContent || "";
+  const pMobile = patient?.mobile || "";
+
+  return `
+    <div class="patient-box">
+      <div class="row">
+        <div><span class="label">PATIENT</span> : <span>${escapeHtml(pName)}</span></div>
+        <div><span class="label">DATE</span> : <span>${escapeHtml(pDate)}</span></div>
+      </div>
+      <div class="row">
+        <div><span class="label">ADDRESS</span> : <span>${escapeHtml(pAddress)}</span></div>
+        <div><span class="label">AGE / SEX</span> : <span>${escapeHtml(pAgeSex)}</span></div>
+      </div>
+      <div class="row">
+        <div><span class="label">REF BY Dr.</span> : <span>${escapeHtml(pDoctor)}</span></div>
+        <div><span class="label">MOBILE</span> : <span>${escapeHtml(pMobile)}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function ensureMeasurePage(){
+  if (measurePage && measurePage.container && document.body.contains(measurePage.container)) {
+    return measurePage;
+  }
+
+  const container = document.createElement("div");
+  container.className = "a4-measure-page";
+  container.style.cssText = `
+position:fixed;
+left:-10000px;
+top:0;
+width:210mm;
+height:297mm;
+padding:10mm;
+box-sizing:border-box;
+visibility:hidden;
+background:#fff;
+color:#000;
+font-family: var(--font-sans, Poppins, Arial, sans-serif);
+`;
+
+  const style = document.createElement("style");
+  style.textContent = `
+.a4-measure-page { line-height:1.25; }
+.a4-measure-page .header{ text-align:center; }
+.a4-measure-page .header h2{ margin:0; }
+.a4-measure-page .header p{ margin:0; }
+
+.a4-measure-page .patient-box{
+  border:1px solid #000;
+  padding:12px;
+  font-size:13px;
+  margin:0;
+}
+.a4-measure-page .row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.a4-measure-page .row:last-child{ margin-bottom:0; }
+.a4-measure-page .label{ font-weight:700; }
+
+.a4-measure-page .report-page-content{
+  height:calc(297mm - 20mm);
+  display:grid;
+  grid-template-rows:auto auto 1fr auto;
+  gap:10px;
+  overflow:hidden;
+}
+.a4-measure-page .report-page-table-wrap{ overflow:hidden; }
+.a4-measure-page .legend{ margin-top:10px; font-size:11px; }
+.a4-measure-page .legend-abnormal{ font-weight:700; }
+.a4-measure-page .report-footer{
+  display:flex;
+  flex-direction:column;
+  gap:0px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.3px;
+}
+.a4-measure-page .report-signature{ text-align:right; padding-right:100px; }
+.a4-measure-page .report-clinical{ text-align:left; }
+
+.a4-measure-page table { width:100%; border-collapse:collapse; font-size:10px; margin:0; }
+.a4-measure-page th, .a4-measure-page td { border:1px solid #000; padding:4px; vertical-align:top; }
+.a4-measure-page th { background:#fff; }
+.a4-measure-page .param-indent { padding-left:20px !important; }
+.a4-measure-page .section-header td { padding-top:8px !important; font-size:11px !important; font-weight:700 !important; }
+.a4-measure-page .normal { white-space:pre-line; font-size:10px; }
+.a4-measure-page .test-name-wrap { display:block; }
+`;
+
+  const content = document.createElement("div");
+  content.className = "report-page-content";
+
+  const header = document.createElement("div");
+  header.className = "header";
+  header.innerHTML = `
+    <h2 style="margin:0;">SAI SREE SWETHA DIAGNOSTICS</h2>
+    <p style="margin:0;"><b>BLOOD EXAMINATION REPORT</b></p>
+  `;
+
+  const patient = document.createElement("div");
+  patient.innerHTML = buildReportPatientBoxHtml();
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "report-page-table-wrap";
+
+  const table = document.createElement("table");
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr>
+      <th style="border:1px solid #000; padding:4px;">TEST</th>
+      <th style="border:1px solid #000; padding:4px;">RESULT</th>
+      <th style="border:1px solid #000; padding:4px;">UNIT</th>
+      <th style="border:1px solid #000; padding:4px;">NORMAL VALUES</th>
+    </tr>
+  `;
+
+  const tbody = document.createElement("tbody");
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+
+  const footer = document.createElement("div");
+  footer.innerHTML = `
+    <div class="legend">
+      <span class="legend-abnormal">Red</span> = Abnormal value
+    </div>
+    <div class="report-footer">
+      <div class="report-signature">SIGNATURE</div>
+      <div class="report-clinical">SUGGESTED CLINICAL CORRELATION</div>
+    </div>
+  `;
+
+  content.appendChild(header);
+  content.appendChild(patient);
+  content.appendChild(tableWrap);
+  content.appendChild(footer);
+  container.appendChild(style);
+  container.appendChild(content);
+  document.body.appendChild(container);
+
+  measurePage = {
+    container,
+    content,
+    thead,
+    tbody,
+    tableWrap
+  };
+  return measurePage;
+}
+
+function invalidateBlockHeight(testId){
+  const prefix = `${Number(testId)}:`;
+  for (const key of blockHeightCache.keys()) {
+    if (String(key).startsWith(prefix)) {
+      blockHeightCache.delete(key);
+    }
+  }
+}
+
+function cloneRowForMeasure(row){
+  const c = row.cloneNode(true);
+
+  // Replace result inputs with plain text so height matches `reports.html`.
+  c.querySelectorAll("input.result-input").forEach(input => {
+    const text =
+      input.value ||
+      input.getAttribute("value") ||
+      input.dataset.default ||
+      "";
+    const span = document.createElement("span");
+    span.textContent = text;
+    input.replaceWith(span);
+  });
+
+  // Remove ordering inputs and action buttons.
+  c.querySelectorAll("input.order-input,button,select,textarea").forEach(el => el.remove());
+  return c;
+}
+
+function isHeaderLikeRow(row){
+  if (!row) {
+    return false;
+  }
+  if (row.classList && row.classList.contains("section-header")) {
+    return true;
+  }
+  const td = row.querySelector("td");
+  if (!td) {
+    return false;
+  }
+  const colspan = td.getAttribute("colspan");
+  return String(colspan || "") === "4";
+}
+
+function splitTextLines(value){
+  const raw = String(value == null ? "" : value);
+  const parts = raw.split(/\r?\n/).map(s => s.trimEnd());
+  const lines = parts.filter(s => s.trim() !== "");
+  return lines.length ? lines : [""];
+}
+
+function cloneRowsForMeasureFromBlock(blockRows){
+  const source = Array.isArray(blockRows) ? blockRows : [];
+  if (!source.length) {
+    return [];
+  }
+
+  const hasMeta = source.some(r => isHeaderLikeRow(r));
+  const data = source
+    .map((r, idx) => ({ r, idx }))
+    .filter(x => !isHeaderLikeRow(x.r))
+    .filter(x => (x.r?.querySelectorAll("td")?.length || 0) >= 4);
+
+  // Heuristic: single-test with multiple result lines (Add line feature).
+  // In reports.html, normal values show only once (on first result row).
+  let suppressNormalAfterFirst = false;
+  let firstDataIndex = -1;
+  if (!hasMeta && data.length > 1) {
+    const first = data[0]?.r;
+    const second = data[1]?.r;
+    const firstName = first?.querySelectorAll("td")?.[0]?.textContent?.trim() || "";
+    const secondName = second?.querySelectorAll("td")?.[0]?.textContent?.trim() || "";
+    if (firstName && !secondName) {
+      suppressNormalAfterFirst = true;
+      firstDataIndex = data[0].idx;
+    }
+  }
+
+  const out = [];
+
+  source.forEach((row, idx) => {
+    if (isHeaderLikeRow(row)) {
+      out.push(cloneRowForMeasure(row));
+      return;
+    }
+
+    const c = cloneRowForMeasure(row);
+    const tds = c.querySelectorAll("td");
+    if (tds.length < 4) {
+      out.push(c);
+      return;
+    }
+
+    const normalTd = tds[3];
+    if (suppressNormalAfterFirst && idx !== firstDataIndex) {
+      normalTd.textContent = "";
+      out.push(c);
+      return;
+    }
+
+    const normalLines = splitTextLines(normalTd.innerText || normalTd.textContent || "");
+    normalTd.textContent = normalLines[0] || "";
+    out.push(c);
+
+    for (let i = 1; i < normalLines.length; i++) {
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td");
+      const td2 = document.createElement("td");
+      const td3 = document.createElement("td");
+      const td4 = document.createElement("td");
+      td4.textContent = normalLines[i] || "";
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tr.appendChild(td3);
+      tr.appendChild(td4);
+      out.push(tr);
+    }
+  });
+
+  return out;
+}
+
+function applyOrderInputs(){
+  document.querySelectorAll(".order-input").forEach(input => {
+    const testId = Number(input?.dataset?.testid);
+    if (!Number.isFinite(testId) || testId <= 0) {
+      return;
+    }
+    input.value = getTestOrder(testId);
+  });
+}
+
+function autoPaginateAndNumber(){
+  if (paginateBusy) {
+    return;
+  }
+  paginateBusy = true;
+  try {
+    if (!Array.isArray(selectedTestsCache) || !selectedTestsCache.length) {
+      return;
+    }
+
+    // Make sure measurements use the final loaded fonts (matches reports.html).
+    scheduleAfterFonts();
+
+    // Ensure DOM blocks are currently in the same order as selectedTestsCache.
+    applyTestOrderToDom();
+
+    const body = document.getElementById("resultBody");
+    if (!body) {
+      return;
+    }
+
+    const ids = selectedTestsCache
+      .map(t => Number(t?.id))
+      .filter(id => Number.isFinite(id) && id > 0);
+
+    const page = ensureMeasurePage();
+    // Refresh patient box (might change date) before measuring.
+    page.content.children[1].innerHTML = buildReportPatientBoxHtml();
+
+    const availableTbodyHeight =
+      page.tableWrap.clientHeight - page.thead.getBoundingClientRect().height;
+
+    // Build blocks (DOM rows) per test id.
+    const blocks = ids.map(id => ({
+      testId: id,
+      rows: [...body.querySelectorAll(`tr[data-testgroup="${id}"]`)]
+    }));
+
+    let pageNumber = 1;
+    let positionOnPage = 0;
+    let usedHeight = 0;
+
+    const assignOrder = (testId, pageNum, pos) => {
+      const pos2 = String(pos).padStart(2, "0");
+      testOrders[String(testId)] = `${pageNum}.${pos2}`;
+    };
+
+    const missingBlocks = blocks.filter(block => {
+      if (!block.rows.length) return false;
+      const cacheKey = `${block.testId}:${block.rows.length}`;
+      return blockHeightCache.get(cacheKey) == null;
+    });
+
+    if (missingBlocks.length) {
+      page.tbody.innerHTML = "";
+      const starts = [];
+
+      missingBlocks.forEach(block => {
+        if (!block.rows.length) {
+          return;
+        }
+        let firstEl = null;
+        const clones = cloneRowsForMeasureFromBlock(block.rows);
+        clones.forEach((c, idx) => {
+          if (idx === 0) {
+            firstEl = c;
+          }
+          page.tbody.appendChild(c);
+        });
+        if (firstEl) {
+          starts.push({ testId: block.testId, rowCount: block.rows.length, el: firstEl });
+        }
+      });
+
+      const tbodyRect = page.tbody.getBoundingClientRect();
+      const totalHeight = page.tbody.getBoundingClientRect().height;
+      const startData = starts
+        .map(s => ({
+          testId: s.testId,
+          rowCount: s.rowCount,
+          top: s.el.getBoundingClientRect().top - tbodyRect.top
+        }))
+        .filter(x => Number.isFinite(x.testId) && x.rowCount > 0)
+        .sort((a, b) => a.top - b.top);
+
+      for (let i = 0; i < startData.length; i++) {
+        const cur = startData[i];
+        const next = startData[i + 1];
+        const height = Math.max(0, (next ? next.top : totalHeight) - cur.top);
+        const cacheKey = `${cur.testId}:${cur.rowCount}`;
+        blockHeightCache.set(cacheKey, height);
+      }
+
+      page.tbody.innerHTML = "";
+    }
+
+    blocks.forEach(block => {
+      if (!block.rows.length) {
+        return;
+      }
+
+      const cacheKey = `${block.testId}:${block.rows.length}`;
+      const blockHeight = blockHeightCache.get(cacheKey) ?? 0;
+
+      if (usedHeight > 0 && usedHeight + blockHeight > availableTbodyHeight + 1) {
+        pageNumber += 1;
+        positionOnPage = 0;
+        usedHeight = 0;
+      }
+
+      usedHeight += blockHeight;
+      positionOnPage += 1;
+      assignOrder(block.testId, pageNumber, positionOnPage);
+    });
+
+    writeTestOrders(testOrders);
+    applyOrderInputs();
+
+    // Keep selectedTestsCache sorted by the (new) order.
+    selectedTestsCache = sortTestsByOrder(selectedTestsCache);
+    applyTestOrderToDom();
+  } finally {
+    paginateBusy = false;
   }
 }
 
