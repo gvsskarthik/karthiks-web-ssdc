@@ -65,6 +65,23 @@ if (getToken()) {
   window.location.href = "dashboard.html";
 }
 
+// Show email verification result (from verify link redirect).
+try {
+  const url = new URL(window.location.href);
+  const verified = url.searchParams.get("verified");
+  if (verified === "1") {
+    alert("Email verified! Now login with Lab ID + password.");
+    url.searchParams.delete("verified");
+    window.history.replaceState({}, "", url.toString());
+  } else if (verified === "0") {
+    alert("Email verification failed or expired. Please resend verification link.");
+    url.searchParams.delete("verified");
+    window.history.replaceState({}, "", url.toString());
+  }
+} catch (e) {
+  // ignore
+}
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const labId = normalizeLabId(document.getElementById("loginLabId").value);
@@ -99,14 +116,25 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
       phone: phone || null,
       password
     });
-    if (!data || !data.token) {
-      alert("Signup successful! Now login.");
-      showLogin();
-      return;
-    }
-    setToken(data.token);
-    window.location.href = "dashboard.html";
+    alert((data && data.message) ? data.message : "Verification link sent to email. Please verify then login.");
+    document.getElementById("loginLabId").value = labId;
+    showLogin();
   } catch (err) {
     alert(err && err.message ? err.message : "Signup failed");
   }
 });
+
+// Optional: resend verification for the labId typed in login box.
+window.resendVerification = async function () {
+  const labId = normalizeLabId(document.getElementById("loginLabId").value);
+  if (!labId) {
+    alert("Enter Lab ID first");
+    return;
+  }
+  try {
+    await postJson(authUrl("/auth/resend-verification"), { labId, password: "x" });
+    alert("Verification link sent. Check your email.");
+  } catch (err) {
+    alert(err && err.message ? err.message : "Resend failed");
+  }
+};

@@ -12,5 +12,7 @@ public interface TestGroupRepository extends JpaRepository<TestGroup, Long> {
     java.util.List<TestGroup> findByLabIdOrderByDisplayOrderAscGroupNameAsc(String labId);
 
     java.util.Optional<TestGroup> findByIdAndLabId(Long id, String labId);
+
+    java.util.Optional<TestGroup> findFirstByLabIdAndShortcutIgnoreCase(String labId, String shortcut);
  
 }

@@ -26,6 +26,25 @@ if (!getAuthToken()) {
     window.location.href = "index.html";
 }
 
+async function checkOnboarding() {
+    try {
+        const res = await fetch(`${window.API_BASE_URL || "/api"}/onboarding/status`);
+        if (!res.ok) {
+            return;
+        }
+        const status = await res.json();
+        const completed = Boolean(status && status.onboardingCompleted);
+        const testCount = Number(status && status.testCount ? status.testCount : 0);
+        if (!completed && testCount === 0) {
+            window.location.href = "select-tests.html";
+        }
+    } catch (e) {
+        // ignore
+    }
+}
+
+checkOnboarding();
+
 const menuByPage = {
     "home/sub-tasks/1-home.html": "dashboard",
     "home/sub-tasks/2-patient.html": "patient",
