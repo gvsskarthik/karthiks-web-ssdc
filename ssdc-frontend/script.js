@@ -1,6 +1,30 @@
 /* ================= SIDEBAR ACTIVE ================= */
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
 const pageFrame = document.getElementById('page-frame');
+const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
+
+function getAuthToken() {
+    try {
+        return window.localStorage ? window.localStorage.getItem(AUTH_TOKEN_KEY) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function clearAuthToken() {
+    try {
+        if (window.localStorage) {
+            window.localStorage.removeItem(AUTH_TOKEN_KEY);
+        }
+    } catch (e) {
+        // ignore
+    }
+}
+
+// Guard: block direct access to dashboard without login token.
+if (!getAuthToken()) {
+    window.location.href = "index.html";
+}
 
 const menuByPage = {
     "home/sub-tasks/1-home.html": "dashboard",
@@ -137,6 +161,16 @@ window.addEventListener('resize', () => {
 /* 🔹 Expose to iframe */
 window.setActiveMenu = setActiveMenu;
 window.loadPage = loadPage;
+
+/* ================= LOGOUT ================= */
+const logoutLink = document.querySelector("#sidebar a.logout");
+if (logoutLink) {
+    logoutLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        clearAuthToken();
+        window.location.href = "index.html";
+    });
+}
 
 function getFramePagePath() {
     if (!pageFrame) {

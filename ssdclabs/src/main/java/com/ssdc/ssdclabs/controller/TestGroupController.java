@@ -1,5 +1,6 @@
 package com.ssdc.ssdclabs.controller;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,24 +36,26 @@ public class TestGroupController {
        GET ALL GROUPS
        =============================== */
     @GetMapping
-    public List<TestGroupDetailDTO> getAllGroups() {
-        return groupService.getAllGroups();
+    public List<TestGroupDetailDTO> getAllGroups(@NonNull Principal principal) {
+        return groupService.getAllGroups(principal.getName());
     }
 
     /* ===============================
        GET GROUP DETAILS
        =============================== */
     @GetMapping("/{id}")
-    public TestGroupDetailDTO getGroup(@PathVariable @NonNull Long id) {
-        return groupService.getGroup(id);
+    public TestGroupDetailDTO getGroup(@PathVariable @NonNull Long id,
+                                       @NonNull Principal principal) {
+        return groupService.getGroup(principal.getName(), id);
     }
 
     /* ===============================
        SAVE GROUP
        =============================== */
     @PostMapping
-    public String saveGroup(@RequestBody @NonNull TestGroupPayload payload) {
-        return groupService.saveGroup(payload);
+    public String saveGroup(@RequestBody @NonNull TestGroupPayload payload,
+                            @NonNull Principal principal) {
+        return groupService.saveGroup(principal.getName(), payload);
     }
 
     /* ===============================
@@ -61,8 +64,9 @@ public class TestGroupController {
     @PutMapping("/{id}")
     public String updateGroup(
             @PathVariable @NonNull Long id,
-            @RequestBody @NonNull TestGroupPayload payload) {
-        return groupService.updateGroup(id, payload);
+            @RequestBody @NonNull TestGroupPayload payload,
+            @NonNull Principal principal) {
+        return groupService.updateGroup(principal.getName(), id, payload);
     }
 
     /* ===============================
@@ -71,10 +75,11 @@ public class TestGroupController {
     @PutMapping("/{id}/active")
     public ResponseEntity<?> updateActive(
             @PathVariable @NonNull Long id,
-            @RequestBody @NonNull Map<String, Boolean> body) {
+            @RequestBody @NonNull Map<String, Boolean> body,
+            @NonNull Principal principal) {
 
         Boolean active = Objects.requireNonNull(body.get("active"), "active");
-        groupService.updateActive(id, active);
+        groupService.updateActive(principal.getName(), id, active);
 
         return ResponseEntity.ok().build();
     }
@@ -83,7 +88,8 @@ public class TestGroupController {
        DELETE GROUP
        =============================== */
     @DeleteMapping("/{id}")
-    public void deleteGroup(@PathVariable @NonNull Long id) {
-        groupService.deleteGroup(id);
+    public void deleteGroup(@PathVariable @NonNull Long id,
+                            @NonNull Principal principal) {
+        groupService.deleteGroup(principal.getName(), id);
     }
 }

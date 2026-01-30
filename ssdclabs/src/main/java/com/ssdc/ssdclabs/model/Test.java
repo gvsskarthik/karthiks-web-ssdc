@@ -2,6 +2,7 @@ package com.ssdc.ssdclabs.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -12,6 +13,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -20,7 +22,11 @@ import jakarta.persistence.UniqueConstraint;
 @Entity
 @Table(
     name = "tests",
-    uniqueConstraints = @UniqueConstraint(columnNames = "test_shortcut")
+    uniqueConstraints = @UniqueConstraint(columnNames = {"lab_id", "test_shortcut"}),
+    indexes = {
+        @Index(name = "idx_tests_lab_active", columnList = "lab_id, active"),
+        @Index(name = "idx_tests_lab_shortcut", columnList = "lab_id, test_shortcut")
+    }
 )
 public class Test {
 
@@ -28,10 +34,14 @@ public class Test {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
+    @Column(name = "lab_id", length = 6, nullable = false)
+    private String labId;
+
     @Column(name = "test_name", nullable = false)
     private String testName;
 
-    @Column(name = "test_shortcut", nullable = false, unique = true)
+    @Column(name = "test_shortcut", nullable = false)
     private String shortcut;
 
     @Enumerated(EnumType.STRING)
@@ -59,6 +69,9 @@ public class Test {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getLabId() { return labId; }
+    public void setLabId(String labId) { this.labId = labId; }
 
     public String getTestName() { return testName; }
     public void setTestName(String testName) { this.testName = testName; }

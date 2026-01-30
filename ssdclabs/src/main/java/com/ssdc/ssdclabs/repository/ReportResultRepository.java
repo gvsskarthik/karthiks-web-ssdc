@@ -4,12 +4,30 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.ssdc.ssdclabs.model.ReportResult;
 
 public interface ReportResultRepository
         extends JpaRepository<ReportResult, Long> {
-    List<ReportResult> findByPatient_Id(Long patientId);
+    @Query("""
+        SELECT r
+        FROM ReportResult r
+        WHERE r.patient.id = :patientId
+          AND r.patient.labId = :labId
+    """)
+    List<ReportResult> findByPatient_Id(@Param("labId") String labId,
+                                       @Param("patientId") Long patientId);
+
+    @Query("""
+        SELECT r
+        FROM ReportResult r
+        WHERE r.patient.id IN :patientIds
+          AND r.patient.labId = :labId
+    """)
+    List<ReportResult> findByPatient_IdIn(@Param("labId") String labId,
+                                         @Param("patientIds") List<Long> patientIds);
 
     Optional<ReportResult> findFirstByPatient_IdAndTest_IdAndParameter_IdAndSubTest(
         Long patientId,

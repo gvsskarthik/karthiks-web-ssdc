@@ -19,6 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
             .allowedOriginPatterns(origins)
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
-            .allowCredentials(true);
+            // JWT auth does not require cookies, keep this off for safety.
+            .allowCredentials(false);
     }
 }

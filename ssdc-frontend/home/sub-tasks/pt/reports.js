@@ -289,26 +289,8 @@ function normalizeText(value){
   return String(value).trim();
 }
 
-function normalizeCategoryKey(value){
-  return String(value == null ? "" : value)
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-function categoryPriority(value){
-  const key = normalizeCategoryKey(value);
-  if (key.includes("hematology")) return 0;
-  if (key.includes("biochemistry")) return 1;
-  if (key.includes("serology")) return 2;
-  if (key.includes("microbiology")) return 3;
-  if (key.includes("clinical pathology") && key.includes("urine")) return 4;
-  if (key.includes("clinical pathology")) return 4;
-  if (key.includes("endocrinology")) return 5;
-  if (key.includes("thyroid")) return 5;
-  if (key.includes("hormone")) return 5;
-  return 99;
-}
+const categoryPriority =
+  window.SSDC?.utils?.categoryPriority || ((_) => 99);
 
 function normalizeNormalForDisplay(value){
   const text = normalizeText(value);
@@ -606,9 +588,15 @@ function loadSelectedTests(){
   return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
     .then(res => res.json())
     .then(list => {
-      selectedTestIds = (list || [])
+      const fromApi = (list || [])
         .map(x => Number(x.testId))
         .filter(id => !Number.isNaN(id));
+      // Don't let a partial API response overwrite a more complete cached selection.
+      // (e.g., when coming from enter-values and selectedTests is already known)
+      const cached = readCachedSelectedTests();
+      const merged = [...new Set([...cached, ...fromApi])]
+        .filter(id => Number.isFinite(id));
+      selectedTestIds = merged;
       try {
         localStorage.setItem("selectedTests", JSON.stringify(selectedTestIds));
       } catch (e) {
@@ -617,11 +605,7 @@ function loadSelectedTests(){
       return selectedTestIds;
     })
     .catch(() => {
-      const stored =
-        JSON.parse(localStorage.getItem("selectedTests") || "[]");
-      selectedTestIds = (stored || [])
-        .map(id => Number(id))
-        .filter(id => Number.isFinite(id));
+      selectedTestIds = readCachedSelectedTests();
       return selectedTestIds;
     });
 }
@@ -637,22 +621,14 @@ const TESTS_CACHE_KEY = "testsActiveCache";
 const TESTS_CACHE_AT_KEY = "testsActiveCacheAt";
 
 function readStorageJson(key, fallback){
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      return fallback;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    return fallback;
-  }
+  const fn = window.SSDC?.utils?.readStorageJson;
+  return typeof fn === "function" ? fn(key, fallback) : fallback;
 }
 
 function writeStorageJson(key, value){
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    // ignore
+  const fn = window.SSDC?.utils?.writeStorageJson;
+  if (typeof fn === "function") {
+    fn(key, value);
   }
 }
 
@@ -728,6 +704,14 @@ function renderReport(tests, resultList, selectedIds){
     return;
   }
 
+  const selectionIndex = new Map();
+  ids.forEach((id, index) => {
+    const n = Number(id);
+    if (Number.isFinite(n) && !selectionIndex.has(n)) {
+      selectionIndex.set(n, index);
+    }
+  });
+
   const defaultKeyByTestId = new Map();
   safeTests.forEach((t, index) => {
     const id = Number(t?.id);
@@ -749,10 +733,10 @@ function renderReport(tests, resultList, selectedIds){
     const ar = ak?.categoryRank ?? 99;
     const br = bk?.categoryRank ?? 99;
     if (ar !== br) return ar - br;
-    const an = ak?.name ?? "";
-    const bn = bk?.name ?? "";
-    const nameCmp = an.localeCompare(bn);
-    if (nameCmp !== 0) return nameCmp;
+    // Within the same category, keep the original selection order (first selected comes first).
+    const ai = selectionIndex.has(aId) ? selectionIndex.get(aId) : Number.MAX_SAFE_INTEGER;
+    const bi = selectionIndex.has(bId) ? selectionIndex.get(bId) : Number.MAX_SAFE_INTEGER;
+    if (ai !== bi) return ai - bi;
     return (ak?.index ?? 0) - (bk?.index ?? 0);
   });
 

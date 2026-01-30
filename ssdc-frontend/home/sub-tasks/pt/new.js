@@ -238,26 +238,8 @@ function formatMoney(value){
   return String(Math.round(value * 100) / 100);
 }
 
-function normalizeCategoryKey(value){
-  return String(value == null ? "" : value)
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-function categoryPriority(value){
-  const key = normalizeCategoryKey(value);
-  if (key.includes("hematology")) return 0;
-  if (key.includes("biochemistry")) return 1;
-  if (key.includes("serology")) return 2;
-  if (key.includes("microbiology")) return 3;
-  if (key.includes("clinical pathology") && key.includes("urine")) return 4;
-  if (key.includes("clinical pathology")) return 4;
-  if (key.includes("endocrinology")) return 5;
-  if (key.includes("thyroid")) return 5;
-  if (key.includes("hormone")) return 5;
-  return 99;
-}
+const categoryPriority =
+  window.SSDC?.utils?.categoryPriority || ((_) => 99);
 
 function sortSelectedIdsByCategory(selectedIds){
   const ids = Array.isArray(selectedIds) ? selectedIds : [];
@@ -902,7 +884,8 @@ patientForm.addEventListener("submit", e => {
 
   // ✅ EXISTING PATIENT → no save
   if (current && current.id) {
-    localStorage.setItem("selectedTests", JSON.stringify(sortSelectedIdsByCategory([...selected])));
+    // Keep the user's selection order; reports.html will group by category but keep this order within category.
+    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
     parent.loadPage("home/sub-tasks/pt/enter-values.html");
     return;
   }
@@ -916,7 +899,8 @@ patientForm.addEventListener("submit", e => {
   .then(res => res.json())
   .then(p => {
     localStorage.setItem("currentPatient", JSON.stringify(p));
-    localStorage.setItem("selectedTests", JSON.stringify(sortSelectedIdsByCategory([...selected])));
+    // Keep the user's selection order; reports.html will group by category but keep this order within category.
+    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
     parent.loadPage("home/sub-tasks/pt/enter-values.html");
   })
   .catch(err => {

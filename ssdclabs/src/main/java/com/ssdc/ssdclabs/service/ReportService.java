@@ -49,7 +49,8 @@ public class ReportService {
     }
 
     @Transactional
-    public void saveSelectedTests(List<PatientTestSelectionDTO> selections) {
+    public void saveSelectedTests(String labId,
+                                  List<PatientTestSelectionDTO> selections) {
         if (selections == null || selections.isEmpty()) {
             return;
         }
@@ -59,7 +60,7 @@ public class ReportService {
             return;
         }
 
-        Patient patient = patientRepo.findById(patientId).orElse(null);
+        Patient patient = patientRepo.findByIdAndLabId(patientId, labId).orElse(null);
         if (patient == null) {
             return;
         }
@@ -74,7 +75,7 @@ public class ReportService {
         }
 
         List<ReportResult> existingResults =
-            resultRepo.findByPatient_Id(patientId);
+            resultRepo.findByPatient_Id(labId, patientId);
 
         Map<Long, Map<Long, ReportResult>> byTestParam = new HashMap<>();
         for (ReportResult result : existingResults) {
@@ -106,6 +107,10 @@ public class ReportService {
         List<ReportResult> toSave = new ArrayList<>();
         for (Long testId : selectedTestIds) {
             Long safeTestId = Objects.requireNonNull(testId, "testId");
+            Test testEntity = testRepo.findByIdAndLabId(safeTestId, labId).orElse(null);
+            if (testEntity == null) {
+                continue;
+            }
             List<TestParameter> params =
                 paramRepo.findByTest_IdOrderByIdAsc(safeTestId);
             if (params.isEmpty()) {
@@ -113,7 +118,7 @@ public class ReportService {
             }
             Map<Long, ReportResult> existingByParam =
                 byTestParam.getOrDefault(safeTestId, Map.of());
-            Test testRef = testRepo.getReferenceById(safeTestId);
+            Test testRef = testEntity;
 
             for (TestParameter param : params) {
                 if (param.getId() == null) {
@@ -149,7 +154,7 @@ public class ReportService {
     }
 
     @Transactional
-    public void saveResults(List<PatientTestResultDTO> results) {
+    public void saveResults(String labId, List<PatientTestResultDTO> results) {
         if (results == null || results.isEmpty()) {
             return;
         }
@@ -203,7 +208,9 @@ public class ReportService {
 
             Patient patient = patientCache.computeIfAbsent(
                 safePatientId,
-                id -> patientRepo.findById(Objects.requireNonNull(id, "patientId"))
+                id -> patientRepo.findByIdAndLabId(
+                        Objects.requireNonNull(id, "patientId"),
+                        Objects.requireNonNull(labId, "labId"))
                     .orElse(null)
             );
             if (patient == null) {
@@ -212,7 +219,9 @@ public class ReportService {
             }
             Test test = testCache.computeIfAbsent(
                 safeTestId,
-                id -> testRepo.findById(Objects.requireNonNull(id, "testId"))
+                id -> testRepo.findByIdAndLabId(
+                        Objects.requireNonNull(id, "testId"),
+                        Objects.requireNonNull(labId, "labId"))
                     .orElse(null)
             );
             if (test == null) {
@@ -260,14 +269,24 @@ public class ReportService {
         }
 
         Map<GroupKey, List<ReportResult>> existingByGroup = new HashMap<>();
-        for (Long patientId : touchedPatients) {
-            if (patientId == null) {
-                continue;
-            }
-            List<ReportResult> existing = resultRepo.findByPatient_Id(patientId);
-            for (ReportResult result : existing) {
-                if (result == null || result.getTest() == null
-                        || result.getParameter() == null) {
+        Map<Long, List<ReportResult>> existingByPatient = new HashMap<>();
+        List<Long> patientIdList = touchedPatients.stream()
+            .filter(Objects::nonNull)
+            .toList();
+        if (!patientIdList.isEmpty()) {
+            List<ReportResult> allExisting = resultRepo.findByPatient_IdIn(labId, patientIdList);
+            for (ReportResult result : allExisting) {
+                if (result == null || result.getPatient() == null) {
+                    continue;
+                }
+                Long patientId = result.getPatient().getId();
+                if (patientId == null) {
+                    continue;
+                }
+                existingByPatient
+                    .computeIfAbsent(patientId, k -> new ArrayList<>())
+                    .add(result);
+                if (result.getTest() == null || result.getParameter() == null) {
                     continue;
                 }
                 Long testId = result.getTest().getId();
@@ -350,14 +369,14 @@ public class ReportService {
         }
 
         // Backfill defaults for any blank results on the same patients.
-        if (!touchedPatients.isEmpty()) {
+        if (!touchedPatients.isEmpty() && !existingByPatient.isEmpty()) {
             List<ReportResult> defaultsToSave = new ArrayList<>();
             for (Long patientId : touchedPatients) {
                 if (patientId == null) {
                     continue;
                 }
                 List<ReportResult> existing =
-                    resultRepo.findByPatient_Id(patientId);
+                    existingByPatient.getOrDefault(patientId, List.of());
                 for (ReportResult result : existing) {
                     if (result == null || !isBlank(result.getResultValue())) {
                         continue;
@@ -378,8 +397,10 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<PatientTestSelectionDTO> getSelectedTests(@NonNull Long patientId) {
+    public List<PatientTestSelectionDTO> getSelectedTests(@NonNull String labId,
+                                                         @NonNull Long patientId) {
         List<ReportResult> results = resultRepo.findByPatient_Id(
+            Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(patientId, "patientId"));
         Set<Long> testIds = results.stream()
             .map(r -> r.getTest() == null ? null : r.getTest().getId())
@@ -402,8 +423,10 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<PatientTestResultDTO> getResults(@NonNull Long patientId) {
+    public List<PatientTestResultDTO> getResults(@NonNull String labId,
+                                                 @NonNull Long patientId) {
         List<ReportResult> results = resultRepo.findByPatient_Id(
+            Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(patientId, "patientId"));
         Map<Long, Integer> paramCount = new HashMap<>();
 

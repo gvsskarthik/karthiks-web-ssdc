@@ -21,19 +21,28 @@ public class DoctorService {
         this.patientRepo = patientRepo;
     }
 
-    public @NonNull Doctor saveDoctor(@NonNull Doctor doctor) {
+    public @NonNull Doctor saveDoctor(@NonNull String labId,
+                                      @NonNull Doctor doctor) {
+        doctor.setLabId(Objects.requireNonNull(labId, "labId"));
         return Objects.requireNonNull(doctorRepo.save(doctor), "saved doctor");
     }
 
-    public List<Doctor> getAllDoctors() {
+    public List<Doctor> getAllDoctors(@NonNull String labId) {
         // Ordered by name for consistent lists.
-        return doctorRepo.findAllByOrderByNameAsc();
+        return doctorRepo.findByLabIdOrderByNameAsc(
+            Objects.requireNonNull(labId, "labId"));
     }
 
-    public void deleteDoctor(@NonNull Long doctorId) {
-        if (patientRepo.countByDoctor_Id(doctorId) > 0) {
+    public void deleteDoctor(@NonNull String labId,
+                             @NonNull Long doctorId) {
+        Doctor doctor = doctorRepo.findByIdAndLabId(
+            Objects.requireNonNull(doctorId, "doctorId"),
+            Objects.requireNonNull(labId, "labId")
+        ).orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
+
+        if (patientRepo.countByLabIdAndDoctor_Id(labId, doctor.getId()) > 0) {
             throw new IllegalStateException("Doctor has assigned patients");
         }
-        doctorRepo.deleteById(doctorId);
+        doctorRepo.deleteById(doctor.getId());
     }
 }

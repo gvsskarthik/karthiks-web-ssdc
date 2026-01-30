@@ -1,5 +1,6 @@
 package com.ssdc.ssdclabs.controller;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -27,22 +28,26 @@ public class DoctorController {
 
     // SAVE doctor
     @PostMapping
-    public @NonNull Doctor addDoctor(@RequestBody @NonNull Doctor doctor) {
-        return doctorService.saveDoctor(doctor);
+    public @NonNull Doctor addDoctor(@RequestBody @NonNull Doctor doctor,
+                                     @NonNull Principal principal) {
+        return doctorService.saveDoctor(principal.getName(), doctor);
     }
 
     // GET all doctors
     @GetMapping
-    public List<Doctor> getAllDoctors() {
-        return doctorService.getAllDoctors();
+    public List<Doctor> getAllDoctors(@NonNull Principal principal) {
+        return doctorService.getAllDoctors(principal.getName());
     }
 
     // DELETE doctor
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDoctor(@PathVariable @NonNull Long id) {
+    public ResponseEntity<?> deleteDoctor(@PathVariable @NonNull Long id,
+                                          @NonNull Principal principal) {
         try {
-            doctorService.deleteDoctor(id);
+            doctorService.deleteDoctor(principal.getName(), id);
             return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (IllegalStateException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }

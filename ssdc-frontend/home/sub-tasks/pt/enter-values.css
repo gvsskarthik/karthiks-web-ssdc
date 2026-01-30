@@ -81,19 +81,22 @@ th {
 }
 
 .small-btn.add-line-btn,
-.small-btn.remove-line-btn {
+.small-btn.remove-line-row-btn {
   margin-top: 8px;
 }
 
-.small-btn.remove-line-btn {
+.small-btn.remove-line-row-btn{
+  margin-top: 8px;
   margin-left: 8px;
-  background: var(--theme-danger);
+  background: var(--theme-danger) !important;
+  color: #fff;
   box-shadow: none;
 }
 
-.small-btn.remove-line-btn:hover {
+.small-btn.remove-line-row-btn:hover{
   filter: brightness(0.95);
 }
+
 
 .normal {
   font-size: 12px;

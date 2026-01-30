@@ -3,6 +3,7 @@ package com.ssdc.ssdclabs.controller;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.security.Principal;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
@@ -35,19 +36,20 @@ public class TestController {
 
     /* ================= ADMIN : GET ALL TESTS ================= */
     @GetMapping
-    public List<TestViewDTO> getAll() {
-        return testService.getAllTests();
+    public List<TestViewDTO> getAll(@NonNull Principal principal) {
+        return testService.getAllTests(principal.getName());
     }
 
     /* ================= STAFF / PATIENT : ACTIVE TESTS ================= */
     @GetMapping("/active")
-    public List<TestViewDTO> getActive() {
-        return testService.getActiveTests();
+    public List<TestViewDTO> getActive(@NonNull Principal principal) {
+        return testService.getActiveTests(principal.getName());
     }
 
     /* ================= CREATE TEST ================= */
     @PostMapping
-    public ResponseEntity<?> save(@RequestBody @NonNull TestPayload test) {
+    public ResponseEntity<?> save(@RequestBody @NonNull TestPayload test,
+                                  @NonNull Principal principal) {
         String testName = trimToNull(test.testName);
         if (testName == null) {
             return ResponseEntity.badRequest().body("Test name is required.");
@@ -68,29 +70,19 @@ public class TestController {
         test.shortcut = shortcut;
         test.category = category;
 
-        if (repo.existsByShortcutIgnoreCase(shortcut)) {
+        if (repo.existsByLabIdAndShortcutIgnoreCase(principal.getName(), shortcut)) {
             return ResponseEntity.badRequest().body("Shortcut already exists.");
         }
 
-        return ResponseEntity.ok(testService.createTest(test));
+        return ResponseEntity.ok(testService.createTest(principal.getName(), test));
     }
 
     /* ================= UPDATE TEST ================= */
     @PutMapping("/{id}")
     public ResponseEntity<TestViewDTO> update(
             @PathVariable @NonNull Long id,
-            @RequestBody @NonNull TestPayload incoming) {
-
-        // #region agent log
-        try {
-            java.nio.file.Files.writeString(
-                java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
-                "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H1\",\"location\":\"TestController.update\",\"message\":\"update called\",\"data\":{\"id\":" + id + "},\"timestamp\":" + System.currentTimeMillis() + "}\n",
-                java.nio.file.StandardOpenOption.CREATE,
-                java.nio.file.StandardOpenOption.APPEND
-            );
-        } catch (Exception ignored) {}
-        // #endregion
+            @RequestBody @NonNull TestPayload incoming,
+            @NonNull Principal principal) {
 
         if (incoming.testName != null && trimToNull(incoming.testName) == null) {
             return ResponseEntity.badRequest().build();
@@ -111,25 +103,16 @@ public class TestController {
 
         final String shortcutValue = shortcut;
         if (shortcutValue != null
-                && repo.existsByShortcutIgnoreCase(shortcutValue)
-                && repo.findById(id)
+                && repo.existsByLabIdAndShortcutIgnoreCase(principal.getName(), shortcutValue)
+                && repo.findByIdAndLabId(id, principal.getName())
                        .map(t -> !shortcutValue.equalsIgnoreCase(t.getShortcut()))
                        .orElse(true)) {
-            // #region agent log
-            try {
-                java.nio.file.Files.writeString(
-                    java.nio.file.Path.of("/srv/ssdc/.cursor/debug.log"),
-                    "{\"sessionId\":\"debug-session\",\"runId\":\"pre-fix\",\"hypothesisId\":\"H2\",\"location\":\"TestController.update\",\"message\":\"shortcut conflict\",\"data\":{\"id\":" + id + "},\"timestamp\":" + System.currentTimeMillis() + "}\n",
-                    java.nio.file.StandardOpenOption.CREATE,
-                    java.nio.file.StandardOpenOption.APPEND
-                );
-            } catch (Exception ignored) {}
-            // #endregion
             return ResponseEntity.badRequest().build();
         }
 
         return ResponseEntity.ok(
             testService.updateTest(
+                Objects.requireNonNull(principal.getName(), "labId"),
                 Objects.requireNonNull(id, "id"),
                 Objects.requireNonNull(incoming, "incoming")
             )
@@ -140,26 +123,28 @@ public class TestController {
     @PutMapping("/{id}/active")
     public ResponseEntity<?> updateActive(
             @PathVariable @NonNull Long id,
-            @RequestBody @NonNull Map<String, Boolean> body) {
+            @RequestBody @NonNull Map<String, Boolean> body,
+            @NonNull Principal principal) {
 
         Boolean active = Objects.requireNonNull(body.get("active"), "active");
-        testService.updateActive(id, active);
+        testService.updateActive(principal.getName(), id, active);
 
         return ResponseEntity.ok().build();
     }
 
     /* ================= DELETE TEST (SAFE) ================= */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable @NonNull Long id) {
+    public ResponseEntity<?> delete(@PathVariable @NonNull Long id,
+                                    @NonNull Principal principal) {
 
         // 🔒 Block delete if used in report results
-        if (repo.isTestUsed(Objects.requireNonNull(id, "id"))) {
+        if (repo.isTestUsed(principal.getName(), Objects.requireNonNull(id, "id"))) {
             return ResponseEntity
                     .badRequest()
                     .body("❌ Cannot delete test. It is already used in reports.");
         }
 
-        testService.deleteTest(id);
+        testService.deleteTest(principal.getName(), id);
         return ResponseEntity.ok().build();
     }
 
