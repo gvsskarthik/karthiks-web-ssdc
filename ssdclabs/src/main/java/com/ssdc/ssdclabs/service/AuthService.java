@@ -212,10 +212,90 @@ public class AuthService {
         return true;
     }
 
+    public void requestPasswordReset(String labId) {
+        String safeLabId = normalizeLabId(labId);
+        if (safeLabId == null) {
+            throw new IllegalArgumentException("labId is required");
+        }
+        if (!mailService.isEnabled()) {
+            throw new IllegalStateException("Email not configured");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElseThrow(() -> new IllegalArgumentException("Lab not found"));
+        String email = trimToNull(lab.getEmail());
+        if (email == null) {
+            throw new IllegalStateException("No email configured for this lab");
+        }
+
+        OffsetDateTime lastSent = lab.getPasswordResetSentAt();
+        if (lastSent != null && lastSent.isAfter(OffsetDateTime.now().minusSeconds(60))) {
+            throw new IllegalStateException("Please wait before requesting again");
+        }
+        Integer count = lab.getPasswordResetSendCount();
+        int nextCount = count == null ? 1 : count + 1;
+        if (nextCount > 10) {
+            throw new IllegalStateException("Too many requests");
+        }
+
+        String token = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+        lab.setPasswordResetTokenHash(sha256Hex(token));
+        lab.setPasswordResetExpiresAt(OffsetDateTime.now().plusMinutes(30));
+        lab.setPasswordResetSentAt(OffsetDateTime.now());
+        lab.setPasswordResetSendCount(nextCount);
+        labRepo.save(lab);
+
+        String link = buildResetLink(lab.getLabId(), token);
+        mailService.send(
+            email,
+            "Reset your SSDC Labs password",
+            "Hello " + lab.getLabName() + ",\n\n"
+                + "Click this link to reset your password:\n"
+                + link + "\n\n"
+                + "This link expires in 30 minutes.\n"
+        );
+    }
+
+    public boolean resetPassword(String labId, String token, String newPassword) {
+        String safeLabId = normalizeLabId(labId);
+        String tokenValue = trimToNull(token);
+        String password = trimToNull(newPassword);
+        if (safeLabId == null || tokenValue == null || password == null) {
+            return false;
+        }
+        if (password.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElse(null);
+        if (lab == null) {
+            return false;
+        }
+        OffsetDateTime expires = lab.getPasswordResetExpiresAt();
+        if (expires == null || expires.isBefore(OffsetDateTime.now())) {
+            return false;
+        }
+        String hash = lab.getPasswordResetTokenHash();
+        if (hash == null || !hash.equalsIgnoreCase(sha256Hex(tokenValue))) {
+            return false;
+        }
+
+        lab.setPasswordHash(passwordEncoder.encode(password));
+        lab.setPasswordResetTokenHash(null);
+        lab.setPasswordResetExpiresAt(null);
+        labRepo.save(lab);
+        return true;
+    }
+
     private String buildVerifyLink(String labId, String token) {
         String encodedLab = URLEncoder.encode(labId, StandardCharsets.UTF_8);
         String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
         return frontendBaseUrl + "/api/auth/verify-email?labId=" + encodedLab + "&token=" + encodedToken;
+    }
+
+    private String buildResetLink(String labId, String token) {
+        String encodedLab = URLEncoder.encode(labId, StandardCharsets.UTF_8);
+        String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
+        return frontendBaseUrl + "/index.html?reset=1&labId=" + encodedLab + "&token=" + encodedToken;
     }
 
     private String sha256Hex(String value) {

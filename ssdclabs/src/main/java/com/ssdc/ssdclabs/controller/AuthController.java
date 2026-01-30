@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ssdc.ssdclabs.dto.AuthLoginRequest;
 import com.ssdc.ssdclabs.dto.AuthResponse;
+import com.ssdc.ssdclabs.dto.AuthResetPasswordRequest;
 import com.ssdc.ssdclabs.dto.AuthSignupRequest;
 import com.ssdc.ssdclabs.dto.AuthSignupResponse;
 import com.ssdc.ssdclabs.service.AuthService;
@@ -78,5 +79,34 @@ public class AuthController {
         return ResponseEntity.status(302)
             .header("Location", redirect)
             .build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody @NonNull AuthLoginRequest request) {
+        try {
+            authService.requestPasswordReset(request.labId);
+            return ResponseEntity.ok("Reset link sent to email");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("Request failed");
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody @NonNull AuthResetPasswordRequest request) {
+        try {
+            boolean ok = authService.resetPassword(request.labId, request.token, request.newPassword);
+            if (!ok) {
+                return ResponseEntity.status(400).body("Invalid or expired reset link");
+            }
+            return ResponseEntity.ok("Password updated");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("Reset failed");
+        }
     }
 }
