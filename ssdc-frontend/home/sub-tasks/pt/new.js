@@ -43,8 +43,6 @@ setInterval(() => {
 
 let selected = new Set();
 let testInfoMap = new Map();
-let testOrderMap = new Map();
-let testOrderCounter = 0;
 let allTests = [];
 let groups = [];
 let groupMap = new Map();
@@ -474,8 +472,6 @@ function initTests(list, groupList){
 
   allTests = ordered;
   testInfoMap = new Map();
-  testOrderMap = new Map();
-  testOrderCounter = 0;
   groups = incomingGroups;
   groupMap = new Map();
   groupOrderMap = new Map();
@@ -493,9 +489,6 @@ function initTests(list, groupList){
       category: test.category || "",
       cost: Number(test.cost) || 0
     });
-    if (!testOrderMap.has(test.id)) {
-      testOrderMap.set(test.id, testOrderCounter++);
-    }
   });
 
   groups
