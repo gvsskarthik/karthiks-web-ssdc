@@ -33,7 +33,9 @@ public class PatientService {
     }
 
     /* SAVE */
-    public @NonNull Patient savePatient(@NonNull Patient patient) {
+    public @NonNull Patient savePatient(@NonNull String labId,
+                                        @NonNull Patient patient) {
+        patient.setLabId(Objects.requireNonNull(labId, "labId"));
         if (patient.getVisitDate() == null) {
             patient.setVisitDate(LocalDate.now(ZoneId.of("Asia/Kolkata")));
         }
@@ -45,53 +47,65 @@ public class PatientService {
         }
 
         String doctorName = patient.getDoctorName();
-        Doctor doctor = resolveDoctor(doctorName);
+        Doctor doctor = resolveDoctor(labId, doctorName);
         patient.setDoctor(doctor);
         return Objects.requireNonNull(patientRepo.save(patient), "saved patient");
     }
 
     /* FIND BY DATE */
-    public List<Patient> findByDate(@NonNull LocalDate date) {
+    public List<Patient> findByDate(@NonNull String labId,
+                                    @NonNull LocalDate date) {
         // Ordered for recency + stability across reloads.
-        return patientRepo.findByVisitDateOrderByVisitDateDescIdDesc(
+        return patientRepo.findByLabIdAndVisitDateOrderByVisitDateDescIdDesc(
+            Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(date, "date"));
     }
 
     /* SEARCH BY NAME + MOBILE (PARTIAL) */
-    public List<Patient> searchPatients(String name, String mobile) {
+    public List<Patient> searchPatients(@NonNull String labId,
+                                        String name,
+                                        String mobile) {
         String nameQuery = name == null ? "" : name.trim();
         String mobileQuery = mobile == null ? "" : mobile.trim();
 
         if (nameQuery.isEmpty() && mobileQuery.isEmpty()) {
-            return patientRepo.findAllByOrderByVisitDateDescIdDesc();
+            return patientRepo.findByLabIdOrderByVisitDateDescIdDesc(labId);
         }
         if (nameQuery.isEmpty()) {
-            return patientRepo.findByMobileContainingOrderByVisitDateDescIdDesc(
+            return patientRepo.findByLabIdAndMobileContainingOrderByVisitDateDescIdDesc(
+                labId,
                 mobileQuery);
         }
         if (mobileQuery.isEmpty()) {
-            return patientRepo.findByNameContainingIgnoreCaseOrderByVisitDateDescIdDesc(
+            return patientRepo.findByLabIdAndNameContainingIgnoreCaseOrderByVisitDateDescIdDesc(
+                labId,
                 nameQuery);
         }
-        return patientRepo.findByNameContainingIgnoreCaseAndMobileContainingOrderByVisitDateDescIdDesc(
+        return patientRepo.findByLabIdAndNameContainingIgnoreCaseAndMobileContainingOrderByVisitDateDescIdDesc(
+            labId,
             nameQuery,
             mobileQuery);
     }
 
     /* DELETE PATIENT + ALL RELATED DATA */
     @Transactional
-    public void deletePatient(@NonNull Long patientId) {
+    public void deletePatient(@NonNull String labId,
+                              @NonNull Long patientId) {
+        Patient patient = patientRepo.findByIdAndLabId(
+            Objects.requireNonNull(patientId, "patientId"),
+            Objects.requireNonNull(labId, "labId")
+        ).orElseThrow(() -> new IllegalArgumentException("Patient not found"));
 
         // 1️⃣ delete report results
         resultRepo.deleteByPatient_Id(
-            Objects.requireNonNull(patientId, "patientId"));
+            patient.getId());
 
         // 2️⃣ delete patient
         patientRepo.deleteById(
-            Objects.requireNonNull(patientId, "patientId"));
+            patient.getId());
     }
 
-    private Doctor resolveDoctor(String doctorName) {
+    private Doctor resolveDoctor(String labId, String doctorName) {
         if (doctorName == null) {
             return null;
         }
@@ -100,16 +114,18 @@ public class PatientService {
             return null;
         }
         if ("SELF".equalsIgnoreCase(trimmed)) {
-            return doctorRepo.findFirstByNameIgnoreCase(trimmed)
+            return doctorRepo.findFirstByLabIdAndNameIgnoreCase(labId, trimmed)
                 .orElseGet(() -> {
                     Doctor doctor = new Doctor();
+                    doctor.setLabId(labId);
                     doctor.setName("SELF");
                     return doctorRepo.save(doctor);
                 });
         }
-        return doctorRepo.findFirstByNameIgnoreCase(trimmed)
+        return doctorRepo.findFirstByLabIdAndNameIgnoreCase(labId, trimmed)
             .orElseGet(() -> {
                 Doctor doctor = new Doctor();
+                doctor.setLabId(labId);
                 doctor.setName(trimmed);
                 return doctorRepo.save(doctor);
             });

@@ -36,10 +36,10 @@ public class TestGroupService {
         this.testRepo = testRepo;
     }
 
-    public List<TestGroupDetailDTO> getAllGroups() {
+    public List<TestGroupDetailDTO> getAllGroups(String labId) {
         // Ordered by displayOrder, then groupName for stability.
         List<TestGroup> groups =
-            groupRepo.findAllByOrderByDisplayOrderAscGroupNameAsc();
+            groupRepo.findByLabIdOrderByDisplayOrderAscGroupNameAsc(labId);
         if (groups.isEmpty()) {
             return Collections.emptyList();
         }
@@ -83,8 +83,11 @@ public class TestGroupService {
             .collect(Collectors.toList());
     }
 
-    public TestGroupDetailDTO getGroup(@NonNull Long id) {
-        TestGroup group = groupRepo.findById(Objects.requireNonNull(id, "id"))
+    public TestGroupDetailDTO getGroup(@NonNull String labId,
+                                       @NonNull Long id) {
+        TestGroup group = groupRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
             .orElseThrow(() -> new RuntimeException("Group not found"));
         List<Long> testIds = mapRepo.findByGroup_Id(id).stream()
             .map(m -> m.getTest().getId())
@@ -102,21 +105,27 @@ public class TestGroupService {
     }
 
     @Transactional
-    public void updateActive(@NonNull Long id, boolean active) {
-        TestGroup group = groupRepo.findById(Objects.requireNonNull(id, "id"))
+    public void updateActive(@NonNull String labId,
+                             @NonNull Long id,
+                             boolean active) {
+        TestGroup group = groupRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
             .orElseThrow(() -> new RuntimeException("Group not found"));
         group.setActive(active);
         groupRepo.save(group);
     }
 
     @Transactional
-    public String saveGroup(@NonNull TestGroupPayload payload) {
+    public String saveGroup(@NonNull String labId,
+                            @NonNull TestGroupPayload payload) {
         String shortcut = Objects.requireNonNull(payload.shortcut, "shortcut");
-        if (groupRepo.existsByShortcut(shortcut)) {
+        if (groupRepo.existsByLabIdAndShortcutIgnoreCase(labId, shortcut)) {
             throw new RuntimeException("Group shortcut already exists");
         }
 
         TestGroup group = new TestGroup();
+        group.setLabId(Objects.requireNonNull(labId, "labId"));
         group.setGroupName(payload.groupName);
         group.setShortcut(shortcut);
         group.setCost(payload.cost == null ? 0.0 : payload.cost);
@@ -132,14 +141,17 @@ public class TestGroupService {
     }
 
     @Transactional
-    public String updateGroup(@NonNull Long id,
+    public String updateGroup(@NonNull String labId,
+                              @NonNull Long id,
                               @NonNull TestGroupPayload payload) {
-        TestGroup group = groupRepo.findById(Objects.requireNonNull(id, "id"))
+        TestGroup group = groupRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
             .orElseThrow(() -> new RuntimeException("Group not found"));
 
         String shortcut = Objects.requireNonNull(payload.shortcut, "shortcut");
         if (!shortcut.equalsIgnoreCase(group.getShortcut())
-                && groupRepo.existsByShortcut(shortcut)) {
+                && groupRepo.existsByLabIdAndShortcutIgnoreCase(labId, shortcut)) {
             throw new RuntimeException("Group shortcut already exists");
         }
 
@@ -159,9 +171,14 @@ public class TestGroupService {
     }
 
     @Transactional
-    public void deleteGroup(@NonNull Long id) {
-        mapRepo.deleteByGroup_Id(Objects.requireNonNull(id, "id"));
-        groupRepo.deleteById(id);
+    public void deleteGroup(@NonNull String labId,
+                            @NonNull Long id) {
+        TestGroup group = groupRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+        mapRepo.deleteByGroup_Id(group.getId());
+        groupRepo.deleteById(group.getId());
     }
 
     private void saveMappings(TestGroup group, List<Long> testIds) {
@@ -170,8 +187,9 @@ public class TestGroupService {
         }
         int position = 0;
         for (Long testId : testIds) {
-            Test test = testRepo.findById(
-                    Objects.requireNonNull(testId, "testId"))
+            Test test = testRepo.findByIdAndLabId(
+                    Objects.requireNonNull(testId, "testId"),
+                    Objects.requireNonNull(group.getLabId(), "labId"))
                 .orElseThrow(() -> new RuntimeException("Test not found: " + testId));
 
             TestGroupMapping map = new TestGroupMapping();

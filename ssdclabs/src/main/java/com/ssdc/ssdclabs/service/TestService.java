@@ -46,31 +46,36 @@ public class TestService {
     }
 
     @Transactional(readOnly = true)
-    public List<TestViewDTO> getAllTests() {
-        return testRepo.findAllByOrderByIdAsc().stream()
+    public List<TestViewDTO> getAllTests(@NonNull String labId) {
+        return testRepo.findByLabIdOrderByIdAsc(labId).stream()
             .map(this::toView)
             .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<TestViewDTO> getActiveTests() {
-        return testRepo.findByActiveTrueOrderByIdAsc().stream()
+    public List<TestViewDTO> getActiveTests(@NonNull String labId) {
+        return testRepo.findByLabIdAndActiveTrueOrderByIdAsc(labId).stream()
             .map(this::toView)
             .collect(Collectors.toList());
     }
 
     @Transactional
-    public @NonNull TestViewDTO createTest(@NonNull TestPayload payload) {
+    public @NonNull TestViewDTO createTest(@NonNull String labId,
+                                           @NonNull TestPayload payload) {
         Test test = new Test();
+        test.setLabId(Objects.requireNonNull(labId, "labId"));
         applyPayload(test, payload, Collections.emptyList());
         Test saved = testRepo.save(test);
         return toView(saved);
     }
 
     @Transactional
-    public @NonNull TestViewDTO updateTest(@NonNull Long id,
+    public @NonNull TestViewDTO updateTest(@NonNull String labId,
+                                           @NonNull Long id,
                                            @NonNull TestPayload payload) {
-        Test test = testRepo.findById(Objects.requireNonNull(id, "id"))
+        Test test = testRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
             .orElseThrow(() -> new RuntimeException("Test not found"));
         List<TestParameter> existingParams =
             paramRepo.findByTest_IdOrderByIdAsc(test.getId());
@@ -80,16 +85,24 @@ public class TestService {
     }
 
     @Transactional
-    public void updateActive(@NonNull Long id, boolean active) {
-        Test test = testRepo.findById(Objects.requireNonNull(id, "id"))
+    public void updateActive(@NonNull String labId,
+                             @NonNull Long id,
+                             boolean active) {
+        Test test = testRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
             .orElseThrow(() -> new RuntimeException("Test not found"));
         test.setActive(active);
         testRepo.save(test);
     }
 
     @Transactional
-    public void deleteTest(@NonNull Long id) {
-        testRepo.deleteById(Objects.requireNonNull(id, "id"));
+    public void deleteTest(@NonNull String labId, @NonNull Long id) {
+        Test test = testRepo.findByIdAndLabId(
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(labId, "labId"))
+            .orElseThrow(() -> new RuntimeException("Test not found"));
+        testRepo.deleteById(test.getId());
     }
 
     private void applyPayload(Test test,

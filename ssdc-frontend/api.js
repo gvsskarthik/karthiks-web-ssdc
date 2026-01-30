@@ -76,6 +76,7 @@
   const memCache = new Map();
   const inflight = new Map();
   const nativeFetch = window.fetch.bind(window);
+  const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
 
   function canUseStorage() {
     try {
@@ -97,6 +98,35 @@
 
   function isApiUrl(url) {
     return url.indexOf(apiPrefixAbs) === 0;
+  }
+
+  function getAuthToken() {
+    try {
+      if (!window.localStorage) {
+        return null;
+      }
+      const raw = window.localStorage.getItem(AUTH_TOKEN_KEY);
+      const token = raw ? String(raw).trim() : "";
+      return token ? token : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function withAuth(request) {
+    const token = getAuthToken();
+    if (!token) {
+      return request;
+    }
+    try {
+      const headers = new Headers(request.headers || {});
+      if (!headers.has("Authorization")) {
+        headers.set("Authorization", "Bearer " + token);
+      }
+      return new Request(request, { headers });
+    } catch (err) {
+      return request;
+    }
   }
 
   function storageKey(url) {
@@ -203,6 +233,10 @@
     if (!request) {
       return true;
     }
+    // Never serve cached API responses across different logged-in labs/users.
+    if (getAuthToken()) {
+      return true;
+    }
     const cacheMode = init && init.cache;
     if (cacheMode === "no-store" || cacheMode === "reload") {
       return true;
@@ -269,9 +303,10 @@
 
     const method = String(request.method || "GET").toUpperCase();
     const absUrl = toAbsoluteUrl(request.url);
+    const finalRequest = isApiUrl(absUrl) ? withAuth(request) : request;
 
     if (method !== "GET") {
-      return nativeFetch(request).then((response) => {
+      return nativeFetch(finalRequest).then((response) => {
         if (response && response.ok && isApiUrl(absUrl)) {
           clearCache();
         }
@@ -279,8 +314,8 @@
       });
     }
 
-    if (!isApiUrl(absUrl) || shouldBypassCache(request, init)) {
-      return nativeFetch(request);
+    if (!isApiUrl(absUrl) || shouldBypassCache(finalRequest, init)) {
+      return nativeFetch(finalRequest);
     }
 
     const cached = readCache(absUrl);
@@ -291,12 +326,12 @@
         return Promise.resolve(buildResponse(cached, "HIT"));
       }
       if (age <= cacheConfig.staleMs) {
-        revalidate(absUrl, request);
+        revalidate(absUrl, finalRequest);
         return Promise.resolve(buildResponse(cached, "STALE"));
       }
     }
 
-    return nativeFetch(request).then((response) => {
+    return nativeFetch(finalRequest).then((response) => {
       cacheResponse(absUrl, response);
       return response;
     });

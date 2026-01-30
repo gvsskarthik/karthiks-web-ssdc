@@ -10,26 +10,24 @@ import com.ssdc.ssdclabs.model.Test;
 
 public interface TestRepository extends JpaRepository<Test, Long> {
 
-    boolean existsByShortcut(String shortcut);
+    boolean existsByLabIdAndShortcutIgnoreCase(String labId, String shortcut);
 
-    boolean existsByShortcutIgnoreCase(String shortcut);
-
-    @SuppressWarnings("unused")
-    List<Test> findByActiveTrue();
+    java.util.Optional<Test> findByIdAndLabId(Long id, String labId);
 
     // Ordered by id for stable insertion order.
-    List<Test> findAllByOrderByIdAsc();
+    List<Test> findByLabIdOrderByIdAsc(String labId);
 
     // Ordered by id for stable insertion order.
-    List<Test> findByActiveTrueOrderByIdAsc();
+    List<Test> findByLabIdAndActiveTrueOrderByIdAsc(String labId);
 
     /* ================= SAFE DELETE CHECK ================= */
     @Query("""
         SELECT COUNT(r) > 0
         FROM ReportResult r
         WHERE r.test.id = :testId
+          AND r.patient.labId = :labId
     """)
-    boolean isTestUsed(@Param("testId") Long testId);
+    boolean isTestUsed(@Param("labId") String labId, @Param("testId") Long testId);
 
  
 }

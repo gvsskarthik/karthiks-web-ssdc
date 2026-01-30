@@ -37,6 +37,7 @@ class ReportServiceTest {
 
         Patient patient = new Patient();
         patient.setId(1L);
+        patient.setLabId("ssdc");
 
         com.ssdc.ssdclabs.model.Test test = new com.ssdc.ssdclabs.model.Test();
         test.setId(10L);
@@ -54,10 +55,10 @@ class ReportServiceTest {
         row.setSubTest("");
         row.setResultValue("13\n14\n15");
 
-        when(resultRepo.findByPatient_Id(1L)).thenReturn(List.of(row));
+        when(resultRepo.findByPatient_Id("ssdc", 1L)).thenReturn(List.of(row));
         when(paramRepo.findByTest_IdOrderByIdAsc(10L)).thenReturn(List.of(param));
 
-        List<PatientTestResultDTO> out = service.getResults(1L);
+        List<PatientTestResultDTO> out = service.getResults("ssdc", 1L);
 
         assertEquals(3, out.size());
         assertEquals(null, out.get(0).subTest);
@@ -74,6 +75,7 @@ class ReportServiceTest {
 
         Patient patient = new Patient();
         patient.setId(1L);
+        patient.setLabId("ssdc");
 
         com.ssdc.ssdclabs.model.Test test = new com.ssdc.ssdclabs.model.Test();
         test.setId(20L);
@@ -91,10 +93,10 @@ class ReportServiceTest {
         row.setSubTest("");
         row.setResultValue("50\n55");
 
-        when(resultRepo.findByPatient_Id(1L)).thenReturn(List.of(row));
+        when(resultRepo.findByPatient_Id("ssdc", 1L)).thenReturn(List.of(row));
         when(paramRepo.findByTest_IdOrderByIdAsc(20L)).thenReturn(List.of(param, new TestParameter()));
 
-        List<PatientTestResultDTO> out = service.getResults(1L);
+        List<PatientTestResultDTO> out = service.getResults("ssdc", 1L);
 
         assertEquals(2, out.size());
         assertEquals("Neutrophils", out.get(0).subTest);
@@ -109,6 +111,7 @@ class ReportServiceTest {
 
         Patient patient = new Patient();
         patient.setId(1L);
+        patient.setLabId("ssdc");
 
         com.ssdc.ssdclabs.model.Test test = new com.ssdc.ssdclabs.model.Test();
         test.setId(10L);
@@ -134,10 +137,10 @@ class ReportServiceTest {
         lineRow.setSubTest("Haemoglobin::2");
         lineRow.setResultValue("old2");
 
-        when(patientRepo.findById(1L)).thenReturn(Optional.of(patient));
-        when(testRepo.findById(10L)).thenReturn(Optional.of(test));
+        when(patientRepo.findByIdAndLabId(1L, "ssdc")).thenReturn(Optional.of(patient));
+        when(testRepo.findByIdAndLabId(10L, "ssdc")).thenReturn(Optional.of(test));
         when(paramRepo.findByTest_IdOrderByIdAsc(10L)).thenReturn(List.of(param));
-        when(resultRepo.findByPatient_Id(1L)).thenReturn(List.of(base, lineRow));
+        when(resultRepo.findByPatient_IdIn("ssdc", List.of(1L))).thenReturn(List.of(base, lineRow));
         when(resultRepo.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         List<PatientTestResultDTO> incoming = List.of(
@@ -146,7 +149,7 @@ class ReportServiceTest {
             new PatientTestResultDTO(null, 1L, 10L, "Haemoglobin::extra-1", "15")
         );
 
-        service.saveResults(incoming);
+        service.saveResults("ssdc", incoming);
 
         ArgumentCaptor<List> saveCaptor = ArgumentCaptor.forClass(List.class);
         verify(resultRepo).saveAll(saveCaptor.capture());

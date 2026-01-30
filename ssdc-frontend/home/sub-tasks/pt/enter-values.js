@@ -146,26 +146,8 @@ function normalizeKey(value){
   return (value || "").trim().toLowerCase();
 }
 
-function normalizeCategoryKey(value){
-  return String(value == null ? "" : value)
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-function categoryPriority(value){
-  const key = normalizeCategoryKey(value);
-  if (key.includes("hematology")) return 0;
-  if (key.includes("biochemistry")) return 1;
-  if (key.includes("serology")) return 2;
-  if (key.includes("microbiology")) return 3;
-  if (key.includes("clinical pathology") && key.includes("urine")) return 4;
-  if (key.includes("clinical pathology")) return 4;
-  if (key.includes("endocrinology")) return 5;
-  if (key.includes("thyroid")) return 5;
-  if (key.includes("hormone")) return 5;
-  return 99;
-}
+const categoryPriority =
+  window.SSDC?.utils?.categoryPriority || ((_) => 99);
 
 function makeGroupKey(testId, baseName){
   const raw = normalizeKey(baseName) || "value";
@@ -536,13 +518,7 @@ function renderTests(tests) {
                 data-valuetype="${escapeAttr(singleParam.valueType || '')}"
                 data-group="${escapeAttr(groupKey)}"
               >Add</button>
-              <button
-                type="button"
-                class="small-btn remove-line-btn"
-                data-testid="${test.id}"
-                data-group="${escapeAttr(groupKey)}"
-                style="display:none;"
-              >Remove</button>` : ""}
+              ` : ""}
           </td>
           <td>${escapeHtml(unit)}</td>
           <td class="normal">
@@ -571,7 +547,14 @@ function renderTests(tests) {
           body.innerHTML += `
             <tr data-testgroup="${escapeAttr(test.id)}" data-line-group="${escapeAttr(groupKey)}">
               <td></td>
-              <td>${extraInput}</td>
+              <td>
+                ${extraInput}
+                <button
+                  type="button"
+                  class="small-btn remove-line-row-btn"
+                  data-group="${escapeAttr(groupKey)}"
+                >Remove</button>
+              </td>
               <td>${escapeHtml(unit)}</td>
               <td class="normal">${formatHtmlLines(normalText)}</td>
             </tr>`;
@@ -605,7 +588,14 @@ function renderTests(tests) {
           body.innerHTML += `
             <tr data-testgroup="${escapeAttr(test.id)}" data-line-group="${escapeAttr(groupKey)}">
               <td></td>
-              <td>${extraInput}</td>
+              <td>
+                ${extraInput}
+                <button
+                  type="button"
+                  class="small-btn remove-line-row-btn"
+                  data-group="${escapeAttr(groupKey)}"
+                >Remove</button>
+              </td>
               <td>${escapeHtml(unit)}</td>
               <td class="normal">${formatHtmlLines(normalText)}</td>
             </tr>`;
@@ -697,6 +687,12 @@ function renderTests(tests) {
             <td class="param-indent">${escapeHtml(slot.label)}</td>
             <td>
               ${inputHtml}
+              ${param.allowNewLines && slotIndex > 0 ? `
+                <button
+                  type="button"
+                  class="small-btn remove-line-row-btn"
+                  data-group="${escapeAttr(groupKey)}"
+                >Remove</button>` : ""}
               ${param.allowNewLines && slotIndex === 0 ? `
                 <button
                   type="button"
@@ -708,13 +704,7 @@ function renderTests(tests) {
                   data-valuetype="${escapeAttr(param.valueType || '')}"
                   data-group="${escapeAttr(groupKey)}"
                 >Add</button>
-                <button
-                  type="button"
-                  class="small-btn remove-line-btn"
-                  data-testid="${test.id}"
-                  data-group="${escapeAttr(groupKey)}"
-                  style="display:none;"
-                >Remove</button>` : ""}
+                ` : ""}
             </td>
             <td>${escapeHtml(unitText)}</td>
             <td class="normal">${formatHtmlLines(normalText)}</td>
@@ -749,23 +739,17 @@ function findDynamicRowsInGroup(body, groupKey){
 }
 
 function handleAddLineClick(event) {
-  const removeBtn = event.target.closest(".remove-line-btn");
-  if (removeBtn) {
+  const removeRowBtn = event.target.closest(".remove-line-row-btn");
+  if (removeRowBtn) {
     const body = document.getElementById("resultBody");
-    if (!body || !body.contains(removeBtn)) {
+    if (!body || !body.contains(removeRowBtn)) {
       return;
     }
-    const groupKey = removeBtn.dataset.group || "";
-    if (!groupKey) {
-      return;
-    }
-    const dynamicRows = findDynamicRowsInGroup(body, groupKey);
-    const last = dynamicRows[dynamicRows.length - 1];
-    if (last) {
-      last.remove();
-    }
-    if (findDynamicRowsInGroup(body, groupKey).length === 0) {
-      removeBtn.style.display = "none";
+    const row = removeRowBtn.closest("tr");
+    if (row) {
+      const groupKey = removeRowBtn.dataset.group || row.dataset.lineGroup || "";
+      row.remove();
+      void groupKey;
     }
     return;
   }
@@ -837,6 +821,11 @@ function handleAddLineClick(event) {
       <td class="${hasParamIndent ? "param-indent" : ""}"></td>
       <td>
         ${inputHtml}
+        <button
+          type="button"
+          class="small-btn remove-line-row-btn"
+          data-group="${escapeAttr(groupKey)}"
+        >Remove</button>
       </td>
       <td>${escapeHtml(unit)}</td>
       <td class="normal">
@@ -847,11 +836,6 @@ function handleAddLineClick(event) {
 
   const insertAfter = findLastRowInGroup(body, groupKey) || row;
   insertAfter.insertAdjacentHTML("afterend", newRowHtml);
-
-  const remove = btn.parentElement?.querySelector(".remove-line-btn");
-  if (remove) {
-    remove.style.display = "";
-  }
 }
 
 function markTouched(event) {
@@ -891,11 +875,25 @@ function saveOnly() {
     selectedIds = [];
   }
   if (!Array.isArray(selectedIds) || !selectedIds.length) {
-    selectedIds = [...new Set(
-      [...document.querySelectorAll(".order-input")]
-        .map(i => Number(i?.dataset?.testid))
-        .filter(n => Number.isFinite(n) && n > 0)
-    )];
+    if (Array.isArray(selectedTestsCache) && selectedTestsCache.length) {
+      selectedIds = selectedTestsCache
+        .map(t => Number(t?.id))
+        .filter(n => Number.isFinite(n) && n > 0);
+    } else {
+      selectedIds = [...new Set(
+        [...document.querySelectorAll(".order-input")]
+          .map(i => Number(i?.dataset?.testid))
+          .filter(n => Number.isFinite(n) && n > 0)
+      )];
+    }
+  }
+
+  // Ensure reports.html always knows the selected test list, even if the initial
+  // /patient-tests/{id} fetch hasn't completed yet.
+  try {
+    localStorage.setItem("selectedTests", JSON.stringify(selectedIds || []));
+  } catch (e) {
+    // ignore storage errors
   }
 
   const finishSave = () => {

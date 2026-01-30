@@ -1,20 +1,35 @@
 package com.ssdc.ssdclabs.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
-@Table(name = "test_groups")
+@Table(
+    name = "test_groups",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"lab_id", "shortcut"}),
+    indexes = {
+        @Index(name = "idx_test_groups_lab_active", columnList = "lab_id, active"),
+        @Index(name = "idx_test_groups_lab_shortcut", columnList = "lab_id, shortcut")
+    }
+)
 public class TestGroup {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @JsonIgnore
+    @Column(name = "lab_id", length = 6, nullable = false)
+    private String labId;
 
     @Column(name = "group_name", nullable = false)
     private String groupName;
@@ -25,7 +40,7 @@ public class TestGroup {
     @Column
     private String category;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String shortcut;
 
     @Column(name = "display_order", nullable = false)
@@ -36,6 +51,9 @@ public class TestGroup {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getLabId() { return labId; }
+    public void setLabId(String labId) { this.labId = labId; }
 
     public String getGroupName() { return groupName; }
     public void setGroupName(String groupName) { this.groupName = groupName; }

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.ssdc.ssdclabs.model.Patient;
 
@@ -18,38 +19,48 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     /* Calendar date filter */
     // Ordered by most recent visit first, then newest id for stability.
-    List<Patient> findByVisitDateOrderByVisitDateDescIdDesc(LocalDate visitDate);
+    List<Patient> findByLabIdAndVisitDateOrderByVisitDateDescIdDesc(
+            String labId,
+            LocalDate visitDate);
 
     /* Doctor filter */
     // Ordered for reports: latest visit first, then newest id.
-    List<Patient> findByDoctor_IdOrderByVisitDateDescIdDesc(Long doctorId);
+    List<Patient> findByLabIdAndDoctor_IdOrderByVisitDateDescIdDesc(
+            String labId,
+            Long doctorId);
 
     // Ordered for reports: latest visit first, then newest id.
-    List<Patient> findByDoctorIsNullOrderByVisitDateDescIdDesc();
+    List<Patient> findByLabIdAndDoctorIsNullOrderByVisitDateDescIdDesc(String labId);
 
     // Ordered for consistent listings.
-    List<Patient> findAllByOrderByVisitDateDescIdDesc();
+    List<Patient> findByLabIdOrderByVisitDateDescIdDesc(String labId);
 
     // Fetch doctor data to avoid lazy-loading issues in summaries.
     @Query("""
         SELECT p
         FROM Patient p
         LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
         ORDER BY p.visitDate DESC, p.id DESC
     """)
-    List<Patient> findAllWithDoctorOrderByVisitDateDescIdDesc();
+    List<Patient> findAllWithDoctorOrderByVisitDateDescIdDesc(@Param("labId") String labId);
 
     /* 🔍 Mobile search (PARTIAL match) */
     // Ordered by most recent visit first, then newest id.
-    List<Patient> findByMobileContainingOrderByVisitDateDescIdDesc(String mobile);
+    List<Patient> findByLabIdAndMobileContainingOrderByVisitDateDescIdDesc(
+            String labId,
+            String mobile);
 
     /* 🔍 Name search (PARTIAL match, ignore case) */
     // Ordered by most recent visit first, then newest id.
-    List<Patient> findByNameContainingIgnoreCaseOrderByVisitDateDescIdDesc(String name);
+    List<Patient> findByLabIdAndNameContainingIgnoreCaseOrderByVisitDateDescIdDesc(
+            String labId,
+            String name);
 
     /* 🔍 Name + mobile search (PARTIAL match) */
     // Ordered by most recent visit first, then newest id.
-    List<Patient> findByNameContainingIgnoreCaseAndMobileContainingOrderByVisitDateDescIdDesc(
+    List<Patient> findByLabIdAndNameContainingIgnoreCaseAndMobileContainingOrderByVisitDateDescIdDesc(
+            String labId,
             String name,
             String mobile);
 
@@ -61,10 +72,32 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
                COALESCE(SUM(p.amount), 0) AS totalBill
         FROM Patient p
         LEFT JOIN p.doctor d
+        WHERE p.labId = :labId
         GROUP BY d.id, d.name
         ORDER BY totalBill DESC
     """)
-    java.util.List<DoctorBillAggregate> findDoctorBillAggregatesOrdered();
+    java.util.List<DoctorBillAggregate> findDoctorBillAggregatesOrdered(@Param("labId") String labId);
 
-    long countByDoctor_Id(Long doctorId);
+    long countByLabIdAndDoctor_Id(String labId, Long doctorId);
+
+    @Query("""
+        SELECT
+            COALESCE(SUM(p.amount), 0),
+            COALESCE(SUM(p.discount), 0),
+            COALESCE(SUM(
+                CASE
+                    WHEN d IS NULL OR LOWER(d.name) = 'self' THEN 0
+                    ELSE p.amount * (COALESCE(d.commissionRate, :defaultRate) / 100.0)
+                END
+            ), 0)
+        FROM Patient p
+        LEFT JOIN p.doctor d
+        WHERE p.labId = :labId
+    """)
+    Object[] findAccountsSummaryNumbers(
+            @Param("labId") String labId,
+            @Param("defaultRate") double defaultRate
+    );
+
+    java.util.Optional<Patient> findByIdAndLabId(Long id, String labId);
 }

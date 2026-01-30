@@ -1,6 +1,7 @@
 package com.ssdc.ssdclabs.controller;
 
 import java.util.List;
+import java.security.Principal;
 
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,29 +28,33 @@ public class PatientTestController {
     // SAVE SELECTED TESTS
     @PostMapping("/select")
     public void saveSelectedTests(
-            @RequestBody @NonNull List<PatientTestSelectionDTO> tests) {
-        reportService.saveSelectedTests(tests);
+            @RequestBody @NonNull List<PatientTestSelectionDTO> tests,
+            @NonNull Principal principal) {
+        reportService.saveSelectedTests(principal.getName(), tests);
     }
 
     // SAVE RESULTS
     @PostMapping("/results")
     public void saveResults(
-            @RequestBody @NonNull List<PatientTestResultDTO> results) {
-        reportService.saveResults(results);
+            @RequestBody @NonNull List<PatientTestResultDTO> results,
+            @NonNull Principal principal) {
+        reportService.saveResults(principal.getName(), results);
     }
 
     // LOAD TESTS FOR PATIENT
     @GetMapping("/{patientId}")
     public List<PatientTestSelectionDTO> getTests(
-            @PathVariable @NonNull Long patientId) {
-        return reportService.getSelectedTests(patientId);
+            @PathVariable @NonNull Long patientId,
+            @NonNull Principal principal) {
+        return reportService.getSelectedTests(principal.getName(), patientId);
     }
 
     // LOAD RESULTS FOR PATIENT
     @GetMapping("/results/{patientId}")
     public List<PatientTestResultDTO> getResults(
-            @PathVariable @NonNull Long patientId) {
-        return reportService.getResults(patientId);
+            @PathVariable @NonNull Long patientId,
+            @NonNull Principal principal) {
+        return reportService.getResults(principal.getName(), patientId);
     }
 
 }

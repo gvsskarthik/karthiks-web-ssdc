@@ -36,43 +36,27 @@ public class AccountsService {
         this.defaultCommissionRate = defaultCommissionRate;
     }
 
-    public @NonNull AccountsSummaryDTO getSummary() {
-        List<Patient> patients = patientRepo.findAllWithDoctorOrderByVisitDateDescIdDesc();
-
-        double totalRevenue = patients.stream()
-            .mapToDouble(this::safeAmount)
-            .sum();
-
-        double totalDiscount = patients.stream()
-            .mapToDouble(this::safeDiscount)
-            .sum();
-
-        double totalCommission = patients.stream()
-            .mapToDouble(p -> {
-                String doctorName = resolveDoctorName(p);
-                return calculateCommission(
-                    safeAmount(p),
-                    commissionRateFor(p.getDoctor(), doctorName)
-                );
-            })
-            .sum();
-
-        double netProfit = totalRevenue - totalCommission;
-
-        return new AccountsSummaryDTO(
-            totalRevenue,
-            totalDiscount,
-            totalCommission,
-            netProfit
+    public @NonNull AccountsSummaryDTO getSummary(@NonNull String labId) {
+        Object[] row = patientRepo.findAccountsSummaryNumbers(
+            Objects.requireNonNull(labId, "labId"),
+            defaultCommissionRate
         );
+
+        double totalRevenue = toDouble(row, 0);
+        double totalDiscount = toDouble(row, 1);
+        double totalCommission = toDouble(row, 2);
+        double netProfit = totalRevenue - totalDiscount - totalCommission;
+
+        return new AccountsSummaryDTO(totalRevenue, totalDiscount, totalCommission, netProfit);
     }
 
-    public @NonNull List<AccountsDoctorDTO> getDoctorSummaries() {
+    public @NonNull List<AccountsDoctorDTO> getDoctorSummaries(@NonNull String labId) {
         // Aggregated totals are ordered by totalBill DESC in the query.
         List<PatientRepository.DoctorBillAggregate> aggregates =
-            patientRepo.findDoctorBillAggregatesOrdered();
+            patientRepo.findDoctorBillAggregatesOrdered(
+                Objects.requireNonNull(labId, "labId"));
 
-        List<Doctor> doctors = doctorRepo.findAllByOrderByNameAsc();
+        List<Doctor> doctors = doctorRepo.findByLabIdOrderByNameAsc(labId);
         Map<Long, Doctor> doctorById = new HashMap<>();
         for (Doctor doctor : doctors) {
             if (doctor.getId() != null) {
@@ -125,20 +109,22 @@ public class AccountsService {
     }
 
     public @NonNull List<AccountsDoctorDetailDTO> getDoctorDetails(
+            @NonNull String labId,
             @NonNull String doctorId) {
-        DoctorSelection selection = resolveDoctorSelection(doctorId);
+        DoctorSelection selection = resolveDoctorSelection(labId, doctorId);
         if (selection == null) {
             return new ArrayList<>();
         }
 
         Doctor doctor = selection.id() == null
             ? null
-            : doctorRepo.findById(selection.id()).orElse(null);
+            : doctorRepo.findByIdAndLabId(selection.id(), labId).orElse(null);
         double rate = commissionRateFor(doctor, selection.name());
         // Ordered by report date desc, then report id desc.
         List<Patient> patients = selection.id() == null
-            ? patientRepo.findByDoctorIsNullOrderByVisitDateDescIdDesc()
-            : patientRepo.findByDoctor_IdOrderByVisitDateDescIdDesc(
+            ? patientRepo.findByLabIdAndDoctorIsNullOrderByVisitDateDescIdDesc(labId)
+            : patientRepo.findByLabIdAndDoctor_IdOrderByVisitDateDescIdDesc(
+                labId,
                 selection.id());
 
         List<AccountsDoctorDetailDTO> details = new ArrayList<>();
@@ -165,8 +151,10 @@ public class AccountsService {
         return details;
     }
 
-    public @NonNull List<AccountsDoctorDetailDTO> getAllDetails() {
-        List<Patient> patients = patientRepo.findAllWithDoctorOrderByVisitDateDescIdDesc();
+    public @NonNull List<AccountsDoctorDetailDTO> getAllDetails(@NonNull String labId) {
+        List<Patient> patients = patientRepo.findAllWithDoctorOrderByVisitDateDescIdDesc(
+            Objects.requireNonNull(labId, "labId")
+        );
         List<AccountsDoctorDetailDTO> details = new ArrayList<>();
 
         for (Patient patient : patients) {
@@ -256,7 +244,7 @@ public class AccountsService {
         return name == null || name.trim().isEmpty() ? "SELF" : name.trim();
     }
 
-    private DoctorSelection resolveDoctorSelection(String doctorId) {
+    private DoctorSelection resolveDoctorSelection(String labId, String doctorId) {
         if (doctorId == null) {
             return null;
         }
@@ -266,15 +254,30 @@ public class AccountsService {
         }
         Long numericId = parseLong(trimmed);
         if (numericId != null) {
-            String name = doctorRepo.findById(numericId)
+            String name = doctorRepo.findByIdAndLabId(numericId, labId)
                 .map(d -> normalizeDoctorName(d.getName()))
                 .orElse(trimmed);
             return new DoctorSelection(numericId, name);
         }
-        return doctorRepo.findFirstByNameIgnoreCase(trimmed)
+        return doctorRepo.findFirstByLabIdAndNameIgnoreCase(labId, trimmed)
             .map(d -> new DoctorSelection(d.getId(), normalizeDoctorName(d.getName())))
             .orElse(new DoctorSelection(null, trimmed));
     }
 
     private record DoctorSelection(Long id, String name) {}
+
+    private double toDouble(Object[] row, int idx) {
+        if (row == null || idx < 0 || idx >= row.length || row[idx] == null) {
+            return 0;
+        }
+        Object value = row[idx];
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
 }

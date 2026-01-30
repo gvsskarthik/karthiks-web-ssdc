@@ -15,17 +15,29 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
 @SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
-@Table(name = "patients")
+@Table(
+    name = "patients",
+    indexes = {
+        @Index(name = "idx_patients_lab_visit_date", columnList = "lab_id, visit_date"),
+        @Index(name = "idx_patients_lab_doctor", columnList = "lab_id, doctor_id"),
+        @Index(name = "idx_patients_lab_mobile", columnList = "lab_id, mobile")
+    }
+)
 public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @JsonIgnore
+    @Column(name = "lab_id", length = 6, nullable = false)
+    private String labId;
 
     @Column(nullable = false)
     private String name;
@@ -59,6 +71,9 @@ public class Patient {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getLabId() { return labId; }
+    public void setLabId(String labId) { this.labId = labId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
