@@ -58,6 +58,22 @@ public class Lab {
     @Column(name = "email_verify_send_count", nullable = false)
     private Integer emailVerifySendCount = 0;
 
+    @JsonIgnore
+    @Column(name = "password_reset_token_hash")
+    private String passwordResetTokenHash;
+
+    @JsonIgnore
+    @Column(name = "password_reset_expires_at")
+    private OffsetDateTime passwordResetExpiresAt;
+
+    @JsonIgnore
+    @Column(name = "password_reset_sent_at")
+    private OffsetDateTime passwordResetSentAt;
+
+    @JsonIgnore
+    @Column(name = "password_reset_send_count", nullable = false)
+    private Integer passwordResetSendCount = 0;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -114,6 +130,26 @@ public class Lab {
     public Integer getEmailVerifySendCount() { return emailVerifySendCount; }
     public void setEmailVerifySendCount(Integer emailVerifySendCount) {
         this.emailVerifySendCount = emailVerifySendCount;
+    }
+
+    public String getPasswordResetTokenHash() { return passwordResetTokenHash; }
+    public void setPasswordResetTokenHash(String passwordResetTokenHash) {
+        this.passwordResetTokenHash = passwordResetTokenHash;
+    }
+
+    public OffsetDateTime getPasswordResetExpiresAt() { return passwordResetExpiresAt; }
+    public void setPasswordResetExpiresAt(OffsetDateTime passwordResetExpiresAt) {
+        this.passwordResetExpiresAt = passwordResetExpiresAt;
+    }
+
+    public OffsetDateTime getPasswordResetSentAt() { return passwordResetSentAt; }
+    public void setPasswordResetSentAt(OffsetDateTime passwordResetSentAt) {
+        this.passwordResetSentAt = passwordResetSentAt;
+    }
+
+    public Integer getPasswordResetSendCount() { return passwordResetSendCount; }
+    public void setPasswordResetSendCount(Integer passwordResetSendCount) {
+        this.passwordResetSendCount = passwordResetSendCount;
     }
 
     public Instant getCreatedAt() { return createdAt; }

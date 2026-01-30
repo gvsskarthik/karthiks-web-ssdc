@@ -138,3 +138,47 @@ window.resendVerification = async function () {
     alert(err && err.message ? err.message : "Resend failed");
   }
 };
+
+window.forgotPassword = async function () {
+  const labId = normalizeLabId(document.getElementById("loginLabId").value);
+  if (!labId) {
+    alert("Enter Lab ID first");
+    return;
+  }
+  try {
+    await postJson(authUrl("/auth/forgot-password"), { labId, password: "x" });
+    alert("Reset link sent to your email.");
+  } catch (err) {
+    alert(err && err.message ? err.message : "Request failed");
+  }
+};
+
+// Password reset (from email link)
+try {
+  const url = new URL(window.location.href);
+  const reset = url.searchParams.get("reset");
+  const labId = url.searchParams.get("labId");
+  const token = url.searchParams.get("token");
+  if (reset === "1" && labId && token) {
+    const newPassword = prompt("Enter new password (min 6 chars):");
+    if (newPassword && String(newPassword).trim().length >= 6) {
+      postJson(authUrl("/auth/reset-password"), {
+        labId,
+        token,
+        newPassword
+      }).then(() => {
+        alert("Password updated. Now login.");
+        url.searchParams.delete("reset");
+        url.searchParams.delete("labId");
+        url.searchParams.delete("token");
+        window.history.replaceState({}, "", url.toString());
+      }).catch((e) => {
+        alert(e && e.message ? e.message : "Reset failed");
+      });
+    } else if (newPassword !== null) {
+      alert("Password too short.");
+    }
+  }
+} catch (e) {
+  // ignore
+}

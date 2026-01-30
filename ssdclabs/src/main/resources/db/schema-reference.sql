@@ -14,6 +14,10 @@ CREATE TABLE labs (
   email_verify_expires_at DATETIME,
   email_verify_sent_at DATETIME,
   email_verify_send_count INT NOT NULL DEFAULT 0,
+  password_reset_token_hash VARCHAR(64),
+  password_reset_expires_at DATETIME,
+  password_reset_sent_at DATETIME,
+  password_reset_send_count INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
