@@ -8,6 +8,12 @@ CREATE TABLE labs (
   password_hash VARCHAR(255) NOT NULL,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   subscription_expiry DATE,
+  onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  email_verify_token_hash VARCHAR(64),
+  email_verify_expires_at DATETIME,
+  email_verify_sent_at DATETIME,
+  email_verify_send_count INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

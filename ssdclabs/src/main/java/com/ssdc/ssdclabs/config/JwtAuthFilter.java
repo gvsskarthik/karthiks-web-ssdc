@@ -1,6 +1,8 @@
 package com.ssdc.ssdclabs.config;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import jakarta.servlet.FilterChain;
@@ -16,13 +18,18 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.ssdc.ssdclabs.model.Lab;
+import com.ssdc.ssdclabs.repository.LabRepository;
+
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final LabRepository labRepo;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, LabRepository labRepo) {
         this.jwtService = jwtService;
+        this.labRepo = labRepo;
     }
 
     @Override
@@ -37,20 +44,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String labId = jwtService.validateAndGetLabId(token);
             if (labId != null
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                        labId,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_LAB_OWNER"))
-                    );
-                authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                Lab lab = labRepo.findById(labId).orElse(null);
+                if (lab != null && Boolean.TRUE.equals(lab.getActive())) {
+                    LocalDate expiry = lab.getSubscriptionExpiry();
+                    if (expiry == null || !expiry.isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")))) {
+                        UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                labId,
+                                null,
+                                List.of(new SimpleGrantedAuthority("ROLE_LAB_OWNER"))
+                            );
+                        authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                }
             }
         }
 
         filterChain.doFilter(request, response);
     }
 }
-

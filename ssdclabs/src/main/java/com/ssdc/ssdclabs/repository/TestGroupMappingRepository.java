@@ -13,5 +13,7 @@ public interface TestGroupMappingRepository
         List<Long> groupIds
     );
 
+    boolean existsByGroup_IdAndTest_Id(Long groupId, Long testId);
+
     void deleteByGroup_Id(Long groupId);
 }

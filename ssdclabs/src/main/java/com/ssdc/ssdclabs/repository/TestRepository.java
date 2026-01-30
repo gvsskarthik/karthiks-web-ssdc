@@ -14,11 +14,15 @@ public interface TestRepository extends JpaRepository<Test, Long> {
 
     java.util.Optional<Test> findByIdAndLabId(Long id, String labId);
 
+    java.util.Optional<Test> findFirstByLabIdAndShortcutIgnoreCase(String labId, String shortcut);
+
     // Ordered by id for stable insertion order.
     List<Test> findByLabIdOrderByIdAsc(String labId);
 
     // Ordered by id for stable insertion order.
     List<Test> findByLabIdAndActiveTrueOrderByIdAsc(String labId);
+
+    long countByLabId(String labId);
 
     /* ================= SAFE DELETE CHECK ================= */
     @Query("""
