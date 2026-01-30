@@ -123,6 +123,7 @@ th,td{
   /* Print/download uses the paged A4 cards so groups don't split across pages. */
   .report-pages{
     display:block !important;
+    padding:0 !important;
   }
 
   .report-print-card{
@@ -131,16 +132,16 @@ th,td{
 
   @page{
     size:A4;
-    margin:10mm;
+    margin:0;
   }
 
   body{
     margin:0;
-    padding:0;
+    padding:0 !important;
   }
 
   .neo-card.report-page-card{
-    margin:0 auto;
+    margin:0 !important;
     box-shadow:none;
     break-after:page;
     page-break-after:always;
