@@ -741,48 +741,18 @@ function renderReport(tests, resultList, selectedIds){
     });
   });
 
-  const orderByTestId = new Map();
-  safeResults.forEach(r => {
-    const tid = Number(r?.testId);
-    if (!Number.isFinite(tid) || orderByTestId.has(tid)) {
-      return;
-    }
-    const raw = r?.testOrder;
-    if (raw === null || raw === undefined || raw === "") {
-      return;
-    }
-    const n = Number(raw);
-    if (Number.isFinite(n)) {
-      orderByTestId.set(tid, n);
-    }
-  });
-
   selectedTests.sort((a, b) => {
     const aId = Number(a?.id);
     const bId = Number(b?.id);
-    const ao = orderByTestId.get(aId);
-    const bo = orderByTestId.get(bId);
-    const aHas = Number.isFinite(ao);
-    const bHas = Number.isFinite(bo);
-
     const ak = defaultKeyByTestId.get(aId);
     const bk = defaultKeyByTestId.get(bId);
     const ar = ak?.categoryRank ?? 99;
     const br = bk?.categoryRank ?? 99;
     if (ar !== br) return ar - br;
-
-    // Same category: manual testOrder comes next (if present).
-    if (!aHas && !bHas) {
-      const an = ak?.name ?? "";
-      const bn = bk?.name ?? "";
-      const nameCmp = an.localeCompare(bn);
-      if (nameCmp !== 0) return nameCmp;
-      return (ak?.index ?? 0) - (bk?.index ?? 0);
-    }
-    if (!aHas) return 1;
-    if (!bHas) return -1;
-    const cmp = ao - bo;
-    if (cmp !== 0) return cmp;
+    const an = ak?.name ?? "";
+    const bn = bk?.name ?? "";
+    const nameCmp = an.localeCompare(bn);
+    if (nameCmp !== 0) return nameCmp;
     return (ak?.index ?? 0) - (bk?.index ?? 0);
   });
 
