@@ -18,6 +18,40 @@
 
 <h2>Enter Test Results</h2>
 
+<!-- ================= LETTERHEAD PRINT SETTINGS (LAB) ================= -->
+<div class="print-settings">
+  <div class="print-settings-head">
+    <h3>Letterhead Spacing (Lines)</h3>
+    <p>
+      Saved per Lab ID. Used only for PRINT on pre-printed letterheads.
+      DOWNLOAD keeps the normal header.
+    </p>
+  </div>
+
+  <div class="print-settings-grid">
+    <label>
+      <span>Top</span>
+      <input id="psTopLines" type="number" min="0" max="200" step="1" value="0">
+    </label>
+    <label>
+      <span>Bottom</span>
+      <input id="psBottomLines" type="number" min="0" max="200" step="1" value="0">
+    </label>
+    <label>
+      <span>Left</span>
+      <input id="psLeftLines" type="number" min="0" max="200" step="1" value="0">
+    </label>
+    <label>
+      <span>Right</span>
+      <input id="psRightLines" type="number" min="0" max="200" step="1" value="0">
+    </label>
+  </div>
+
+  <div class="print-settings-actions">
+    <button class="neo-btn neo-btn-secondary" onclick="savePrintSettings()">SAVE SPACING</button>
+  </div>
+</div>
+
 <!-- ================= PATIENT ================= -->
 <div class="patient-box">
   <div class="p-row">

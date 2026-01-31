@@ -3,6 +3,20 @@ body{
   background:#ffffff;
 }
 
+:root{
+  /* "Lines" are stored as integers in DB. We convert lines -> mm here. */
+  --ssdc-letterhead-line-mm: 4mm;
+  --ssdc-letterhead-top-lines: 0;
+  --ssdc-letterhead-bottom-lines: 0;
+  --ssdc-letterhead-left-lines: 0;
+  --ssdc-letterhead-right-lines: 0;
+
+  --ssdc-letterhead-top: calc(var(--ssdc-letterhead-top-lines) * var(--ssdc-letterhead-line-mm));
+  --ssdc-letterhead-bottom: calc(var(--ssdc-letterhead-bottom-lines) * var(--ssdc-letterhead-line-mm));
+  --ssdc-letterhead-left: calc(var(--ssdc-letterhead-left-lines) * var(--ssdc-letterhead-line-mm));
+  --ssdc-letterhead-right: calc(var(--ssdc-letterhead-right-lines) * var(--ssdc-letterhead-line-mm));
+}
+
 /* ================= SCREEN (A4 NEO-CARDS) ================= */
 .report-pages{
   display:block;
@@ -20,12 +34,24 @@ body{
   box-shadow:none;
 }
 
+body[data-report-mode="letterhead"] .neo-card.report-page-card{
+  padding-top: calc(10mm + var(--ssdc-letterhead-top));
+  padding-bottom: calc(10mm + var(--ssdc-letterhead-bottom));
+  padding-left: calc(10mm + var(--ssdc-letterhead-left));
+  padding-right: calc(10mm + var(--ssdc-letterhead-right));
+}
+
 .report-page-content{
-  height:calc(297mm - 20mm); /* page height - padding */
+  height:100%;
+  box-sizing:border-box;
   display:grid;
   grid-template-rows:auto auto 1fr auto;
   gap:10px;
   overflow:hidden;
+}
+
+.neo-card.report-page-card.is-letterhead .report-page-content{
+  grid-template-rows:auto 1fr auto; /* patient, table, footer */
 }
 
 .report-page-table-wrap{

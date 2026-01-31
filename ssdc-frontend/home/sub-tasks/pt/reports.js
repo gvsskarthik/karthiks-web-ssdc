@@ -947,8 +947,120 @@ function goPatients(){
 }
 
 function downloadPDF(){
-  window.print(); // browser save as PDF
+  setReportMode("pdf").then(() => nextPaint()).then(() => {
+    window.print(); // browser save as PDF
+  });
 }
+
+/* ================= PRINT (LETTERHEAD) ================= */
+const defaultPrintSettings = {
+  topLines: 0,
+  bottomLines: 0,
+  leftLines: 0,
+  rightLines: 0
+};
+
+let cachedPrintSettings = { ...defaultPrintSettings };
+let cachedPrintSettingsLoaded = false;
+let restoreModeAfterPrint = null;
+
+function clampLines(value){
+  const n = Number.parseInt(String(value ?? "0"), 10);
+  if (!Number.isFinite(n) || Number.isNaN(n)) return 0;
+  if (n < 0) return 0;
+  if (n > 200) return 200;
+  return n;
+}
+
+function applyLetterheadCssVars(settings){
+  const s = settings || defaultPrintSettings;
+  document.documentElement.style.setProperty(
+    "--ssdc-letterhead-top-lines",
+    String(clampLines(s.topLines))
+  );
+  document.documentElement.style.setProperty(
+    "--ssdc-letterhead-bottom-lines",
+    String(clampLines(s.bottomLines))
+  );
+  document.documentElement.style.setProperty(
+    "--ssdc-letterhead-left-lines",
+    String(clampLines(s.leftLines))
+  );
+  document.documentElement.style.setProperty(
+    "--ssdc-letterhead-right-lines",
+    String(clampLines(s.rightLines))
+  );
+}
+
+function loadPrintSettingsOnce(){
+  if (cachedPrintSettingsLoaded) {
+    return Promise.resolve(cachedPrintSettings);
+  }
+  return fetch(API_BASE_URL + "/print-settings")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Failed to load print settings");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      cachedPrintSettings = {
+        topLines: clampLines(data?.topLines),
+        bottomLines: clampLines(data?.bottomLines),
+        leftLines: clampLines(data?.leftLines),
+        rightLines: clampLines(data?.rightLines)
+      };
+      cachedPrintSettingsLoaded = true;
+      return cachedPrintSettings;
+    })
+    .catch(() => {
+      cachedPrintSettingsLoaded = true;
+      cachedPrintSettings = { ...defaultPrintSettings };
+      return cachedPrintSettings;
+    });
+}
+
+function nextPaint(){
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+function getReportMode(){
+  return (document.body?.dataset?.reportMode || "pdf").toLowerCase();
+}
+
+function setReportMode(mode){
+  const normalized = String(mode || "pdf").toLowerCase();
+  document.body.dataset.reportMode = normalized;
+
+  if (normalized === "letterhead") {
+    return loadPrintSettingsOnce().then((settings) => {
+      applyLetterheadCssVars(settings);
+      renderScreenPages();
+    });
+  }
+
+  renderScreenPages();
+  return Promise.resolve();
+}
+
+function printLetterhead(){
+  const before = getReportMode();
+  restoreModeAfterPrint = before || "pdf";
+  setReportMode("letterhead").then(() => nextPaint()).then(() => {
+    window.print();
+  });
+}
+
+window.addEventListener("afterprint", () => {
+  if (!restoreModeAfterPrint) {
+    return;
+  }
+  const toRestore = restoreModeAfterPrint;
+  restoreModeAfterPrint = null;
+  setReportMode(toRestore);
+});
 
 function shareWhatsApp(){
   let mobile = (patient.mobile || "").replace(/\D/g, "");
@@ -1027,6 +1139,8 @@ function renderScreenPages(){
     return;
   }
 
+  const mode = getReportMode();
+
   const colsRow = printCard.querySelector(".report-table thead .report-cols");
   const footerLegend = printCard.querySelector(".report-table tfoot .legend");
   const footerBlock = printCard.querySelector(".report-table tfoot .report-footer");
@@ -1038,12 +1152,13 @@ function renderScreenPages(){
     return;
   }
 
-  const headerHtml = `
-    <div class="header">
-      <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
-      <p><b>BLOOD EXAMINATION REPORT</b></p>
-    </div>
-  `;
+  const showHeader = mode !== "letterhead";
+  const headerHtml = showHeader ? `
+      <div class="header">
+        <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
+        <p><b>BLOOD EXAMINATION REPORT</b></p>
+      </div>
+    ` : "";
   const patientHtml = buildPatientBoxHtml();
   const footerHtml = `
     ${footerLegend ? footerLegend.outerHTML : ""}
@@ -1062,13 +1177,16 @@ function renderScreenPages(){
 
   function createPage(){
     const card = document.createElement("div");
-    card.className = "neo-card report-page-card";
+    card.className = "neo-card report-page-card" + (mode === "letterhead" ? " is-letterhead" : "");
 
     const content = document.createElement("div");
     content.className = "report-page-content";
 
-    const head = document.createElement("div");
-    head.innerHTML = headerHtml;
+    if (showHeader) {
+      const head = document.createElement("div");
+      head.innerHTML = headerHtml;
+      content.appendChild(head);
+    }
 
     const patient = document.createElement("div");
     patient.innerHTML = patientHtml;
@@ -1092,7 +1210,6 @@ function renderScreenPages(){
     footer.className = "report-page-footer";
     footer.innerHTML = footerHtml;
 
-    content.appendChild(head);
     content.appendChild(patient);
     content.appendChild(tableWrap);
     content.appendChild(footer);
