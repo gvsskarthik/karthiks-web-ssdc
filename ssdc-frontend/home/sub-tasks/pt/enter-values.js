@@ -22,6 +22,83 @@ document.getElementById("pDate").innerText =
     ? window.formatIstDateDisplay(new Date())
     : new Date().toLocaleDateString());
 
+/* ================= LAB PRINT SETTINGS (DB) ================= */
+function clampLines(value) {
+  const n = Number.parseInt(String(value ?? "0"), 10);
+  if (!Number.isFinite(n) || Number.isNaN(n)) return 0;
+  if (n < 0) return 0;
+  if (n > 200) return 200;
+  return n;
+}
+
+function setPrintSettingsForm(data) {
+  const top = document.getElementById("psTopLines");
+  const bottom = document.getElementById("psBottomLines");
+  const left = document.getElementById("psLeftLines");
+  const right = document.getElementById("psRightLines");
+  if (!top || !bottom || !left || !right) {
+    return;
+  }
+  top.value = clampLines(data?.topLines);
+  bottom.value = clampLines(data?.bottomLines);
+  left.value = clampLines(data?.leftLines);
+  right.value = clampLines(data?.rightLines);
+}
+
+function readPrintSettingsForm() {
+  return {
+    topLines: clampLines(document.getElementById("psTopLines")?.value),
+    bottomLines: clampLines(document.getElementById("psBottomLines")?.value),
+    leftLines: clampLines(document.getElementById("psLeftLines")?.value),
+    rightLines: clampLines(document.getElementById("psRightLines")?.value)
+  };
+}
+
+function loadPrintSettings() {
+  return fetch(API_BASE_URL + "/print-settings")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Failed to load print settings");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      setPrintSettingsForm(data);
+      return data;
+    })
+    .catch(() => {
+      // Keep defaults (0) if not available.
+      setPrintSettingsForm({ topLines: 0, bottomLines: 0, leftLines: 0, rightLines: 0 });
+      return null;
+    });
+}
+
+function savePrintSettings() {
+  const payload = readPrintSettingsForm();
+  fetch(API_BASE_URL + "/print-settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+    .then(async (res) => {
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(text || "Failed to save print settings");
+      }
+      return text ? JSON.parse(text) : payload;
+    })
+    .then((saved) => {
+      setPrintSettingsForm(saved);
+      alert("Letterhead spacing saved for this Lab ID.");
+    })
+    .catch((err) => {
+      console.error(err);
+      alert(err?.message || "Failed to save print settings");
+    });
+}
+
+loadPrintSettings();
+
 /* ================= LOAD SELECTED TEST IDS ================= */
 function loadSelectedIds(){
   const local =

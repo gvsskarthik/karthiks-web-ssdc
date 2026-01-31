@@ -130,3 +130,14 @@ CREATE TABLE report_results (
   CONSTRAINT fk_report_param
     FOREIGN KEY (parameter_id) REFERENCES test_parameters(id)
 );
+
+CREATE TABLE lab_print_settings (
+  lab_id VARCHAR(6) PRIMARY KEY,
+  top_lines INT NOT NULL DEFAULT 0,
+  bottom_lines INT NOT NULL DEFAULT 0,
+  left_lines INT NOT NULL DEFAULT 0,
+  right_lines INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_lab_print_settings_lab
+    FOREIGN KEY (lab_id) REFERENCES labs(lab_id)
+);

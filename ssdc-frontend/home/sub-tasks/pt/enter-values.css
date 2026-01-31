@@ -10,6 +10,70 @@ body {
   border-radius: 24px;
 }
 
+.print-settings{
+  border: 1px solid var(--theme-line);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.print-settings-head h3{
+  margin: 0 0 6px 0;
+  font-size: 15px;
+}
+
+.print-settings-head p{
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  color: var(--theme-muted);
+}
+
+.print-settings-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px){
+  .print-settings-grid{
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 520px){
+  .print-settings-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.print-settings-grid label{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--theme-muted);
+}
+
+.print-settings-grid input{
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--theme-line);
+  border-radius: 10px;
+  background: var(--theme-field-bg);
+  box-shadow: none;
+  color: inherit;
+}
+
+.print-settings-actions{
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.neo-btn.neo-btn-secondary{
+  background: var(--theme-field-bg);
+  border: 1px solid var(--theme-line);
+}
+
 .patient-box {
   border: 1px solid var(--theme-line);
   padding: 14px 18px;
