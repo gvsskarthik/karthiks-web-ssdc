@@ -1,11 +1,5 @@
-const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
-
 function getToken() {
-  try {
-    return window.localStorage ? window.localStorage.getItem(AUTH_TOKEN_KEY) : null;
-  } catch (e) {
-    return null;
-  }
+  return typeof window.getAuthToken === "function" ? window.getAuthToken() : null;
 }
 
 function setStatus(msg) {
@@ -110,4 +104,3 @@ if (!getToken()) {
   });
   loadTemplateTests().catch((e) => setStatus(e.message || "Failed to load tests"));
 }
-

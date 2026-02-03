@@ -1,23 +1,14 @@
 /* ================= SIDEBAR ACTIVE ================= */
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
 const pageFrame = document.getElementById('page-frame');
-const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
 
 function getAuthToken() {
-    try {
-        return window.localStorage ? window.localStorage.getItem(AUTH_TOKEN_KEY) : null;
-    } catch (e) {
-        return null;
-    }
+    return typeof window.getAuthToken === "function" ? window.getAuthToken() : null;
 }
 
 function clearAuthToken() {
-    try {
-        if (window.localStorage) {
-            window.localStorage.removeItem(AUTH_TOKEN_KEY);
-        }
-    } catch (e) {
-        // ignore
+    if (typeof window.clearAuthToken === "function") {
+        window.clearAuthToken();
     }
 }
 
@@ -186,6 +177,10 @@ const logoutLink = document.querySelector("#sidebar a.logout");
 if (logoutLink) {
     logoutLink.addEventListener("click", (e) => {
         e.preventDefault();
+        if (typeof window.forceLogout === "function") {
+            window.forceLogout("manual");
+            return;
+        }
         clearAuthToken();
         window.location.href = "index.html";
     });

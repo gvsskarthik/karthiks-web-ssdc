@@ -8,37 +8,23 @@ function showLogin() {
   document.getElementById("loginForm").hidden = false;
 }
 
-const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
-
 function normalizeLabId(value) {
   return String(value || "").trim().toLowerCase();
 }
 
 function getToken() {
-  try {
-    return window.localStorage ? window.localStorage.getItem(AUTH_TOKEN_KEY) : null;
-  } catch (e) {
-    return null;
-  }
+  return typeof window.getAuthToken === "function" ? window.getAuthToken() : null;
 }
 
 function setToken(token) {
-  try {
-    if (window.localStorage) {
-      window.localStorage.setItem(AUTH_TOKEN_KEY, String(token || ""));
-    }
-  } catch (e) {
-    // ignore
+  if (typeof window.setAuthToken === "function") {
+    window.setAuthToken(token);
   }
 }
 
 function clearToken() {
-  try {
-    if (window.localStorage) {
-      window.localStorage.removeItem(AUTH_TOKEN_KEY);
-    }
-  } catch (e) {
-    // ignore
+  if (typeof window.clearAuthToken === "function") {
+    window.clearAuthToken();
   }
 }
 
@@ -68,6 +54,21 @@ if (getToken()) {
 // Show email verification result (from verify link redirect).
 try {
   const url = new URL(window.location.href);
+  const loggedOut = url.searchParams.get("loggedOut");
+  const reason = url.searchParams.get("reason");
+  if (loggedOut === "1" && reason) {
+    if (reason === "idle") {
+      alert("Logged out due to inactivity");
+    } else if (reason === "expired") {
+      alert("Session expired. Please login again.");
+    } else {
+      alert("You have been logged out.");
+    }
+    url.searchParams.delete("loggedOut");
+    url.searchParams.delete("reason");
+    window.history.replaceState({}, "", url.toString());
+  }
+
   const verified = url.searchParams.get("verified");
   if (verified === "1") {
     alert("Email verified! Now login with Lab ID + password.");
