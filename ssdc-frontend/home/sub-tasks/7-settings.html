@@ -3,50 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../../vendor/fonts/fonts.css" rel="stylesheet">
     <link href="../../vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
 
     <link rel="stylesheet" href="theme.css">
     <link rel="stylesheet" href="components.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="7-settings.css">
 
     <title>Settings</title>
 </head>
 <body>
- 
-	
-    <main>
-        <section class="head-title">
-				<div class="left">
-					<h1>Settings</h1>
-				</div>
-			</section>
-
-            <div class="neo-card">
-                <div class="header-row">
-                    <div>
-                        <h2>Lab Profile</h2>
-                        <div class="subtitle">Update your lab name.</div>
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <div>
-                        <label for="labNameInput">Lab Name</label>
-                        <input id="labNameInput" placeholder="Lab Name" spellcheck="false" disabled>
-                    </div>
-                </div>
-
-                <div class="actions">
-                    <button class="btn" type="button" id="editLabNameBtn">Edit</button>
-                    <button class="btn" type="button" id="saveLabNameBtn" hidden>Save</button>
-                    <button class="btn secondary" type="button" id="cancelLabNameBtn" hidden>Cancel</button>
-                </div>
-
-                <div id="labNameStatus" class="message"></div>
+    <div class="page">
+        <div class="head-title">
+            <div>
+                <h1>Settings</h1>
+                <div class="subtitle">Lab profile and preferences</div>
             </div>
-	</main>
-</body>
+        </div>
 
-<script src="../../api.js"></script>
-<script src="7-settings.js"></script>
+        <div class="neo card">
+            <div class="card-head">
+                <div>
+                    <h3>Lab Name</h3>
+                    <div class="hint">This name appears on dashboard, reports, bills &amp; exports.</div>
+                </div>
+
+                <div class="card-actions">
+                    <button class="btn secondary" type="button" id="editLabNameBtn">
+                        <i class="bx bx-edit-alt"></i> Edit
+                    </button>
+                    <button class="btn" type="button" id="saveLabNameBtn" hidden>
+                        <i class="bx bx-save"></i> Save
+                    </button>
+                    <button class="btn secondary" type="button" id="cancelLabNameBtn" hidden>
+                        <i class="bx bx-x"></i> Cancel
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="small" for="labNameInput">Lab Name</label>
+                    <input id="labNameInput" class="neo-input neo-pressed" placeholder="Lab Name" spellcheck="false" disabled>
+                </div>
+            </div>
+
+            <div id="labNameStatus" class="status-text"></div>
+        </div>
+    </div>
+
+    <script src="../../api.js"></script>
+    <script src="7-settings.js"></script>
+</body>
 </html>

@@ -79,6 +79,8 @@
   const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
   const LAB_NAME_KEY = "SSDC_LAB_NAME";
   const LOGOUT_BROADCAST_KEY = "SSDC_LOGOUT_BROADCAST";
+  const SESSION_REQUEST_KEY = "SSDC_SESSION_REQUEST";
+  const SESSION_RESPONSE_KEY = "SSDC_SESSION_RESPONSE";
 
   function canUseSessionStorage() {
     try {
@@ -245,6 +247,124 @@
       removeStorageValue(window.localStorage, LAB_NAME_KEY);
     }
   }
+
+  // Share sessionStorage auth token across tabs while the browser is open
+  // (new tabs should stay logged in), without persisting the token in
+  // localStorage (so closing the browser ends the session).
+  function installSessionSync() {
+    if (!canUseSessionStorage() || !canUseStorage()) {
+      return;
+    }
+    if (window.__ssdcSessionSyncInstalled) {
+      return;
+    }
+    window.__ssdcSessionSyncInstalled = true;
+
+    let pendingRequestId = null;
+
+    function parsePayload(raw) {
+      try {
+        return raw ? JSON.parse(String(raw)) : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function broadcastResponse(requestId) {
+      const token = getAuthToken();
+      if (!token) {
+        return;
+      }
+      const payload = {
+        id: requestId,
+        ts: Date.now(),
+        token,
+        labName: getLabName() || null
+      };
+      try {
+        window.localStorage.setItem(SESSION_RESPONSE_KEY, JSON.stringify(payload));
+        window.setTimeout(() => {
+          try {
+            window.localStorage.removeItem(SESSION_RESPONSE_KEY);
+          } catch (err) {
+            // ignore
+          }
+        }, 800);
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    window.addEventListener("storage", (event) => {
+      if (!event || !event.key) {
+        return;
+      }
+
+      if (event.key === SESSION_REQUEST_KEY) {
+        const payload = parsePayload(event.newValue);
+        if (!payload || !payload.id) {
+          return;
+        }
+        broadcastResponse(payload.id);
+        return;
+      }
+
+      if (event.key === SESSION_RESPONSE_KEY) {
+        const payload = parsePayload(event.newValue);
+        if (!payload || !payload.token || !payload.id) {
+          return;
+        }
+        if (!pendingRequestId || payload.id !== pendingRequestId) {
+          return;
+        }
+        if (getAuthToken()) {
+          pendingRequestId = null;
+          return;
+        }
+
+        setAuthToken(payload.token);
+        if (payload.labName) {
+          setLabName(payload.labName);
+        }
+        try {
+          applyLabNameToDom(payload.labName);
+        } catch (err) {
+          // ignore
+        }
+
+        pendingRequestId = null;
+
+        try {
+          if (document.getElementById("loginForm")) {
+            window.location.href = "dashboard.html";
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+    });
+
+    if (!getAuthToken()) {
+      pendingRequestId = `${Date.now()}:${Math.random().toString(16).slice(2)}`;
+      try {
+        window.localStorage.setItem(
+          SESSION_REQUEST_KEY,
+          JSON.stringify({ id: pendingRequestId, ts: Date.now() })
+        );
+        window.setTimeout(() => {
+          try {
+            window.localStorage.removeItem(SESSION_REQUEST_KEY);
+          } catch (err) {
+            // ignore
+          }
+        }, 800);
+      } catch (err) {
+        pendingRequestId = null;
+      }
+    }
+  }
+
+  installSessionSync();
 
   let labProfileInFlight = null;
 
