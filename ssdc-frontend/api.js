@@ -77,12 +77,56 @@
   const inflight = new Map();
   const nativeFetch = window.fetch.bind(window);
   const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
+  const LOGOUT_BROADCAST_KEY = "SSDC_LOGOUT_BROADCAST";
+
+  function canUseSessionStorage() {
+    try {
+      return Boolean(window.sessionStorage);
+    } catch (err) {
+      return false;
+    }
+  }
 
   function canUseStorage() {
     try {
       return Boolean(window.localStorage);
     } catch (err) {
       return false;
+    }
+  }
+
+  function readStorageValue(storage, key) {
+    try {
+      if (!storage) {
+        return null;
+      }
+      const raw = storage.getItem(key);
+      const value = raw ? String(raw).trim() : "";
+      return value ? value : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function writeStorageValue(storage, key, value) {
+    try {
+      if (!storage) {
+        return;
+      }
+      storage.setItem(key, String(value || ""));
+    } catch (err) {
+      // Ignore storage write errors.
+    }
+  }
+
+  function removeStorageValue(storage, key) {
+    try {
+      if (!storage) {
+        return;
+      }
+      storage.removeItem(key);
+    } catch (err) {
+      // Ignore storage remove errors.
     }
   }
 
@@ -101,17 +145,100 @@
   }
 
   function getAuthToken() {
-    try {
-      if (!window.localStorage) {
-        return null;
-      }
-      const raw = window.localStorage.getItem(AUTH_TOKEN_KEY);
-      const token = raw ? String(raw).trim() : "";
-      return token ? token : null;
-    } catch (err) {
+    const sessionToken = readStorageValue(
+      canUseSessionStorage() ? window.sessionStorage : null,
+      AUTH_TOKEN_KEY
+    );
+    if (sessionToken) {
+      return sessionToken;
+    }
+
+    // Legacy migration: previously we stored tokens in localStorage.
+    const legacy = readStorageValue(
+      canUseStorage() ? window.localStorage : null,
+      AUTH_TOKEN_KEY
+    );
+    if (!legacy) {
       return null;
     }
+
+    // Move token to sessionStorage (logout on tab close) and remove from localStorage.
+    if (canUseSessionStorage()) {
+      writeStorageValue(window.sessionStorage, AUTH_TOKEN_KEY, legacy);
+    }
+    if (canUseStorage()) {
+      removeStorageValue(window.localStorage, AUTH_TOKEN_KEY);
+    }
+    return legacy;
   }
+
+  function setAuthToken(token) {
+    const value = String(token || "").trim();
+    if (!value) {
+      clearAuthToken();
+      return;
+    }
+    if (canUseSessionStorage()) {
+      writeStorageValue(window.sessionStorage, AUTH_TOKEN_KEY, value);
+    }
+    if (canUseStorage()) {
+      removeStorageValue(window.localStorage, AUTH_TOKEN_KEY);
+    }
+  }
+
+  function clearAuthToken() {
+    if (canUseSessionStorage()) {
+      removeStorageValue(window.sessionStorage, AUTH_TOKEN_KEY);
+    }
+    if (canUseStorage()) {
+      removeStorageValue(window.localStorage, AUTH_TOKEN_KEY);
+    }
+  }
+
+  function safeTopWindow() {
+    try {
+      return window.top && window.top.location ? window.top : window;
+    } catch (err) {
+      return window;
+    }
+  }
+
+  function broadcastLogout(reason) {
+    try {
+      if (!canUseStorage()) {
+        return;
+      }
+      const payload = JSON.stringify({
+        ts: Date.now(),
+        reason: reason || null
+      });
+      window.localStorage.setItem(LOGOUT_BROADCAST_KEY, payload);
+    } catch (err) {
+      // Ignore.
+    }
+  }
+
+  function redirectToLogin(reason) {
+    const topWin = safeTopWindow();
+    try {
+      const suffix = reason ? `?loggedOut=1&reason=${encodeURIComponent(reason)}` : "";
+      topWin.location.href = "index.html" + suffix;
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  function forceLogout(reason) {
+    clearAuthToken();
+    broadcastLogout(reason);
+    redirectToLogin(reason);
+  }
+
+  // Expose minimal auth helpers for pages.
+  window.getAuthToken = getAuthToken;
+  window.setAuthToken = setAuthToken;
+  window.clearAuthToken = clearAuthToken;
+  window.forceLogout = forceLogout;
 
   function withAuth(request) {
     const token = getAuthToken();
@@ -307,6 +434,13 @@
 
     if (method !== "GET") {
       return nativeFetch(finalRequest).then((response) => {
+        if (response && isApiUrl(absUrl) && getAuthToken()) {
+          if (response.status === 401 || response.status === 403) {
+            if (absUrl.indexOf("/auth/") === -1) {
+              forceLogout("expired");
+            }
+          }
+        }
         if (response && response.ok && isApiUrl(absUrl)) {
           clearCache();
         }
@@ -315,7 +449,16 @@
     }
 
     if (!isApiUrl(absUrl) || shouldBypassCache(finalRequest, init)) {
-      return nativeFetch(finalRequest);
+      return nativeFetch(finalRequest).then((response) => {
+        if (response && isApiUrl(absUrl) && getAuthToken()) {
+          if (response.status === 401 || response.status === 403) {
+            if (absUrl.indexOf("/auth/") === -1) {
+              forceLogout("expired");
+            }
+          }
+        }
+        return response;
+      });
     }
 
     const cached = readCache(absUrl);
@@ -332,8 +475,241 @@
     }
 
     return nativeFetch(finalRequest).then((response) => {
+      if (response && isApiUrl(absUrl) && getAuthToken()) {
+        if (response.status === 401 || response.status === 403) {
+          if (absUrl.indexOf("/auth/") === -1) {
+            forceLogout("expired");
+          }
+        }
+      }
       cacheResponse(absUrl, response);
       return response;
     });
   };
+
+  // ===== Idle auto-logout (20 min) with 120s warning =====
+  const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+  const IDLE_WARNING_MS = 120 * 1000;
+  const IDLE_ACTIVITY_EVENTS = [
+    "mousemove",
+    "mousedown",
+    "keydown",
+    "touchstart",
+    "scroll",
+    "wheel",
+    "pointerdown"
+  ];
+
+  function installIdleManagerTop() {
+    const topWin = safeTopWindow();
+    if (topWin !== window) {
+      return;
+    }
+    if (window.__ssdcIdleInstalled) {
+      return;
+    }
+    window.__ssdcIdleInstalled = true;
+
+    let lastActivityMs = Date.now();
+    let warningVisible = false;
+    let overlayEl = null;
+    let countdownEl = null;
+
+    function ensureWarningUi() {
+      if (overlayEl && countdownEl) {
+        return;
+      }
+      const ready = () => Boolean(document.body && document.head);
+      if (!ready()) {
+        window.setTimeout(ensureWarningUi, 50);
+        return;
+      }
+
+      const existing = document.getElementById("ssdc-idle-warning-overlay");
+      if (existing) {
+        overlayEl = existing;
+        countdownEl = document.getElementById("ssdc-idle-countdown");
+        return;
+      }
+
+      const style = document.createElement("style");
+      style.id = "ssdc-idle-warning-style";
+      style.textContent = `
+#ssdc-idle-warning-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 999999;
+}
+#ssdc-idle-warning-overlay.show {
+  display: flex;
+}
+#ssdc-idle-warning-overlay .ssdc-idle-box {
+  width: min(92vw, 420px);
+  border-radius: 14px;
+  padding: 18px 16px;
+  background: rgba(20, 20, 20, 0.98);
+  color: #fff;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+#ssdc-idle-warning-overlay .ssdc-idle-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+#ssdc-idle-warning-overlay .ssdc-idle-countdown {
+  font-size: 14px;
+  opacity: 0.92;
+  margin: 0;
+}
+#ssdc-idle-warning-overlay .ssdc-idle-hint {
+  font-size: 12px;
+  opacity: 0.75;
+  margin: 10px 0 0;
+}
+`;
+      document.head.appendChild(style);
+
+      overlayEl = document.createElement("div");
+      overlayEl.id = "ssdc-idle-warning-overlay";
+      overlayEl.innerHTML = `
+        <div class="ssdc-idle-box" role="alertdialog" aria-live="assertive">
+          <div class="ssdc-idle-title">Logged out due to inactivity</div>
+          <p class="ssdc-idle-countdown" id="ssdc-idle-countdown">Time left: 120 seconds</p>
+          <p class="ssdc-idle-hint">Move mouse / press any key to stay logged in.</p>
+        </div>
+      `;
+      document.body.appendChild(overlayEl);
+      countdownEl = document.getElementById("ssdc-idle-countdown");
+    }
+
+    function hideWarning() {
+      ensureWarningUi();
+      if (!overlayEl) {
+        return;
+      }
+      overlayEl.classList.remove("show");
+      warningVisible = false;
+    }
+
+    function showWarning(secondsLeft) {
+      ensureWarningUi();
+      if (!overlayEl || !countdownEl) {
+        return;
+      }
+      overlayEl.classList.add("show");
+      warningVisible = true;
+      const s = Math.max(0, Math.ceil(Number(secondsLeft) || 0));
+      countdownEl.textContent = `Time left: ${s} seconds`;
+    }
+
+    function checkIdle(nowMs) {
+      if (!getAuthToken()) {
+        if (warningVisible) {
+          hideWarning();
+        }
+        lastActivityMs = nowMs;
+        return;
+      }
+
+      const idleMs = nowMs - lastActivityMs;
+      if (idleMs >= IDLE_TIMEOUT_MS) {
+        hideWarning();
+        forceLogout("idle");
+        return;
+      }
+
+      const remainingMs = IDLE_TIMEOUT_MS - idleMs;
+      if (remainingMs <= IDLE_WARNING_MS) {
+        showWarning(remainingMs / 1000);
+      } else if (warningVisible) {
+        hideWarning();
+      }
+    }
+
+    function onActivity() {
+      const now = Date.now();
+      // If already exceeded, logout immediately (don't "revive" on first event).
+      if (getAuthToken() && now - lastActivityMs >= IDLE_TIMEOUT_MS) {
+        forceLogout("idle");
+        return;
+      }
+      lastActivityMs = now;
+      if (warningVisible) {
+        hideWarning();
+      }
+    }
+
+    window.__ssdcIdleOnActivity = onActivity;
+
+    // Receive forwarded activity from iframes.
+    window.addEventListener("message", (event) => {
+      try {
+        if (event.origin !== window.location.origin) {
+          return;
+        }
+      } catch (err) {
+        return;
+      }
+      const data = event && event.data;
+      if (data && data.type === "SSDC_ACTIVITY") {
+        onActivity();
+      }
+    });
+
+    // Cross-tab logout broadcast.
+    window.addEventListener("storage", (event) => {
+      if (!event || event.key !== LOGOUT_BROADCAST_KEY) {
+        return;
+      }
+      const reason = "broadcast";
+      clearAuthToken();
+      redirectToLogin(reason);
+    });
+
+    IDLE_ACTIVITY_EVENTS.forEach((evt) => {
+      window.addEventListener(evt, onActivity, { passive: true });
+    });
+    document.addEventListener("visibilitychange", () => checkIdle(Date.now()));
+    window.addEventListener("focus", () => checkIdle(Date.now()));
+    window.setInterval(() => checkIdle(Date.now()), 1000);
+  }
+
+  function installIdleActivityForwarderFrame() {
+    const topWin = safeTopWindow();
+    if (topWin === window) {
+      return;
+    }
+    if (window.__ssdcIdleForwarderInstalled) {
+      return;
+    }
+    window.__ssdcIdleForwarderInstalled = true;
+
+    function forward() {
+      try {
+        if (topWin && typeof topWin.__ssdcIdleOnActivity === "function") {
+          topWin.__ssdcIdleOnActivity();
+          return;
+        }
+      } catch (err) {
+        // ignore
+      }
+      try {
+        topWin.postMessage({ type: "SSDC_ACTIVITY" }, window.location.origin);
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    IDLE_ACTIVITY_EVENTS.forEach((evt) => {
+      window.addEventListener(evt, forward, { passive: true });
+    });
+  }
+
+  installIdleManagerTop();
+  installIdleActivityForwarderFrame();
 })();
