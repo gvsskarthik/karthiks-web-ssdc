@@ -139,6 +139,32 @@ public class AuthService {
         return new AuthResponse(token, lab.getLabId(), lab.getLabName());
     }
 
+    public void changePassword(String labId, String currentPassword, String newPassword) {
+        String safeLabId = normalizeLabId(labId);
+        String current = trimToNull(currentPassword);
+        String next = trimToNull(newPassword);
+        if (safeLabId == null) {
+            throw new IllegalArgumentException("labId is required");
+        }
+        if (current == null) {
+            throw new IllegalArgumentException("Current password is required");
+        }
+        if (next == null || next.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElseThrow(() -> new IllegalArgumentException("Lab not found"));
+        if (!passwordEncoder.matches(current, lab.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(next, lab.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must be different");
+        }
+
+        lab.setPasswordHash(passwordEncoder.encode(next));
+        labRepo.save(lab);
+    }
+
     public void resendVerificationLink(String labId) {
         String safeLabId = normalizeLabId(labId);
         if (safeLabId == null) {

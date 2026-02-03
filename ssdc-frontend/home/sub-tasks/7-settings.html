@@ -50,6 +50,55 @@
 
             <div id="labNameStatus" class="status-text"></div>
         </div>
+
+        <div class="neo card">
+            <div class="card-head">
+                <div>
+                    <h3>Security</h3>
+                    <div class="hint">Change your password. You will be logged out on all tabs.</div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="small" for="currentPasswordInput">Current Password</label>
+                    <div class="password-field">
+                        <input id="currentPasswordInput" class="neo-input neo-pressed" type="password" autocomplete="current-password" placeholder="Current password">
+                        <button class="icon-btn" type="button" id="toggleCurrentPasswordBtn" aria-label="Show password">
+                            <i class="bx bx-show"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="small" for="newPasswordInput">New Password</label>
+                    <div class="password-field">
+                        <input id="newPasswordInput" class="neo-input neo-pressed" type="password" autocomplete="new-password" placeholder="New password (min 6 chars)">
+                        <button class="icon-btn" type="button" id="toggleNewPasswordBtn" aria-label="Show password">
+                            <i class="bx bx-show"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="small" for="confirmPasswordInput">Confirm New Password</label>
+                    <div class="password-field">
+                        <input id="confirmPasswordInput" class="neo-input neo-pressed" type="password" autocomplete="new-password" placeholder="Confirm new password">
+                        <button class="icon-btn" type="button" id="toggleConfirmPasswordBtn" aria-label="Show password">
+                            <i class="bx bx-show"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn" type="button" id="changePasswordBtn" disabled>
+                        <i class="bx bx-key"></i> Change Password
+                    </button>
+                </div>
+            </div>
+
+            <div id="passwordStatus" class="status-text"></div>
+        </div>
     </div>
 
     <script src="../../api.js"></script>

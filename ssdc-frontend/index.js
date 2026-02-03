@@ -59,6 +59,8 @@ try {
   if (loggedOut === "1" && reason) {
     if (reason === "idle") {
       alert("Logged out due to inactivity");
+    } else if (reason === "passwordChanged") {
+      alert("Password changed. Please login again.");
     } else if (reason === "expired") {
       alert("Session expired. Please login again.");
     } else {

@@ -1,7 +1,11 @@
 package com.ssdc.ssdclabs.controller;
 
+import java.security.Principal;
+import java.util.Objects;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,6 +13,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ssdc.ssdclabs.dto.AuthChangePasswordRequest;
+import com.ssdc.ssdclabs.dto.AuthChangePasswordResponse;
 import com.ssdc.ssdclabs.dto.AuthLoginRequest;
 import com.ssdc.ssdclabs.dto.AuthResponse;
 import com.ssdc.ssdclabs.dto.AuthResetPasswordRequest;
@@ -107,6 +113,24 @@ public class AuthController {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body("Reset failed");
+        }
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody @NonNull AuthChangePasswordRequest request,
+            @NonNull Principal principal) {
+        try {
+            authService.changePassword(
+                Objects.requireNonNull(principal.getName(), "labId"),
+                request.currentPassword,
+                request.newPassword
+            );
+            return ResponseEntity.ok(new AuthChangePasswordResponse("Password updated"));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("Change password failed");
         }
     }
 }

@@ -912,7 +912,15 @@
       if (!event || event.key !== LOGOUT_BROADCAST_KEY) {
         return;
       }
-      const reason = "broadcast";
+      let reason = "broadcast";
+      try {
+        const payload = event.newValue ? JSON.parse(String(event.newValue)) : null;
+        if (payload && payload.reason) {
+          reason = String(payload.reason);
+        }
+      } catch (err) {
+        // ignore
+      }
       clearAuthToken();
       redirectToLogin(reason);
     });

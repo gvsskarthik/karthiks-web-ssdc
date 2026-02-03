@@ -5,16 +5,33 @@
   const cancelBtn = document.getElementById("cancelLabNameBtn");
   const statusEl = document.getElementById("labNameStatus");
 
+  const currentPasswordInput = document.getElementById("currentPasswordInput");
+  const newPasswordInput = document.getElementById("newPasswordInput");
+  const confirmPasswordInput = document.getElementById("confirmPasswordInput");
+  const toggleCurrentPasswordBtn = document.getElementById("toggleCurrentPasswordBtn");
+  const toggleNewPasswordBtn = document.getElementById("toggleNewPasswordBtn");
+  const toggleConfirmPasswordBtn = document.getElementById("toggleConfirmPasswordBtn");
+  const changePasswordBtn = document.getElementById("changePasswordBtn");
+  const passwordStatusEl = document.getElementById("passwordStatus");
+
   if (!labNameInput || !editBtn || !saveBtn || !cancelBtn) {
     return;
   }
 
-  function setStatus(message, isError) {
-    if (!statusEl) {
+  function setTextStatus(el, message, isError) {
+    if (!el) {
       return;
     }
-    statusEl.textContent = message || "";
-    statusEl.style.color = isError ? "#ff7a7a" : "";
+    el.textContent = message || "";
+    el.style.color = isError ? "#ff7a7a" : "";
+  }
+
+  function setStatus(message, isError) {
+    setTextStatus(statusEl, message, isError);
+  }
+
+  function setPasswordStatus(message, isError) {
+    setTextStatus(passwordStatusEl, message, isError);
   }
 
   function api(path) {
@@ -76,6 +93,109 @@
       throw new Error(text || `Request failed: ${res.status}`);
     }
     return text ? JSON.parse(text) : null;
+  }
+
+  function installPasswordToggle(btn, input) {
+    if (!btn || !input) {
+      return;
+    }
+    btn.addEventListener("click", () => {
+      const nextIsText = input.type === "password";
+      input.type = nextIsText ? "text" : "password";
+      const icon = btn.querySelector("i");
+      if (icon) {
+        icon.className = nextIsText ? "bx bx-hide" : "bx bx-show";
+      }
+      btn.setAttribute("aria-label", nextIsText ? "Hide password" : "Show password");
+    });
+  }
+
+  function validatePasswordForm() {
+    if (!changePasswordBtn) {
+      return;
+    }
+    const current = String(currentPasswordInput && currentPasswordInput.value ? currentPasswordInput.value : "");
+    const next = String(newPasswordInput && newPasswordInput.value ? newPasswordInput.value : "");
+    const confirm = String(confirmPasswordInput && confirmPasswordInput.value ? confirmPasswordInput.value : "");
+
+    const ok = Boolean(
+      current.trim().length > 0 &&
+        next.trim().length >= 6 &&
+        confirm.trim().length > 0 &&
+        next === confirm
+    );
+    changePasswordBtn.disabled = !ok;
+  }
+
+  async function changePassword() {
+    if (!getToken()) {
+      window.location.href = "../../index.html";
+      return;
+    }
+    if (!currentPasswordInput || !newPasswordInput || !confirmPasswordInput || !changePasswordBtn) {
+      return;
+    }
+
+    const current = String(currentPasswordInput.value || "");
+    const next = String(newPasswordInput.value || "");
+    const confirm = String(confirmPasswordInput.value || "");
+
+    if (!current.trim()) {
+      setPasswordStatus("Current password is required", true);
+      return;
+    }
+    if (next.trim().length < 6) {
+      setPasswordStatus("Password must be at least 6 characters", true);
+      return;
+    }
+    if (next !== confirm) {
+      setPasswordStatus("Passwords do not match", true);
+      return;
+    }
+
+    changePasswordBtn.disabled = true;
+    currentPasswordInput.disabled = true;
+    newPasswordInput.disabled = true;
+    confirmPasswordInput.disabled = true;
+    setPasswordStatus("Updating...");
+
+    try {
+      const data = await fetchJson(api("/auth/change-password"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: current, newPassword: next })
+      });
+      setPasswordStatus((data && data.message) ? data.message : "Password updated");
+
+      try {
+        currentPasswordInput.value = "";
+        newPasswordInput.value = "";
+        confirmPasswordInput.value = "";
+      } catch (e) {
+        // ignore
+      }
+
+      window.setTimeout(() => {
+        if (typeof window.forceLogout === "function") {
+          window.forceLogout("passwordChanged");
+        } else {
+          window.location.href = "../../index.html?loggedOut=1&reason=passwordChanged";
+        }
+      }, 150);
+    } catch (e) {
+      const msg = e && e.message ? e.message : "Change password failed";
+      if (/Request failed: (401|403)\b/.test(msg) || /\b(401|403)\b/.test(msg) || /unauthorized|forbidden/i.test(msg)) {
+        if (typeof window.forceLogout === "function") {
+          window.forceLogout("expired");
+          return;
+        }
+      }
+      setPasswordStatus(msg, true);
+      currentPasswordInput.disabled = false;
+      newPasswordInput.disabled = false;
+      confirmPasswordInput.disabled = false;
+      validatePasswordForm();
+    }
   }
 
   async function loadProfile() {
@@ -173,7 +293,31 @@
     }
   });
 
+  if (currentPasswordInput && newPasswordInput && confirmPasswordInput && changePasswordBtn) {
+    installPasswordToggle(toggleCurrentPasswordBtn, currentPasswordInput);
+    installPasswordToggle(toggleNewPasswordBtn, newPasswordInput);
+    installPasswordToggle(toggleConfirmPasswordBtn, confirmPasswordInput);
+
+    [currentPasswordInput, newPasswordInput, confirmPasswordInput].forEach((el) => {
+      el.addEventListener("input", () => {
+        setPasswordStatus("");
+        validatePasswordForm();
+      });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !changePasswordBtn.disabled) {
+          e.preventDefault();
+          changePassword();
+        }
+      });
+    });
+
+    changePasswordBtn.addEventListener("click", () => {
+      changePassword();
+    });
+
+    validatePasswordForm();
+  }
+
   setEditing(false);
   loadProfile();
 })();
-
