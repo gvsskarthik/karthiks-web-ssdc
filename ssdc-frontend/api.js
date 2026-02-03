@@ -77,6 +77,7 @@
   const inflight = new Map();
   const nativeFetch = window.fetch.bind(window);
   const AUTH_TOKEN_KEY = "SSDC_AUTH_TOKEN";
+  const LAB_NAME_KEY = "SSDC_LAB_NAME";
   const LOGOUT_BROADCAST_KEY = "SSDC_LOGOUT_BROADCAST";
 
   function canUseSessionStorage() {
@@ -193,6 +194,127 @@
     if (canUseStorage()) {
       removeStorageValue(window.localStorage, AUTH_TOKEN_KEY);
     }
+    clearLabName();
+  }
+
+  function getLabName() {
+    const fromSession = readStorageValue(
+      canUseSessionStorage() ? window.sessionStorage : null,
+      LAB_NAME_KEY
+    );
+    if (fromSession) {
+      return fromSession;
+    }
+
+    // Legacy migration (if ever stored in localStorage).
+    const legacy = readStorageValue(
+      canUseStorage() ? window.localStorage : null,
+      LAB_NAME_KEY
+    );
+    if (!legacy) {
+      return null;
+    }
+    if (canUseSessionStorage()) {
+      writeStorageValue(window.sessionStorage, LAB_NAME_KEY, legacy);
+    }
+    if (canUseStorage()) {
+      removeStorageValue(window.localStorage, LAB_NAME_KEY);
+    }
+    return legacy;
+  }
+
+  function setLabName(name) {
+    const value = String(name || "").trim();
+    if (!value) {
+      clearLabName();
+      return;
+    }
+    if (canUseSessionStorage()) {
+      writeStorageValue(window.sessionStorage, LAB_NAME_KEY, value);
+    }
+    if (canUseStorage()) {
+      removeStorageValue(window.localStorage, LAB_NAME_KEY);
+    }
+  }
+
+  function clearLabName() {
+    if (canUseSessionStorage()) {
+      removeStorageValue(window.sessionStorage, LAB_NAME_KEY);
+    }
+    if (canUseStorage()) {
+      removeStorageValue(window.localStorage, LAB_NAME_KEY);
+    }
+  }
+
+  let labProfileInFlight = null;
+
+  function fetchLabProfile() {
+    if (labProfileInFlight) {
+      return labProfileInFlight;
+    }
+    if (!getAuthToken() || typeof window.fetch !== "function") {
+      return Promise.resolve(null);
+    }
+
+    const url = typeof window.apiUrl === "function"
+      ? window.apiUrl("/lab/me")
+      : "/api/lab/me";
+
+    labProfileInFlight = window.fetch(url, { cache: "no-store" })
+      .then((res) => res.text().then((text) => {
+        if (!res.ok) {
+          throw new Error(text || `Request failed: ${res.status}`);
+        }
+        try {
+          return text ? JSON.parse(text) : null;
+        } catch (err) {
+          return null;
+        }
+      }))
+      .then((data) => {
+        const name = data && data.labName ? String(data.labName).trim() : "";
+        if (name) {
+          setLabName(name);
+        }
+        return data || null;
+      })
+      .catch(() => null)
+      .finally(() => {
+        labProfileInFlight = null;
+      });
+
+    return labProfileInFlight;
+  }
+
+  function applyLabNameToDom(labName) {
+    const value = String(labName || getLabName() || "").trim();
+    if (!value) {
+      return false;
+    }
+    try {
+      document.querySelectorAll("[data-ssdc-lab-name]").forEach((el) => {
+        if (el) {
+          el.textContent = value;
+        }
+      });
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function ensureLabNameApplied() {
+    if (applyLabNameToDom()) {
+      return;
+    }
+    if (!getAuthToken()) {
+      return;
+    }
+    fetchLabProfile().then((data) => {
+      if (data && data.labName) {
+        applyLabNameToDom(data.labName);
+      }
+    });
   }
 
   function safeTopWindow() {
@@ -239,6 +361,10 @@
   window.setAuthToken = setAuthToken;
   window.clearAuthToken = clearAuthToken;
   window.forceLogout = forceLogout;
+  window.getLabName = getLabName;
+  window.setLabName = setLabName;
+  window.clearLabName = clearLabName;
+  window.applyLabNameToDom = applyLabNameToDom;
 
   function withAuth(request) {
     const token = getAuthToken();
@@ -712,4 +838,14 @@
 
   installIdleManagerTop();
   installIdleActivityForwarderFrame();
+
+  try {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", ensureLabNameApplied);
+    } else {
+      ensureLabNameApplied();
+    }
+  } catch (err) {
+    // ignore
+  }
 })();

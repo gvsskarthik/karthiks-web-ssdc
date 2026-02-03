@@ -1155,7 +1155,7 @@ function renderScreenPages(){
   const showHeader = mode !== "letterhead";
   const headerHtml = showHeader ? `
       <div class="header">
-        <h2 spellcheck="false">SAI SREE SWETHA DIAGNOSTICS</h2>
+        <h2 spellcheck="false" data-ssdc-lab-name>SAI SREE SWETHA DIAGNOSTICS</h2>
         <p><b>BLOOD EXAMINATION REPORT</b></p>
       </div>
     ` : "";
@@ -1338,6 +1338,10 @@ function renderScreenPages(){
 
     // Non-group: start a new page and retry.
     current = createPage();
+  }
+
+  if (typeof window.applyLabNameToDom === "function") {
+    window.applyLabNameToDom();
   }
 }
 

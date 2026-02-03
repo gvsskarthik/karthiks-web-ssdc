@@ -94,6 +94,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       throw new Error("Login failed");
     }
     setToken(data.token);
+    if (data.labName && typeof window.setLabName === "function") {
+      window.setLabName(data.labName);
+    }
     window.location.href = "dashboard.html";
   } catch (err) {
     clearToken();

@@ -20,6 +20,33 @@
 					<h1>Settings</h1>
 				</div>
 			</section>
+
+            <div class="neo-card">
+                <div class="header-row">
+                    <div>
+                        <h2>Lab Profile</h2>
+                        <div class="subtitle">Update your lab name.</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <label for="labNameInput">Lab Name</label>
+                        <input id="labNameInput" placeholder="Lab Name" spellcheck="false" disabled>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button class="btn" type="button" id="editLabNameBtn">Edit</button>
+                    <button class="btn" type="button" id="saveLabNameBtn" hidden>Save</button>
+                    <button class="btn secondary" type="button" id="cancelLabNameBtn" hidden>Cancel</button>
+                </div>
+
+                <div id="labNameStatus" class="message"></div>
+            </div>
 	</main>
 </body>
+
+<script src="../../api.js"></script>
+<script src="7-settings.js"></script>
 </html>
