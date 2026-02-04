@@ -5,9 +5,14 @@ const saveBtn = document.getElementById("saveBtn");
 const formMessage = document.getElementById("formMessage");
 const shortcutInput = document.getElementById("shortcut");
 const shortcutMsg = document.getElementById("shortcutMsg");
+const title = document.getElementById("title");
+const cancelBtn = document.getElementById("cancelBtn");
 
 let shortcutsLoaded = false;
 let existingShortcuts = new Set();
+let testsCache = null;
+let editingId = null;
+let editingShortcutNormalized = "";
 let paramIdCounter = 0;
 let normalIdCounter = 0;
 let defaultIdCounter = 0;
@@ -17,6 +22,18 @@ hasParametersInput.addEventListener("change", () => toggleParameters());
 saveBtn.addEventListener("click", () => saveTest());
 shortcutInput.addEventListener("input", () => validateShortcut());
 shortcutInput.addEventListener("blur", () => validateShortcut());
+if (cancelBtn) {
+  cancelBtn.addEventListener("click", () => {
+    window.location.href = "../5-tests.html";
+  });
+}
+
+{
+  const params = new URLSearchParams(location.search);
+  const raw = params.get("edit");
+  const parsed = raw == null ? NaN : Number(raw);
+  editingId = Number.isFinite(parsed) ? parsed : null;
+}
 
 function toggleParameters() {
   const enabled = hasParametersInput.checked;
@@ -47,7 +64,7 @@ function ensureAtLeastOneParameter() {
   }
 }
 
-function addParameter() {
+function addParameter(prefill = null) {
   const card = document.createElement("div");
   card.className = "param-card";
   const paramId = `param-${paramIdCounter++}`;
@@ -129,12 +146,44 @@ function addParameter() {
     }
   });
 
-  addNormalRow(card.querySelector(".normals"));
+  const nameInput = card.querySelector(".param-name");
+  const unitInput = card.querySelector(".param-unit");
+  const typeSelect = card.querySelector(".param-type");
+  const addLineToggle = card.querySelector(".param-add-line-toggle");
+  const normalsContainer = card.querySelector(".normals");
+
+  const defaultResultsList =
+    Array.isArray(prefill?.defaultResults) ? prefill.defaultResults : [];
+  if (defaultResultsList.length) {
+    defaultToggle.checked = true;
+    defaultControls.classList.remove("hidden");
+    defaultResults.innerHTML = "";
+    defaultResultsList.forEach(value => addDefaultResultRow(defaultResults, value));
+  }
+
+  if (prefill) {
+    nameInput.value = prefill.name || "";
+    unitInput.value = prefill.unit || "";
+    typeSelect.value = prefill.valueType || "";
+    if (addLineToggle) {
+      addLineToggle.checked = Boolean(prefill.allowNewLines);
+    }
+  }
+
+  const normalsList =
+    Array.isArray(prefill?.normalLines) ? prefill.normalLines : [];
+  normalsContainer.innerHTML = "";
+  if (normalsList.length) {
+    normalsList.forEach(value => addNormalRow(normalsContainer, value));
+  } else {
+    addNormalRow(normalsContainer, "");
+  }
+
   refreshParameterLabels();
   toggleParameters();
 }
 
-function addNormalRow(container) {
+function addNormalRow(container, value = "") {
   const row = document.createElement("div");
   row.className = "normal-row";
   const normalId = `normal-${normalIdCounter++}`;
@@ -144,10 +193,11 @@ function addNormalRow(container) {
     <div class="row-error"></div>
   `;
   container.appendChild(row);
+  row.querySelector(".normal-text").value = value == null ? "" : String(value);
   row.querySelector(".remove-normal").addEventListener("click", () => row.remove());
 }
 
-function addDefaultResultRow(container) {
+function addDefaultResultRow(container, value = "") {
   const row = document.createElement("div");
   row.className = "default-row";
   const defaultId = `default-${defaultIdCounter++}`;
@@ -156,6 +206,7 @@ function addDefaultResultRow(container) {
     <button class="btn link remove-default" type="button">Remove</button>
   `;
   container.appendChild(row);
+  row.querySelector(".default-result-input").value = value == null ? "" : String(value);
   row.querySelector(".remove-default").addEventListener("click", () => row.remove());
 }
 
@@ -188,8 +239,10 @@ async function loadShortcuts() {
       return;
     }
     const list = await res.json();
+    const tests = Array.isArray(list) ? list : [];
+    testsCache = tests;
     existingShortcuts = new Set(
-      (list || [])
+      tests
         .map(t => normalizeShortcut(t.shortcut))
         .filter(Boolean)
     );
@@ -210,7 +263,9 @@ function validateShortcut() {
     return false;
   }
 
-  if (shortcutsLoaded && existingShortcuts.has(normalized)) {
+  if (shortcutsLoaded
+      && existingShortcuts.has(normalized)
+      && (!editingShortcutNormalized || normalized !== editingShortcutNormalized)) {
     shortcutMsg.textContent = "Shortcut already exists.";
     shortcutInput.classList.add("error");
     return true;
@@ -223,6 +278,70 @@ function validateShortcut() {
 
 function normalizeNormalText(value) {
   return (value || "").trim();
+}
+
+function splitNormalLines(text) {
+  return String(text == null ? "" : text)
+    .replace(/\s+\/\s+/g, "\n")
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+}
+
+function clearParamCards() {
+  paramList.innerHTML = "";
+  paramIdCounter = 0;
+  normalIdCounter = 0;
+  defaultIdCounter = 0;
+}
+
+function applyTestToForm(test) {
+  const testName = document.getElementById("testName");
+  const shortcut = document.getElementById("shortcut");
+  const category = document.getElementById("category");
+  const cost = document.getElementById("cost");
+  const active = document.getElementById("active");
+
+  testName.value = test?.testName || "";
+  shortcut.value = test?.shortcut || "";
+  category.value = test?.category || "";
+  cost.value = test?.cost == null ? "" : String(test.cost);
+  active.checked = test?.active !== false;
+
+  editingShortcutNormalized = normalizeShortcut(test?.shortcut);
+
+  const params = Array.isArray(test?.parameters) ? test.parameters : [];
+  const fallbackNormals = Array.isArray(test?.normalValues)
+    ? test.normalValues
+        .map(n => n && (n.normalValue || n.textValue || n.value))
+        .filter(Boolean)
+        .map(v => String(v))
+    : [];
+
+  clearParamCards();
+
+  if (params.length) {
+    params.forEach(param => {
+      addParameter({
+        name: param?.name || "",
+        unit: param?.unit || "",
+        valueType: param?.valueType || "",
+        allowNewLines: Boolean(param?.allowNewLines),
+        defaultResults: Array.isArray(param?.defaultResults) ? param.defaultResults : [],
+        normalLines: splitNormalLines(param?.normalText)
+      });
+    });
+    return;
+  }
+
+  addParameter({
+    name: "",
+    unit: "",
+    valueType: "NUMBER",
+    allowNewLines: false,
+    defaultResults: [],
+    normalLines: fallbackNormals.length ? fallbackNormals : []
+  });
 }
 
 function collectPayload() {
@@ -339,12 +458,16 @@ async function saveTest() {
     return;
   }
 
-  setMessage("Saving...", "");
+  setMessage(editingId ? "Updating..." : "Saving...", "");
   saveBtn.disabled = true;
 
   try {
-    const res = await fetch(API_BASE_URL + "/tests", {
-      method: "POST",
+    const url = editingId
+      ? (API_BASE_URL + "/tests/" + editingId)
+      : (API_BASE_URL + "/tests");
+    const method = editingId ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method: method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
@@ -356,7 +479,7 @@ async function saveTest() {
       return;
     }
 
-    setMessage("Saved successfully.", "success");
+    setMessage(editingId ? "Updated successfully." : "Saved successfully.", "success");
     setTimeout(() => {
       window.location.href = "../5-tests.html";
     }, 600);
@@ -368,6 +491,31 @@ async function saveTest() {
   }
 }
 
-addParameter();
-toggleParameters();
-loadShortcuts();
+async function initPage() {
+  if (editingId && title) {
+    title.textContent = "Edit Test";
+  }
+  if (editingId && saveBtn) {
+    saveBtn.textContent = "Update Test";
+  }
+
+  await loadShortcuts();
+
+  if (editingId) {
+    const list = Array.isArray(testsCache) ? testsCache : [];
+    const match = list.find(t => Number(t?.id) === Number(editingId));
+    if (!match) {
+      setMessage("Test not found.", "error");
+      return;
+    }
+    applyTestToForm(match);
+    validateShortcut();
+    toggleParameters();
+    return;
+  }
+
+  addParameter();
+  toggleParameters();
+}
+
+initPage();

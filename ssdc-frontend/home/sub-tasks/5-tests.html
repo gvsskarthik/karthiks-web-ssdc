@@ -58,46 +58,6 @@
   </div>
 </div>
 
-<!-- ===== SINGLE TEST EDIT MODAL ===== -->
-<div class="modal" id="testModal">
-  <div class="modal-card">
-    <h3>Edit Test</h3>
-
-    <input id="tName" placeholder="Test Name">
-    <input id="tShortcut" placeholder="Shortcut">
-    <input id="tCategory" placeholder="Category">
-    <input id="tCost" type="number" placeholder="Cost">
-
-    <h4>Normal Values</h4>
-    <div id="nBox"></div>
-    <button class="neo-btn secondary" onclick="addNormal()">+ Normal</button>
-
-    <div class="actions">
-      <button class="neo-btn" onclick="saveTest()">Save</button>
-      <button class="neo-btn secondary" onclick="closeTest()">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== GROUP EDIT MODAL ===== -->
-<div class="modal" id="groupModal">
-  <div class="modal-card">
-    <h3>Edit Group</h3>
-
-    <input id="gName" placeholder="Group Name">
-    <input id="gShortcut" placeholder="Shortcut">
-    <input id="gCost" type="number" placeholder="Cost">
-
-    <h4>Select Tests</h4>
-    <div id="groupTests"></div>
-
-    <div class="actions">
-      <button class="neo-btn" onclick="saveGroup()">Save</button>
-      <button class="neo-btn secondary" onclick="closeGroup()">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <script src="../../api.js"></script>
 <script src="5-tests.js"></script>
 

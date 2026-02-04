@@ -1,6 +1,4 @@
 let tests=[], groups=[], mode="all";
-let normalIdCounter = 0;
-let editTest=null, editGroup=null;
 
 /* LOAD */
 Promise.all([
@@ -273,82 +271,27 @@ function render(){
     </td>
    </tr>`;
   });
-}
+ }
+ }
+
+/* EDIT (REDIRECT) */
+function openTest(test){
+  const id = Number(test?.id);
+  if (!Number.isFinite(id)) {
+    return;
+  }
+  closeMenus();
+  location.href = `test/new-tests.html?edit=${encodeURIComponent(id)}`;
 }
 
-/* ===== SINGLE TEST ===== */
-function openTest(t){
- editTest=t;
- tName.value=t.testName;
- tShortcut.value=t.shortcut;
- tCategory.value=t.category;
- tCost.value=t.cost;
- nBox.innerHTML="";
- normalIdCounter = 0;
- (t.normalValues||[]).forEach(n=>{
-  const normalId = `normal-${t.id}-${normalIdCounter++}`;
-  nBox.innerHTML+=`<div class="inline"><textarea id="${normalId}" name="${normalId}">${n.normalValue}</textarea></div>`;
- });
- testModal.style.display="flex";
+function openGroup(group){
+  const id = Number(group?.id);
+  if (!Number.isFinite(id)) {
+    return;
+  }
+  closeMenus();
+  location.href = `test/new-group.html?edit=${encodeURIComponent(id)}`;
 }
-function addNormal(){
-  const normalId = `normal-${editTest ? editTest.id : "new"}-${normalIdCounter++}`;
-  nBox.innerHTML+=`<textarea id="${normalId}" name="${normalId}"></textarea>`;
-}
-function saveTest(){
- fetch(API_BASE_URL + "/tests/" + editTest.id,{
-  method:"PUT",
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({
-    testName:tName.value,
-    shortcut:tShortcut.value,
-    category:tCategory.value,
-    cost:+tCost.value,
-    normalValues:[...nBox.querySelectorAll("textarea")].map(t=>({normalValue:t.value}))
-  })
- }).then(()=>location.reload());
-}
-function closeTest(){testModal.style.display="none"}
-
-/* ===== GROUP EDIT (MODAL, NO REDIRECT) ===== */
-function openGroup(g){
- editGroup=g;
- gName.value=g.groupName;
- gShortcut.value=g.shortcut;
- gCost.value=g.cost;
-
- fetch(API_BASE_URL + "/groups/" + g.id)
- .then(r=>r.json())
- .then(d=>{
-  editGroup = { ...editGroup, ...d };
-  groupTests.innerHTML="";
-  tests.forEach(t=>{
-  groupTests.innerHTML+=`
-    <div class="inline neo pad-8">
-      <input type="checkbox" id="group-test-${g.id}-${t.id}" name="group-test-${g.id}-${t.id}" value="${t.id}"
-        ${(d.testIds||[]).includes(t.id)?"checked":""}>
-      ${t.testName} (${t.shortcut})
-    </div>`;
-  });
-  groupModal.style.display="flex";
- });
-}
-function saveGroup(){
- const ids=[...groupTests.querySelectorAll("input:checked")].map(i=>+i.value);
- fetch(API_BASE_URL + "/groups/" + editGroup.id,{
-  method:"PUT",
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({
-   groupName:gName.value,
-   shortcut:gShortcut.value,
-   cost:+gCost.value,
-   testIds:ids,
-   category: editGroup.category || undefined,
-   active: typeof editGroup.active === "boolean" ? editGroup.active : undefined
-  })
- }).then(()=>location.reload());
-}
-function closeGroup(){groupModal.style.display="none"}
 
 /* DELETE */
 function deleteTest(id){
