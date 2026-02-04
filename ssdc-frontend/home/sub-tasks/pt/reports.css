@@ -109,9 +109,16 @@ th,td{
 }
 
 .group-header-row td{
-  padding-top:10px;
-  font-size:12px;
+  padding-top:8px;
+  padding-bottom:4px;
+}
+
+.group-heading{
+  margin:0;
+  font-size:11px;
   font-weight:700;
+  letter-spacing:0.6px;
+  line-height:1.2;
 }
 
 .section-header td{

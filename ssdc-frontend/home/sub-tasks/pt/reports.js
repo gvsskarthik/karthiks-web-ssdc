@@ -1121,7 +1121,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
 
     out.push(`
       <tr class="group-header-row" data-testid="${escapeHtml(firstTestId)}">
-        <td colspan="4">${escapeHtml(group.groupName || "Group")}</td>
+        <td colspan="4"><h4 class="group-heading">${escapeHtml(group.groupName || "Group")}</h4></td>
       </tr>
     `);
 
