@@ -619,6 +619,7 @@ function deriveSelectedFromResults(){
 
 const TESTS_CACHE_KEY = "testsActiveCache";
 const TESTS_CACHE_AT_KEY = "testsActiveCacheAt";
+const GROUPS_CACHE_KEY = "groupsCache";
 
 function readStorageJson(key, fallback){
   const fn = window.SSDC?.utils?.readStorageJson;
@@ -649,6 +650,11 @@ function readCachedTests(){
   return Array.isArray(list) ? list : [];
 }
 
+function readCachedGroups(){
+  const list = readStorageJson(GROUPS_CACHE_KEY, []);
+  return Array.isArray(list) ? list : [];
+}
+
 function deriveSelectedFromResultsList(list){
   const ids = new Set(
     (Array.isArray(list) ? list : [])
@@ -656,6 +662,17 @@ function deriveSelectedFromResultsList(list){
       .filter(id => Number.isFinite(id))
   );
   return [...ids];
+}
+
+function loadGroupsAll(){
+  return fetch(API_BASE_URL + "/groups")
+    .then(res => res.json())
+    .then(list => {
+      const groups = Array.isArray(list) ? list : [];
+      writeStorageJson(GROUPS_CACHE_KEY, groups);
+      return groups;
+    })
+    .catch(() => readCachedGroups());
 }
 
 function loadTestsActive(){
@@ -674,7 +691,7 @@ function loadTestsActive(){
     .catch(() => readCachedTests());
 }
 
-function renderReport(tests, resultList, selectedIds){
+function renderReport(tests, resultList, selectedIds, groupList){
   const body = document.getElementById("reportBody");
   if (!body) {
     return;
@@ -682,6 +699,7 @@ function renderReport(tests, resultList, selectedIds){
 
   const safeTests = Array.isArray(tests) ? tests : [];
   const safeResults = Array.isArray(resultList) ? resultList : [];
+  const safeGroups = Array.isArray(groupList) ? groupList : [];
   const ids = (Array.isArray(selectedIds) && selectedIds.length)
     ? selectedIds
     : deriveSelectedFromResultsList(safeResults);
@@ -755,10 +773,61 @@ function renderReport(tests, resultList, selectedIds){
 
   const out = [];
 
-  selectedTests.forEach(test => {
+  const INDENT_1 = "&nbsp;&nbsp;&nbsp;&nbsp;";
+  const INDENT_2 = INDENT_1 + INDENT_1;
+
+  const selectedIdSet = new Set(
+    ids.map(id => Number(id)).filter(id => Number.isFinite(id))
+  );
+
+  const testById = new Map();
+  safeTests.forEach(test => {
+    const id = Number(test?.id);
+    if (Number.isFinite(id)) {
+      testById.set(id, test);
+    }
+  });
+
+  function parseReportLayout(value){
+    if (!value) {
+      return null;
+    }
+    if (typeof value === "object") {
+      return value;
+    }
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch (err) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function normalizeReportLayout(value){
+    const layout = parseReportLayout(value);
+    if (!layout || Number(layout.version) !== 1) {
+      return null;
+    }
+    const directTestIds = Array.isArray(layout.directTestIds) ? layout.directTestIds : [];
+    const subGroups = Array.isArray(layout.subGroups) ? layout.subGroups : [];
+    if (!directTestIds.length && !subGroups.length) {
+      return null;
+    }
+    return { directTestIds, subGroups };
+  }
+
+  function renderOneTest(test, prefixHtml){
+    const testId = Number(test?.id);
+    if (!Number.isFinite(testId)) {
+      return;
+    }
+    const prefix = prefixHtml || "";
+
     const params = Array.isArray(test.parameters) ? test.parameters : [];
     const hasParams = params.length > 0;
-    const rawItemMap = grouped[test.id] || {};
+    const rawItemMap = grouped[testId] || {};
     const hasLineSlots = Object.keys(rawItemMap)
       .some(key => key && String(key).includes("::"));
     const isMultiParam = hasParams && params.length > 1;
@@ -786,8 +855,8 @@ function renderReport(tests, resultList, selectedIds){
         // and split normal values into separate bordered rows.
         if (index === 0) {
           pushRowsWithNormalLines(out, {
-            testId: test.id,
-            col1Html: `<b>${escapeHtml(test.testName)}</b>`,
+            testId: testId,
+            col1Html: `<b>${prefix}${escapeHtml(test.testName)}</b>`,
             col2Html: escapeHtml(value),
             col3Html: escapeHtml(unitText),
             col2Class: abnormal ? "is-abnormal" : "",
@@ -797,7 +866,7 @@ function renderReport(tests, resultList, selectedIds){
         }
 
         out.push(`
-          <tr data-testid="${escapeHtml(test.id)}">
+          <tr data-testid="${escapeHtml(testId)}">
             <td></td>
             <td class="${abnormal ? "is-abnormal" : ""}">${escapeHtml(value)}</td>
             <td>${escapeHtml(unitText)}</td>
@@ -810,8 +879,8 @@ function renderReport(tests, resultList, selectedIds){
 
     if (isMultiParam || isMultiUnits) {
       out.push(`
-        <tr class="test-header-row" data-testid="${escapeHtml(test.id)}">
-          <td colspan="4"><b>${escapeHtml(test.testName)}</b></td>
+        <tr class="test-header-row" data-testid="${escapeHtml(testId)}">
+          <td colspan="4"><b>${prefix}${escapeHtml(test.testName)}</b></td>
         </tr>
       `);
 
@@ -845,8 +914,8 @@ function renderReport(tests, resultList, selectedIds){
         if (sectionName) {
           if (sectionName !== currentSection) {
             out.push(`
-              <tr class="section-header" data-testid="${escapeHtml(test.id)}">
-                <td colspan="4">${escapeHtml(sectionName)}</td>
+              <tr class="section-header" data-testid="${escapeHtml(testId)}">
+                <td colspan="4">${prefix}${escapeHtml(sectionName)}</td>
               </tr>
             `);
             currentSection = sectionName;
@@ -876,8 +945,8 @@ function renderReport(tests, resultList, selectedIds){
           );
 
           pushRowsWithNormalLines(out, {
-            testId: test.id,
-            col1Html: escapeHtml(slot.label),
+            testId: testId,
+            col1Html: `${prefix}${escapeHtml(slot.label)}`,
             col1Class: "param-indent",
             col2Html: escapeHtml(displayValue),
             col2Class: abnormal ? "is-abnormal" : "",
@@ -907,13 +976,190 @@ function renderReport(tests, resultList, selectedIds){
     const unit = resolveUnitText(test, params[0] || {}, 0);
 
     pushRowsWithNormalLines(out, {
-      testId: test.id,
-      col1Html: `<b>${escapeHtml(test.testName)}</b>`,
+      testId: testId,
+      col1Html: `<b>${prefix}${escapeHtml(test.testName)}</b>`,
       col2Html: escapeHtml(resultValue),
       col2Class: abnormal ? "is-abnormal" : "",
       col3Html: escapeHtml(unit),
       normalText
     });
+  }
+
+  const normalizedGroups = safeGroups
+    .map(group => {
+      const id = Number(group?.id);
+      if (!Number.isFinite(id)) {
+        return null;
+      }
+      const ids = Array.isArray(group.testIds) ? group.testIds : [];
+      const testIds = ids
+        .map(testId => Number(testId))
+        .filter(testId => Number.isFinite(testId));
+      return { ...group, id, testIds };
+    })
+    .filter(group => group && Array.isArray(group.testIds) && group.testIds.length);
+
+  const groupById = new Map(normalizedGroups.map(group => [Number(group.id), group]));
+
+  const layoutCandidates = normalizedGroups
+    .map(group => {
+      const layout = normalizeReportLayout(group.reportLayout);
+      if (!layout) {
+        return null;
+      }
+      const allSelected = group.testIds.every(id => selectedIdSet.has(id));
+      if (!allSelected) {
+        return null;
+      }
+      return { ...group, __layout: layout };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const diff = (b.testIds?.length || 0) - (a.testIds?.length || 0);
+      if (diff !== 0) return diff;
+      return (Number(a.id) || 0) - (Number(b.id) || 0);
+    });
+
+  const selectedGroups = [];
+  const covered = new Set();
+  layoutCandidates.forEach(group => {
+    if (group.testIds.some(id => covered.has(id))) {
+      return;
+    }
+    selectedGroups.push(group);
+    group.testIds.forEach(id => covered.add(id));
+  });
+
+  function minSelectionIndexForIds(testIds){
+    let min = Number.MAX_SAFE_INTEGER;
+    (Array.isArray(testIds) ? testIds : []).forEach(id => {
+      const value = selectionIndex.get(id);
+      if (typeof value === "number" && value < min) {
+        min = value;
+      }
+    });
+    return min;
+  }
+
+  selectedGroups.sort((a, b) => {
+    const aMin = minSelectionIndexForIds(a.testIds);
+    const bMin = minSelectionIndexForIds(b.testIds);
+    if (aMin !== bMin) return aMin - bMin;
+    return String(a.groupName || "").localeCompare(String(b.groupName || ""));
+  });
+
+  const rendered = new Set();
+
+  function resolveSubGroupName(sub){
+    const groupId = Number(sub?.groupId);
+    const group = Number.isFinite(groupId) ? groupById.get(groupId) : null;
+    return String(group?.groupName || sub?.groupName || "Group").trim() || "Group";
+  }
+
+  function renderGroupWithLayout(group){
+    const layout = group.__layout;
+    const groupTestSet = new Set((group.testIds || []).map(id => Number(id)).filter(id => Number.isFinite(id)));
+
+    const directIds = [];
+    (layout.directTestIds || [])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id)
+        && selectedIdSet.has(id)
+        && groupTestSet.has(id)
+        && testById.has(id)
+        && !rendered.has(id))
+      .forEach(id => {
+        directIds.push(id);
+        rendered.add(id);
+      });
+
+    const subGroups = [];
+    (layout.subGroups || []).forEach(sub => {
+      const raw = Array.isArray(sub?.testIds) ? sub.testIds : [];
+      const testIds = raw
+        .map(id => Number(id))
+        .filter(id => Number.isFinite(id)
+          && selectedIdSet.has(id)
+          && groupTestSet.has(id)
+          && testById.has(id)
+          && !rendered.has(id));
+
+      if (!testIds.length) {
+        return;
+      }
+      testIds.forEach(id => rendered.add(id));
+
+      subGroups.push({
+        groupId: Number(sub?.groupId),
+        showName: sub?.showName !== false,
+        name: resolveSubGroupName(sub),
+        testIds
+      });
+    });
+
+    const remainingIds = (group.testIds || [])
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id)
+        && selectedIdSet.has(id)
+        && testById.has(id)
+        && !rendered.has(id));
+    remainingIds.forEach(id => rendered.add(id));
+
+    const firstTestId =
+      directIds[0]
+      || subGroups[0]?.testIds?.[0]
+      || remainingIds[0]
+      || null;
+
+    if (!firstTestId) {
+      // No renderable tests (inactive/missing master data). Undo coverage marks.
+      directIds.forEach(id => rendered.delete(id));
+      subGroups.forEach(sub => sub.testIds.forEach(id => rendered.delete(id)));
+      remainingIds.forEach(id => rendered.delete(id));
+      return;
+    }
+
+    out.push(`
+      <tr data-testid="${escapeHtml(firstTestId)}">
+        <td colspan="4"><b>${escapeHtml(group.groupName || "Group")}</b></td>
+      </tr>
+    `);
+
+    directIds.forEach(id => {
+      renderOneTest(testById.get(id), "");
+    });
+
+    subGroups.forEach(sub => {
+      const attachId = sub.testIds[0];
+      if (sub.showName) {
+        out.push(`
+          <tr class="section-header" data-testid="${escapeHtml(attachId)}">
+            <td colspan="4">${INDENT_1}<b>${escapeHtml(sub.name)}</b></td>
+          </tr>
+        `);
+      }
+
+      const prefix = sub.showName ? INDENT_2 : "";
+      sub.testIds.forEach(id => {
+        renderOneTest(testById.get(id), prefix);
+      });
+    });
+
+    remainingIds.forEach(id => {
+      renderOneTest(testById.get(id), "");
+    });
+  }
+
+  selectedGroups.forEach(group => renderGroupWithLayout(group));
+
+  const remainingTests = selectedTests
+    .filter(test => {
+      const id = Number(test?.id);
+      return Number.isFinite(id) && !rendered.has(id);
+    });
+
+  remainingTests.forEach(test => {
+    renderOneTest(test, "");
   });
 
   body.innerHTML = out.join("");
@@ -924,9 +1170,10 @@ function renderReport(tests, resultList, selectedIds){
 const cachedResults = readCachedResults();
 const cachedSelectedIds = readCachedSelectedTests();
 const cachedTests = readCachedTests();
+const cachedGroups = readCachedGroups();
 
 if (cachedResults.length || cachedSelectedIds.length) {
-  renderReport(cachedTests, cachedResults, cachedSelectedIds);
+  renderReport(cachedTests, cachedResults, cachedSelectedIds, cachedGroups);
 } else {
   const body = document.getElementById("reportBody");
   if (body) {
@@ -936,9 +1183,9 @@ if (cachedResults.length || cachedSelectedIds.length) {
 }
 
 /* ================= REFRESH FROM API (PARALLEL) ================= */
-Promise.all([loadResults(), loadSelectedTests(), loadTestsActive()])
-  .then(([freshResults, freshSelectedIds, freshTests]) => {
-    renderReport(freshTests, freshResults, freshSelectedIds);
+Promise.all([loadResults(), loadSelectedTests(), loadTestsActive(), loadGroupsAll()])
+  .then(([freshResults, freshSelectedIds, freshTests, freshGroups]) => {
+    renderReport(freshTests, freshResults, freshSelectedIds, freshGroups);
   });
 
 /* ================= ACTIONS ================= */

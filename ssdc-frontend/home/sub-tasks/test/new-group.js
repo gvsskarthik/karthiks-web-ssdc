@@ -59,6 +59,23 @@ function normalizeQuery(value){
     .trim();
 }
 
+function parseReportLayout(value){
+  if (!value) {
+    return null;
+  }
+  if (typeof value === "object") {
+    return value;
+  }
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      return null;
+    }
+  }
+  return null;
+}
+
 function formatValue(value, fallback){
   if (value === null || value === undefined || value === "") {
     return fallback || "—";
@@ -431,7 +448,14 @@ function resolveGroupCost(group){
 function setGroupSlotInputFromSelection(slot){
   const group = groupMap.get(slot.groupId);
   if (!group) {
-    slot.searchInput.value = "";
+    const fallbackName = String(slot.fallbackGroupName || "").trim();
+    const fallbackShortcut = String(slot.fallbackShortcut || "").trim();
+    if (!fallbackName) {
+      slot.searchInput.value = "";
+      return;
+    }
+    const shortcutText = fallbackShortcut ? ` (${fallbackShortcut})` : "";
+    slot.searchInput.value = `${fallbackName}${shortcutText}`.trim();
     return;
   }
   const shortcutText = group.shortcut ? ` (${group.shortcut})` : "";
@@ -442,7 +466,29 @@ function renderGroupDetails(slot){
   const detail = slot.detail;
   const group = groupMap.get(slot.groupId);
   if (!group) {
-    detail.innerHTML = '<div class="muted">Select a group to see details.</div>';
+    const fallbackName = String(slot.fallbackGroupName || "").trim();
+    const fallbackShortcut = String(slot.fallbackShortcut || "").trim();
+    if (!fallbackName) {
+      detail.innerHTML = '<div class="muted">Select a group to see details.</div>';
+      return;
+    }
+    const shortcutText = fallbackShortcut || "—";
+    detail.innerHTML = `
+      <div class="detail-grid">
+        <div>
+          <div class="detail-label">Group Name</div>
+          <div class="detail-value">${formatValue(fallbackName, "—")}</div>
+        </div>
+        <div>
+          <div class="detail-label">Shortcut</div>
+          <div class="detail-value">${shortcutText}</div>
+        </div>
+        <div>
+          <div class="detail-label">Status</div>
+          <div class="detail-value">Unavailable</div>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -653,7 +699,7 @@ function handleGroupSlotSuggestionKeys(slot, event){
   }
 }
 
-function addGroupSlot(groupId){
+function addGroupSlot(groupId, showNameChecked = true, fallback){
   const slotId = `group-slot-${groupSlotCounter++}`;
   const wrapper = document.createElement("div");
   wrapper.className = "slot-card";
@@ -673,6 +719,8 @@ function addGroupSlot(groupId){
         <div class="no-result hidden">❌ No group available</div>
       </div>
       <div class="inline">
+        <input class="show-name" type="checkbox" checked>
+        <label class="label-inline">Show Name</label>
         <input type="checkbox" disabled>
         <label class="label-inline">Details (read-only)</label>
       </div>
@@ -686,10 +734,14 @@ function addGroupSlot(groupId){
   const removeBtn = wrapper.querySelector(".btn.link");
   const titleEl = wrapper.querySelector(".slot-title");
   const detail = wrapper.querySelector(".detail-card");
+  const showNameInput = wrapper.querySelector(".show-name");
 
   const slot = {
     id: slotId,
     groupId: normalizeId(groupId),
+    fallbackGroupName: String(fallback?.groupName || ""),
+    fallbackShortcut: String(fallback?.shortcut || ""),
+    showNameInput,
     wrapper,
     searchInput,
     suggestions,
@@ -700,6 +752,9 @@ function addGroupSlot(groupId){
     titleEl
   };
   groupSlots.push(slot);
+  if (slot.showNameInput) {
+    slot.showNameInput.checked = showNameChecked !== false;
+  }
 
   searchInput.addEventListener("input", () => updateGroupSlotSuggestions(slot));
   searchInput.addEventListener("keydown", event => handleGroupSlotSuggestionKeys(slot, event));
@@ -764,8 +819,7 @@ async function loadData(){
     if (groupRes.ok) {
       const groupList = await groupRes.json();
       const rawGroups = Array.isArray(groupList) ? groupList : [];
-      groups = rawGroups
-        .filter(group => group && group.active !== false)
+      const normalizedAll = rawGroups
         .map(group => {
           const id = Number(group?.id);
           if (!Number.isFinite(id)) {
@@ -779,8 +833,9 @@ async function loadData(){
         })
         .filter(group => group && Array.isArray(group.testIds) && group.testIds.length);
 
-      groupMap = new Map(groups.map(group => [Number(group.id), group]));
-      addGroupBtn.disabled = false;
+      groupMap = new Map(normalizedAll.map(group => [Number(group.id), group]));
+      groups = normalizedAll.filter(group => group && group.active !== false);
+      addGroupBtn.disabled = groups.length === 0;
     } else {
       setStatus("Groups are not available right now. You can still add tests.", "error");
     }
@@ -799,14 +854,48 @@ async function loadData(){
         if (typeof group.active === "boolean") {
           active.checked = group.active;
         }
+        const layout = parseReportLayout(group.reportLayout);
         const ids = Array.isArray(group.testIds) ? group.testIds : [];
-        ids.forEach(id => addSlot(id));
+        const used = new Set();
+
+        const direct = Array.isArray(layout?.directTestIds) ? layout.directTestIds : [];
+        direct
+          .map(id => Number(id))
+          .filter(id => Number.isFinite(id) && testMap.has(id))
+          .forEach(id => {
+            used.add(id);
+            addSlot(id);
+          });
+
+        const subs = Array.isArray(layout?.subGroups) ? layout.subGroups : [];
+        subs.forEach(sub => {
+          const groupId = Number(sub?.groupId);
+          if (!Number.isFinite(groupId)) {
+            return;
+          }
+          const showName = sub?.showName !== false;
+          addGroupSlot(groupId, showName, {
+            groupName: sub?.groupName,
+            shortcut: sub?.shortcut
+          });
+
+          const subTestIds = Array.isArray(sub?.testIds) ? sub.testIds : [];
+          subTestIds
+            .map(id => Number(id))
+            .filter(id => Number.isFinite(id))
+            .forEach(id => used.add(id));
+        });
+
+        ids
+          .map(id => Number(id))
+          .filter(id => Number.isFinite(id) && testMap.has(id) && !used.has(id))
+          .forEach(id => addSlot(id));
       } else {
         setStatus("Failed to load group.", "error");
       }
     }
 
-    if (!slots.length) {
+    if (!slots.length && !groupSlots.length) {
       addSlot();
     }
 
@@ -846,24 +935,54 @@ async function saveGroup(){
     }
   }
 
-  const testIds = slots
+  const directTestIds = slots
     .map(slot => slot.testId)
     .filter(id => Number.isFinite(id));
 
-  const groupTestIds = groupSlots
-    .map(slot => slot.groupId)
-    .filter(id => Number.isFinite(id))
-    .flatMap(id => {
-      const group = groupMap.get(id);
-      if (!group || !Array.isArray(group.testIds)) {
-        return [];
-      }
-      return group.testIds;
-    })
-    .filter(id => Number.isFinite(id));
+  const subgroupDefs = groupSlots
+    .map(slot => ({
+      groupId: slot.groupId,
+      showName: slot.showNameInput ? slot.showNameInput.checked : true
+    }))
+    .filter(item => Number.isFinite(item.groupId));
 
-  const uniqueIds = [...new Set([...testIds, ...groupTestIds])];
-  if (!uniqueIds.length) {
+  const seen = new Set();
+  const normalizedDirectIds = [];
+  directTestIds.forEach(id => {
+    if (!seen.has(id)) {
+      seen.add(id);
+      normalizedDirectIds.push(id);
+    }
+  });
+
+  const normalizedSubGroups = [];
+  subgroupDefs.forEach(def => {
+    const group = groupMap.get(def.groupId);
+    const rawIds = Array.isArray(group?.testIds) ? group.testIds : [];
+    const filtered = rawIds
+      .map(id => Number(id))
+      .filter(id => Number.isFinite(id) && !seen.has(id) && testMap.has(id));
+    filtered.forEach(id => seen.add(id));
+
+    if (!filtered.length) {
+      return;
+    }
+
+    normalizedSubGroups.push({
+      groupId: def.groupId,
+      groupName: group?.groupName || "",
+      shortcut: group?.shortcut || "",
+      showName: def.showName !== false,
+      testIds: filtered
+    });
+  });
+
+  const finalTestIds = [
+    ...normalizedDirectIds,
+    ...normalizedSubGroups.flatMap(item => item.testIds)
+  ];
+
+  if (!finalTestIds.length) {
     setStatus("Select at least one test or group.", "error");
     return;
   }
@@ -874,7 +993,12 @@ async function saveGroup(){
     category: categoryValue || null,
     cost: costNumber,
     active: active.checked,
-    testIds: uniqueIds
+    testIds: finalTestIds,
+    reportLayout: {
+      version: 1,
+      directTestIds: normalizedDirectIds,
+      subGroups: normalizedSubGroups
+    }
   };
 
   setStatus("Saving...");

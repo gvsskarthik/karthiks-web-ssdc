@@ -49,6 +49,9 @@ public class TestGroup {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(name = "report_layout", columnDefinition = "TEXT")
+    private String reportLayout;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -78,4 +81,9 @@ public class TestGroup {
     public Boolean getActive() { return active; }
     @SuppressWarnings("unused")
     public void setActive(Boolean active) { this.active = active; }
+
+    @SuppressWarnings("unused")
+    public String getReportLayout() { return reportLayout; }
+    @SuppressWarnings("unused")
+    public void setReportLayout(String reportLayout) { this.reportLayout = reportLayout; }
 }

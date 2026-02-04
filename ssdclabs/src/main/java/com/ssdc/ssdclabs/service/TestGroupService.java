@@ -6,12 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssdc.ssdclabs.dto.TestGroupDetailDTO;
 import com.ssdc.ssdclabs.dto.TestGroupPayload;
 import com.ssdc.ssdclabs.model.Test;
@@ -27,13 +30,42 @@ public class TestGroupService {
     private final TestGroupRepository groupRepo;
     private final TestGroupMappingRepository mapRepo;
     private final TestRepository testRepo;
+    private final ObjectMapper objectMapper;
 
     public TestGroupService(TestGroupRepository groupRepo,
                             TestGroupMappingRepository mapRepo,
-                            TestRepository testRepo) {
+                            TestRepository testRepo,
+                            ObjectMapper objectMapper) {
         this.groupRepo = groupRepo;
         this.mapRepo = mapRepo;
         this.testRepo = testRepo;
+        this.objectMapper = objectMapper;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String serializeReportLayout(Object reportLayout) {
+        if (reportLayout == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(reportLayout);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Invalid report layout");
+        }
+    }
+
+    private Object deserializeReportLayout(String reportLayoutJson) {
+        if (isBlank(reportLayoutJson)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(reportLayoutJson, Object.class);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     public List<TestGroupDetailDTO> getAllGroups(String labId) {
@@ -78,7 +110,8 @@ public class TestGroupService {
                 testIdsByGroup.getOrDefault(
                     group.getId(),
                     Collections.emptyList()
-                )
+                ),
+                deserializeReportLayout(group.getReportLayout())
             ))
             .collect(Collectors.toList());
     }
@@ -100,7 +133,8 @@ public class TestGroupService {
             group.getCost(),
             group.getCategory(),
             group.getActive(),
-            testIds
+            testIds,
+            deserializeReportLayout(group.getReportLayout())
         );
     }
 
@@ -133,6 +167,7 @@ public class TestGroupService {
         if (payload.active != null) {
             group.setActive(payload.active);
         }
+        group.setReportLayout(serializeReportLayout(payload.reportLayout));
         group = groupRepo.save(group);
 
         saveMappings(group, payload.testIds);
@@ -162,6 +197,22 @@ public class TestGroupService {
         if (payload.active != null) {
             group.setActive(payload.active);
         }
+
+        Set<Long> existingTestIds = mapRepo.findByGroup_Id(id).stream()
+            .map(m -> m == null || m.getTest() == null ? null : m.getTest().getId())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Set<Long> incomingTestIds = (payload.testIds == null ? List.<Long>of() : payload.testIds).stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        boolean testsChanged = !existingTestIds.equals(incomingTestIds);
+
+        if (payload.reportLayout != null) {
+            group.setReportLayout(serializeReportLayout(payload.reportLayout));
+        } else if (testsChanged) {
+            group.setReportLayout(null);
+        }
+
         groupRepo.save(group);
 
         mapRepo.deleteByGroup_Id(group.getId());
