@@ -6,6 +6,7 @@ const cost = document.getElementById("cost");
 const active = document.getElementById("active");
 const slotList = document.getElementById("slotList");
 const addTestBtn = document.getElementById("addTestBtn");
+const addGroupBtn = document.getElementById("addGroupBtn");
 const status = document.getElementById("status");
 const saveBtn = document.getElementById("saveBtn");
 
@@ -14,10 +15,15 @@ const editId = params.get("edit");
 
 let tests = [];
 let testMap = new Map();
+let groups = [];
+let groupMap = new Map();
 let slots = [];
 let slotCounter = 0;
+let groupSlots = [];
+let groupSlotCounter = 0;
 
 addTestBtn.addEventListener("click", () => addSlot());
+addGroupBtn.addEventListener("click", () => addGroupSlot());
 saveBtn.addEventListener("click", () => saveGroup());
 
 function setStatus(message, type){
@@ -33,8 +39,16 @@ function normalizeId(value){
 function getSelectedIds(excludeSlotId){
   return new Set(
     slots
-      .filter(slot => slot.testId && slot.id !== excludeSlotId)
+      .filter(slot => Number.isFinite(slot.testId) && slot.id !== excludeSlotId)
       .map(slot => slot.testId)
+  );
+}
+
+function getSelectedGroupIds(excludeSlotId){
+  return new Set(
+    groupSlots
+      .filter(slot => Number.isFinite(slot.groupId) && slot.id !== excludeSlotId)
+      .map(slot => slot.groupId)
   );
 }
 
@@ -401,28 +415,380 @@ function addSlot(testId){
   refreshSlotTitles();
 }
 
+function resolveGroupCost(group){
+  const cost = Number(group?.cost);
+  if (Number.isFinite(cost)) {
+    return cost;
+  }
+  let sum = 0;
+  (group?.testIds || []).forEach(id => {
+    const test = testMap.get(Number(id));
+    sum += Number(test?.cost) || 0;
+  });
+  return Math.round(sum * 100) / 100;
+}
+
+function setGroupSlotInputFromSelection(slot){
+  const group = groupMap.get(slot.groupId);
+  if (!group) {
+    slot.searchInput.value = "";
+    return;
+  }
+  const shortcutText = group.shortcut ? ` (${group.shortcut})` : "";
+  slot.searchInput.value = `${group.groupName || ""}${shortcutText}`.trim();
+}
+
+function renderGroupDetails(slot){
+  const detail = slot.detail;
+  const group = groupMap.get(slot.groupId);
+  if (!group) {
+    detail.innerHTML = '<div class="muted">Select a group to see details.</div>';
+    return;
+  }
+
+  const shortcutText = group.shortcut || "—";
+  const categoryText = group.category || "—";
+  const activeText = group.active === false ? "Inactive" : "Active";
+  const testIds = Array.isArray(group.testIds) ? group.testIds : [];
+  const testLabels = testIds
+    .map(id => {
+      const test = testMap.get(Number(id));
+      if (!test) {
+        return "";
+      }
+      const shortText = test.shortcut ? ` (${test.shortcut})` : "";
+      return `${test.testName || ""}${shortText}`.trim();
+    })
+    .filter(Boolean);
+
+  const previewLimit = 10;
+  const preview = testLabels.slice(0, previewLimit).join(", ");
+  const remaining = testLabels.length - previewLimit;
+  const previewText = preview
+    ? preview + (remaining > 0 ? ` and ${remaining} more` : "")
+    : "—";
+
+  detail.innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="detail-label">Group Name</div>
+        <div class="detail-value">${formatValue(group.groupName, "—")}</div>
+      </div>
+      <div>
+        <div class="detail-label">Shortcut</div>
+        <div class="detail-value">${shortcutText}</div>
+      </div>
+      <div>
+        <div class="detail-label">Category</div>
+        <div class="detail-value">${categoryText}</div>
+      </div>
+      <div>
+        <div class="detail-label">Cost</div>
+        <div class="detail-value">${formatCost(resolveGroupCost(group))}</div>
+      </div>
+      <div>
+        <div class="detail-label">Status</div>
+        <div class="detail-value">${activeText}</div>
+      </div>
+      <div>
+        <div class="detail-label">Tests</div>
+        <div class="detail-value">${testIds.length}</div>
+      </div>
+    </div>
+    <div class="param-list">
+      <div class="param-item">
+        <div class="param-title">Includes</div>
+        <div class="param-normal">${previewText}</div>
+      </div>
+    </div>
+  `;
+}
+
+function rankGroupSuggestion(group, query){
+  const name = normalizeQuery(group.groupName);
+  const shortcut = normalizeQuery(group.shortcut);
+  if (shortcut && shortcut.startsWith(query)) {
+    return 0;
+  }
+  if (name.startsWith(query)) {
+    return 1;
+  }
+  if (shortcut && shortcut.includes(query)) {
+    return 2;
+  }
+  return 3;
+}
+
+function updateGroupSlotSuggestions(slot){
+  const query = normalizeQuery(slot.searchInput.value);
+
+  if (!query) {
+    slot.suggestionItems = [];
+    slot.activeSuggestionIndex = -1;
+    slot.suggestions.innerHTML = "";
+    slot.suggestions.classList.add("hidden");
+    slot.noResult.classList.add("hidden");
+    return;
+  }
+
+  const selectedElsewhere = getSelectedGroupIds(slot.id);
+
+  const matches = groups
+    .filter(group => {
+      const id = Number(group?.id);
+      if (!Number.isFinite(id)) {
+        return false;
+      }
+      if (selectedElsewhere.has(id)) {
+        return false;
+      }
+      const name = normalizeQuery(group.groupName);
+      const shortcut = normalizeQuery(group.shortcut);
+      return name.includes(query) || shortcut.includes(query);
+    })
+    .map(group => ({
+      id: Number(group.id),
+      name: group.groupName || "",
+      shortcut: group.shortcut || "",
+      cost: resolveGroupCost(group),
+      rank: rankGroupSuggestion(group, query)
+    }))
+    .sort((a, b) => {
+      const rankDiff = a.rank - b.rank;
+      if (rankDiff !== 0) {
+        return rankDiff;
+      }
+      return (a.id || 0) - (b.id || 0);
+    })
+    .slice(0, 8);
+
+  slot.suggestionItems = matches;
+  slot.activeSuggestionIndex = matches.length ? 0 : -1;
+  slot.suggestions.innerHTML = "";
+
+  matches.forEach((item, index) => {
+    const shortcut = item.shortcut ? item.shortcut : "";
+    const activeClass = index === slot.activeSuggestionIndex ? " active" : "";
+    const meta = shortcut ? shortcut : " ";
+    slot.suggestions.innerHTML += `
+      <div class="suggestion${activeClass}" data-id="${item.id}">
+        <div class="suggestion-main">
+          <div class="suggestion-name">${item.name || ""}</div>
+          <div class="suggestion-meta">${meta}</div>
+        </div>
+        <div class="suggestion-cost">₹${Number(item.cost) || 0}</div>
+      </div>
+    `;
+  });
+
+  slot.suggestions.classList.toggle("hidden", !matches.length);
+  slot.noResult.classList.toggle("hidden", matches.length > 0);
+}
+
+function chooseSlotGroup(slot, groupId){
+  const id = Number(groupId);
+  if (!Number.isFinite(id)) {
+    return;
+  }
+
+  const selectedElsewhere = getSelectedGroupIds(slot.id);
+  if (selectedElsewhere.has(id)) {
+    setStatus("This group is already selected in another slot.", "error");
+    return;
+  }
+
+  slot.groupId = id;
+  setGroupSlotInputFromSelection(slot);
+  renderGroupDetails(slot);
+  groupSlots.forEach(other => {
+    if (other.suggestions && !other.suggestions.classList.contains("hidden")) {
+      updateGroupSlotSuggestions(other);
+    }
+  });
+}
+
+function handleGroupSlotSuggestionClick(slot, event){
+  const item = event.target.closest(".suggestion");
+  if (!item) {
+    return;
+  }
+  chooseSlotGroup(slot, item.dataset.id);
+  slot.suggestions.classList.add("hidden");
+  slot.noResult.classList.add("hidden");
+}
+
+function handleGroupSlotSuggestionKeys(slot, event){
+  if (event.key === "ArrowDown") {
+    if (slot.suggestionItems.length) {
+      event.preventDefault();
+      setActiveSuggestion(slot, slot.activeSuggestionIndex + 1);
+    }
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    if (slot.suggestionItems.length) {
+      event.preventDefault();
+      setActiveSuggestion(slot, slot.activeSuggestionIndex - 1);
+    }
+    return;
+  }
+
+  if (event.key === "Enter") {
+    if (slot.suggestionItems.length) {
+      event.preventDefault();
+      const active = slot.suggestionItems[slot.activeSuggestionIndex] || slot.suggestionItems[0];
+      if (active) {
+        chooseSlotGroup(slot, active.id);
+      }
+      slot.suggestions.classList.add("hidden");
+      slot.noResult.classList.add("hidden");
+    }
+    return;
+  }
+
+  if (event.key === "Escape") {
+    slot.suggestions.classList.add("hidden");
+    slot.noResult.classList.add("hidden");
+  }
+}
+
+function addGroupSlot(groupId){
+  const slotId = `group-slot-${groupSlotCounter++}`;
+  const wrapper = document.createElement("div");
+  wrapper.className = "slot-card";
+
+  wrapper.innerHTML = `
+    <div class="slot-header">
+      <h4 class="slot-title"></h4>
+      <button class="btn link" type="button">Remove</button>
+    </div>
+    <div class="grid-2">
+      <div>
+        <label>Select Group</label>
+        <div class="search-wrap">
+          <input class="group-search" placeholder="Search group..." autocomplete="off">
+          <div class="suggestions hidden"></div>
+        </div>
+        <div class="no-result hidden">❌ No group available</div>
+      </div>
+      <div class="inline">
+        <input type="checkbox" disabled>
+        <label class="label-inline">Details (read-only)</label>
+      </div>
+    </div>
+    <div class="detail-card"></div>
+  `;
+
+  const searchInput = wrapper.querySelector(".group-search");
+  const suggestions = wrapper.querySelector(".suggestions");
+  const noResult = wrapper.querySelector(".no-result");
+  const removeBtn = wrapper.querySelector(".btn.link");
+  const titleEl = wrapper.querySelector(".slot-title");
+  const detail = wrapper.querySelector(".detail-card");
+
+  const slot = {
+    id: slotId,
+    groupId: normalizeId(groupId),
+    wrapper,
+    searchInput,
+    suggestions,
+    noResult,
+    suggestionItems: [],
+    activeSuggestionIndex: -1,
+    detail,
+    titleEl
+  };
+  groupSlots.push(slot);
+
+  searchInput.addEventListener("input", () => updateGroupSlotSuggestions(slot));
+  searchInput.addEventListener("keydown", event => handleGroupSlotSuggestionKeys(slot, event));
+  suggestions.addEventListener("click", event => handleGroupSlotSuggestionClick(slot, event));
+  searchInput.addEventListener("focus", () => updateGroupSlotSuggestions(slot));
+  searchInput.addEventListener("blur", () => {
+    setTimeout(() => {
+      slot.suggestions.classList.add("hidden");
+      slot.noResult.classList.add("hidden");
+      setGroupSlotInputFromSelection(slot);
+    }, 120);
+  });
+
+  removeBtn.addEventListener("click", () => {
+    groupSlots = groupSlots.filter(item => item.id !== slot.id);
+    wrapper.remove();
+    groupSlots.forEach(other => updateGroupSlotSuggestions(other));
+    refreshSlotTitles();
+  });
+
+  slotList.appendChild(wrapper);
+  setGroupSlotInputFromSelection(slot);
+  renderGroupDetails(slot);
+  refreshSlotTitles();
+}
+
 function refreshSlotTitles(){
   slots.forEach((slot, index) => {
     slot.titleEl.textContent = `Test ${index + 1}`;
   });
+  groupSlots.forEach((slot, index) => {
+    slot.titleEl.textContent = `Group ${index + 1}`;
+  });
 }
 
 async function loadData(){
-  setStatus("Loading tests...");
+  setStatus("Loading tests & groups...");
+  addGroupBtn.disabled = true;
   try {
-    const testRes = await fetch(API_BASE_URL + "/tests/active");
+    const [testRes, groupRes] = await Promise.all([
+      fetch(API_BASE_URL + "/tests/active"),
+      fetch(API_BASE_URL + "/groups")
+    ]);
+
     if (!testRes.ok) {
       setStatus("Failed to load tests.", "error");
       return;
     }
     tests = await testRes.json();
     tests = Array.isArray(tests) ? tests : [];
-    testMap = new Map(tests.map(t => [Number(t.id), t]));
+    testMap = new Map();
+    tests.forEach(test => {
+      const id = Number(test?.id);
+      if (Number.isFinite(id)) {
+        testMap.set(id, test);
+      }
+    });
+
+    groups = [];
+    groupMap = new Map();
+
+    if (groupRes.ok) {
+      const groupList = await groupRes.json();
+      const rawGroups = Array.isArray(groupList) ? groupList : [];
+      groups = rawGroups
+        .filter(group => group && group.active !== false)
+        .map(group => {
+          const id = Number(group?.id);
+          if (!Number.isFinite(id)) {
+            return null;
+          }
+          const ids = Array.isArray(group.testIds) ? group.testIds : [];
+          const testIds = ids
+            .map(testId => Number(testId))
+            .filter(testId => Number.isFinite(testId) && testMap.has(testId));
+          return { ...group, id, testIds };
+        })
+        .filter(group => group && Array.isArray(group.testIds) && group.testIds.length);
+
+      groupMap = new Map(groups.map(group => [Number(group.id), group]));
+      addGroupBtn.disabled = false;
+    } else {
+      setStatus("Groups are not available right now. You can still add tests.", "error");
+    }
 
     if (editId) {
-      const groupRes = await fetch(API_BASE_URL + "/groups/" + editId);
-      if (groupRes.ok) {
-        const group = await groupRes.json();
+      const editRes = await fetch(API_BASE_URL + "/groups/" + editId);
+      if (editRes.ok) {
+        const group = await editRes.json();
         title.textContent = "Edit Group";
         groupName.value = group.groupName || "";
         shortcut.value = group.shortcut || "";
@@ -444,6 +810,9 @@ async function loadData(){
       addSlot();
     }
 
+    if (status.classList.contains("error")) {
+      return;
+    }
     setStatus("");
   } catch (err) {
     console.error(err);
@@ -481,9 +850,21 @@ async function saveGroup(){
     .map(slot => slot.testId)
     .filter(id => Number.isFinite(id));
 
-  const uniqueIds = [...new Set(testIds)];
+  const groupTestIds = groupSlots
+    .map(slot => slot.groupId)
+    .filter(id => Number.isFinite(id))
+    .flatMap(id => {
+      const group = groupMap.get(id);
+      if (!group || !Array.isArray(group.testIds)) {
+        return [];
+      }
+      return group.testIds;
+    })
+    .filter(id => Number.isFinite(id));
+
+  const uniqueIds = [...new Set([...testIds, ...groupTestIds])];
   if (!uniqueIds.length) {
-    setStatus("Select at least one test.", "error");
+    setStatus("Select at least one test or group.", "error");
     return;
   }
 
