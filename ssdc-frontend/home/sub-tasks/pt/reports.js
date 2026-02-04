@@ -856,7 +856,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
         if (index === 0) {
           pushRowsWithNormalLines(out, {
             testId: testId,
-            col1Html: `<b>${prefix}${escapeHtml(test.testName)}</b>`,
+            col1Html: `${prefix}${escapeHtml(test.testName)}`,
             col2Html: escapeHtml(value),
             col3Html: escapeHtml(unitText),
             col2Class: abnormal ? "is-abnormal" : "",
@@ -880,7 +880,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
     if (isMultiParam || isMultiUnits) {
       out.push(`
         <tr class="test-header-row" data-testid="${escapeHtml(testId)}">
-          <td colspan="4"><b>${prefix}${escapeHtml(test.testName)}</b></td>
+          <td colspan="4">${prefix}${escapeHtml(test.testName)}</td>
         </tr>
       `);
 
@@ -977,7 +977,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
 
     pushRowsWithNormalLines(out, {
       testId: testId,
-      col1Html: `<b>${prefix}${escapeHtml(test.testName)}</b>`,
+      col1Html: `${prefix}${escapeHtml(test.testName)}`,
       col2Html: escapeHtml(resultValue),
       col2Class: abnormal ? "is-abnormal" : "",
       col3Html: escapeHtml(unit),
@@ -1120,8 +1120,8 @@ function renderReport(tests, resultList, selectedIds, groupList){
     }
 
     out.push(`
-      <tr data-testid="${escapeHtml(firstTestId)}">
-        <td colspan="4"><b>${escapeHtml(group.groupName || "Group")}</b></td>
+      <tr class="group-header-row" data-testid="${escapeHtml(firstTestId)}">
+        <td colspan="4">${escapeHtml(group.groupName || "Group")}</td>
       </tr>
     `);
 

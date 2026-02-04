@@ -108,6 +108,12 @@ th,td{
   color: var(--theme-danger);
 }
 
+.group-header-row td{
+  padding-top:10px;
+  font-size:12px;
+  font-weight:700;
+}
+
 .section-header td{
   padding-top:8px;
   font-size:11px;
