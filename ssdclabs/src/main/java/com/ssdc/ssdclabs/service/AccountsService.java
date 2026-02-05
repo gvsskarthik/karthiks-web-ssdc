@@ -45,7 +45,9 @@ public class AccountsService {
         double totalRevenue = toDouble(row, 0);
         double totalDiscount = toDouble(row, 1);
         double totalCommission = toDouble(row, 2);
-        double netProfit = totalRevenue - totalDiscount - totalCommission;
+        // totalRevenue is SUM(p.amount) (final payable), which already reflects discounts.
+        // Do not subtract discount again.
+        double netProfit = totalRevenue - totalCommission;
 
         return new AccountsSummaryDTO(totalRevenue, totalDiscount, totalCommission, netProfit);
     }

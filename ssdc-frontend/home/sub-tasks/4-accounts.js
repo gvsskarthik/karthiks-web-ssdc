@@ -210,8 +210,9 @@ function computeSummary(rows){
     totals.totalCommission += commission;
   });
 
-  totals.netProfit =
-    totals.totalRevenue - totals.totalDiscount - totals.totalCommission;
+  // billAmount is already the FINAL payable amount (after discount),
+  // so subtracting discount again would double-count it.
+  totals.netProfit = totals.totalRevenue - totals.totalCommission;
 
   return totals;
 }
