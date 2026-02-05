@@ -226,6 +226,7 @@ public class TestGroupService {
         groupRepo.save(group);
 
         mapRepo.deleteByGroup_Id(group.getId());
+        mapRepo.flush();
         saveMappings(group, payload.testIds);
 
         return "GROUP_UPDATED";
