@@ -238,16 +238,21 @@ body.select-mode .check-col {
 
 .sno {
   width: 60px;
+  text-align: center;
 }
 
 .name {
-  width: 220px;
-  overflow-wrap: anywhere;
+  width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .doctor {
-  width: 200px;
-  overflow-wrap: anywhere;
+  width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .amount {
@@ -260,14 +265,17 @@ body.select-mode .check-col {
 .status-col {
   width: 140px;
   white-space: nowrap;
+  text-align: center;
 }
 
 .status {
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .options {
   width: 90px;
+  text-align: center;
 }
 
 .menu {

@@ -178,12 +178,16 @@ tbody td:last-child {
 
 .name {
   width: 260px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .doctor {
   width: 220px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-col {
@@ -203,6 +207,10 @@ tbody td:last-child {
   color: var(--accent);
   font-weight: 600;
   text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .patient-link:hover {

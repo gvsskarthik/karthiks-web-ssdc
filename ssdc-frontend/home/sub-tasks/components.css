@@ -62,6 +62,14 @@ textarea {
   color: var(--theme-warm);
 }
 
+.status.is-completed{
+  color: var(--theme-success);
+}
+
+.status.is-not-completed{
+  color: var(--theme-danger);
+}
+
 .danger {
   color: var(--theme-danger);
 }

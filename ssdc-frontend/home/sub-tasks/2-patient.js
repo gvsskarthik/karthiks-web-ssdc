@@ -146,6 +146,12 @@ function renderTable(data){
   const snoClass = selectMode ? "sno" : "sno round-left";
 
   data.forEach((p,i)=>{
+    const isCompleted =
+      String(p?.status || "").trim().toUpperCase() === "COMPLETED";
+    const statusClass =
+      isCompleted ? "status is-completed" : "status is-not-completed";
+    const statusText =
+      String(p?.status || "").trim() || "NOT COMPLETE";
     tableBody.innerHTML+=`
     <tr>
       <td class="${checkClass}">
@@ -160,7 +166,7 @@ function renderTable(data){
       <td class="name">${p.name || "-"}</td>
       <td class="doctor">${p.doctor||'-'}</td>
       <td class="amount">₹${p.amount}</td>
-      <td class="status-col"><span class="status">${p.status}</span></td>
+      <td class="status-col"><span class="${statusClass}">${statusText}</span></td>
       <td class="options">
         <div class="menu">
           <button class="menu-btn" type="button" onclick="toggleMenu(${p.id})">⋮</button>

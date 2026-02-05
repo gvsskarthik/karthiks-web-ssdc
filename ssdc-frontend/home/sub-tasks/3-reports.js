@@ -152,6 +152,12 @@ function renderTable(data){
   }
 
   data.forEach((p,i)=>{
+    const isCompleted =
+      String(p?.status || "").trim().toUpperCase() === "COMPLETED";
+    const statusClass =
+      isCompleted ? "status is-completed" : "status is-not-completed";
+    const statusText =
+      String(p?.status || "").trim() || "NOT COMPLETE";
     table.innerHTML += `
       <tr>
         <td class="sno">${i+1}</td>
@@ -165,7 +171,7 @@ function renderTable(data){
         </td>
 
         <td class="doctor">${p.doctor || "SELF"}</td>
-        <td class="status-col"><span class="status">${p.status}</span></td>
+        <td class="status-col"><span class="${statusClass}">${statusText}</span></td>
 
         <!-- VIEW FINAL REPORT -->
         <td class="action-col">
