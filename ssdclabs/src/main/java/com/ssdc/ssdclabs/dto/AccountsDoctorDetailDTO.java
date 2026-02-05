@@ -6,5 +6,8 @@ public record AccountsDoctorDetailDTO(
     String patientName,
     String doctorName,
     double billAmount,
+    double discountAmount,
+    double paidAmount,
+    double dueAmount,
     double commissionAmount
 ) {}

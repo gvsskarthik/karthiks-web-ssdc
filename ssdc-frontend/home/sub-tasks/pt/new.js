@@ -62,6 +62,7 @@ const billItems = document.getElementById("billItems");
 let lastPricingEdited = null; // "discount" | "payable"
 let lastPaymentEdited = null; // "paid" | "due"
 let isAutoBillUpdate = false;
+let isSubmittingPatient = false;
 let searchTimer = null;
 let patientSearchController = null;
 let patientSearchRequestId = 0;
@@ -907,9 +908,18 @@ function handleSuggestionKeys(event){
 patientForm.addEventListener("submit", e => {
   e.preventDefault();
 
+  if (isSubmittingPatient) {
+    return;
+  }
+
   if (!selected.size) {
     alert("Select at least one test");
     return;
+  }
+
+  isSubmittingPatient = true;
+  if (savePatientBtn) {
+    savePatientBtn.disabled = true;
   }
 
   const current =
@@ -934,7 +944,16 @@ patientForm.addEventListener("submit", e => {
   if (current && current.id) {
     // Keep the user's selection order; reports.html will group by category but keep this order within category.
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    parent.loadPage("home/sub-tasks/pt/enter-values.html");
+    try {
+      parent.loadPage("home/sub-tasks/pt/enter-values.html");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to open results page");
+      isSubmittingPatient = false;
+      if (savePatientBtn) {
+        savePatientBtn.disabled = false;
+      }
+    }
     return;
   }
 
@@ -944,8 +963,17 @@ patientForm.addEventListener("submit", e => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
-  .then(res => res.json())
+  .then(async (res) => {
+    const text = await res.text().catch(() => "");
+    if (!res.ok) {
+      throw new Error(text || "Failed to save patient");
+    }
+    return text ? JSON.parse(text) : null;
+  })
   .then(p => {
+    if (!p || !p.id) {
+      throw new Error("Failed to save patient");
+    }
     localStorage.setItem("currentPatient", JSON.stringify(p));
     // Keep the user's selection order; reports.html will group by category but keep this order within category.
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
@@ -954,5 +982,9 @@ patientForm.addEventListener("submit", e => {
   .catch(err => {
     console.error(err);
     alert("Failed to save patient");
+    isSubmittingPatient = false;
+    if (savePatientBtn) {
+      savePatientBtn.disabled = false;
+    }
   });
 });

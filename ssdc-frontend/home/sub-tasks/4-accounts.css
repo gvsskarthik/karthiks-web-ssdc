@@ -79,7 +79,7 @@ body {
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -102,6 +102,10 @@ body {
   animation-delay: .15s;
 }
 
+.summary-card:nth-child(5) {
+  animation-delay: .2s;
+}
+
 .summary-card::after {
   content: "";
   position: absolute;
@@ -115,10 +119,14 @@ body {
 }
 
 .summary-card:nth-child(3)::after {
-  background: linear-gradient(135deg, rgba(208, 129, 42, 0.12), transparent 60%);
+  background: linear-gradient(135deg, rgba(92, 124, 250, 0.12), transparent 60%);
 }
 
 .summary-card:nth-child(4)::after {
+  background: linear-gradient(135deg, rgba(208, 129, 42, 0.12), transparent 60%);
+}
+
+.summary-card:nth-child(5)::after {
   background: linear-gradient(135deg, rgba(27, 122, 63, 0.12), transparent 60%);
 }
 
@@ -149,6 +157,10 @@ body {
 
 .summary-commission {
   color: var(--theme-warm);
+}
+
+.summary-due {
+  color: #2f6feb;
 }
 
 .summary-profit {
@@ -257,7 +269,7 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 860px;
 }
 
 th, td {

@@ -4,6 +4,7 @@ const apiPath = window.apiUrl || function (path) {
 
 const sumRevenue = document.getElementById("sumRevenue");
 const sumDiscount = document.getElementById("sumDiscount");
+const sumDue = document.getElementById("sumDue");
 const sumCommission = document.getElementById("sumCommission");
 const sumProfit = document.getElementById("sumProfit");
 const doctorSelect = document.getElementById("doctor");
@@ -39,6 +40,8 @@ function setSummaryMessage(message){
     `<h4>Total Revenue</h4><p class="summary-value summary-revenue">${message}</p>`;
   sumDiscount.innerHTML =
     `<h4>Discounts Given</h4><p class="summary-value summary-discount">${message}</p>`;
+  sumDue.innerHTML =
+    `<h4>Total Due</h4><p class="summary-value summary-due">${message}</p>`;
   sumCommission.innerHTML =
     `<h4>Total Commission</h4><p class="summary-value summary-commission">${message}</p>`;
   sumProfit.innerHTML =
@@ -50,6 +53,8 @@ function setSummaryValues(data){
     `<h4>Total Revenue</h4><p class="summary-value summary-revenue">₹${formatNumber(data?.totalRevenue)}</p>`;
   sumDiscount.innerHTML =
     `<h4>Discounts Given</h4><p class="summary-value summary-discount">₹${formatNumber(data?.totalDiscount)}</p>`;
+  sumDue.innerHTML =
+    `<h4>Total Due</h4><p class="summary-value summary-due">₹${formatNumber(data?.totalDue)}</p>`;
   sumCommission.innerHTML =
     `<h4>Total Commission</h4><p class="summary-value summary-commission">₹${formatNumber(data?.totalCommission)}</p>`;
   sumProfit.innerHTML =
@@ -58,7 +63,7 @@ function setSummaryValues(data){
 
 function setDetailsMessage(message){
   detailsBody.innerHTML =
-    `<tr><td colspan="6" class="muted text-center">${message}</td></tr>`;
+    `<tr><td colspan="7" class="muted text-center">${message}</td></tr>`;
 }
 
 function renderDetails(rows, doctorNameFallback){
@@ -68,14 +73,17 @@ function renderDetails(rows, doctorNameFallback){
   }
 
   let totalBill = 0;
+  let totalDue = 0;
   let totalCommission = 0;
   let html = "";
 
   rows.forEach(r => {
     const doctorName = r.doctorName || doctorNameFallback || "-";
     const bill = parseNumber(r.billAmount);
+    const due = parseNumber(r.dueAmount ?? r.due ?? 0);
     const commission = parseNumber(r.commissionAmount);
     totalBill += bill;
+    totalDue += due;
     totalCommission += commission;
     html += `
       <tr>
@@ -84,6 +92,7 @@ function renderDetails(rows, doctorNameFallback){
         <td>${r.patientName || "-"}</td>
         <td>${doctorName}</td>
         <td class="num">₹${formatNumber(bill)}</td>
+        <td class="num">₹${formatNumber(due)}</td>
         <td class="num commission">₹${formatNumber(commission)}</td>
       </tr>
     `;
@@ -93,6 +102,7 @@ function renderDetails(rows, doctorNameFallback){
     <tr class="total-row">
       <td colspan="4">Total</td>
       <td class="num">₹${formatNumber(totalBill)}</td>
+      <td class="num">₹${formatNumber(totalDue)}</td>
       <td class="num commission">₹${formatNumber(totalCommission)}</td>
     </tr>
   `;
@@ -184,6 +194,7 @@ function computeSummary(rows){
   const totals = {
     totalRevenue: 0,
     totalDiscount: 0,
+    totalDue: 0,
     totalCommission: 0,
     netProfit: 0,
   };
@@ -191,9 +202,11 @@ function computeSummary(rows){
   rows.forEach(row => {
     const bill = parseNumber(row?.billAmount ?? row?.amount ?? 0);
     const discount = getDiscountAmount(row);
+    const due = parseNumber(row?.dueAmount ?? row?.due ?? 0);
     const commission = parseNumber(row?.commissionAmount ?? 0);
     totals.totalRevenue += bill;
     totals.totalDiscount += discount;
+    totals.totalDue += due;
     totals.totalCommission += commission;
   });
 

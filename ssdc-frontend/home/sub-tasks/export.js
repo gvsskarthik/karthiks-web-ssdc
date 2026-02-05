@@ -35,7 +35,7 @@ function formatCurrency(value){
 
 function setBodyMessage(message){
   exportBody.innerHTML =
-    `<tr><td colspan="6">${message}</td></tr>`;
+    `<tr><td colspan="7">${message}</td></tr>`;
 }
 
 function renderRows(rows){
@@ -48,6 +48,7 @@ function renderRows(rows){
   rows.forEach(row => {
     const doctorLabel = row.doctorName
       || (exportDoctorId ? exportDoctorName : "-");
+    const due = parseNumber(row.dueAmount ?? row.due ?? 0);
     exportBody.innerHTML += `
       <tr>
         <td>${row.date || "-"}</td>
@@ -55,6 +56,7 @@ function renderRows(rows){
         <td>${row.patientName || "-"}</td>
         <td>${doctorLabel}</td>
         <td>${formatCurrency(row.billAmount)}</td>
+        <td>${formatCurrency(due)}</td>
         <td>${formatCurrency(row.commissionAmount)}</td>
       </tr>
     `;
@@ -99,18 +101,21 @@ function buildCsv(rows){
     "Patient",
     "Doctor",
     "Bill",
+    "Due",
     "Commission"
   ];
   const lines = [header.map(toCsvValue).join(",")];
   rows.forEach(row => {
     const doctorLabel = row.doctorName
       || (exportDoctorId ? exportDoctorName : "");
+    const due = parseNumber(row.dueAmount ?? row.due ?? 0);
     const line = [
       row.date || "",
       row.reportId || "",
       row.patientName || "",
       doctorLabel,
       formatNumber(row.billAmount),
+      formatNumber(due),
       formatNumber(row.commissionAmount)
     ];
     lines.push(line.map(toCsvValue).join(","));

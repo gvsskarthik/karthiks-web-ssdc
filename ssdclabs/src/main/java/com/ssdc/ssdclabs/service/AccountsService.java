@@ -130,6 +130,9 @@ public class AccountsService {
         List<AccountsDoctorDetailDTO> details = new ArrayList<>();
         for (Patient patient : patients) {
             double bill = safeAmount(patient);
+            double discount = safeDiscount(patient);
+            double paid = safePaid(patient, bill);
+            double due = Math.max(0, bill - paid);
             double commission = calculateCommission(bill, rate);
             String date = patient.getVisitDate() == null
                 ? ""
@@ -144,6 +147,9 @@ public class AccountsService {
                 patient.getName(),
                 doctorName,
                 bill,
+                discount,
+                paid,
+                due,
                 commission
             ));
         }
@@ -159,6 +165,9 @@ public class AccountsService {
 
         for (Patient patient : patients) {
             double bill = safeAmount(patient);
+            double discount = safeDiscount(patient);
+            double paid = safePaid(patient, bill);
+            double due = Math.max(0, bill - paid);
             String doctorName = resolveDoctorName(patient);
             double rate = commissionRateFor(patient.getDoctor(), doctorName);
             double commission = calculateCommission(bill, rate);
@@ -174,6 +183,9 @@ public class AccountsService {
                 patient.getName(),
                 normalizeDoctorName(doctorName),
                 bill,
+                discount,
+                paid,
+                due,
                 commission
             ));
         }
@@ -226,6 +238,21 @@ public class AccountsService {
             return 0;
         }
         return Math.max(0, discount);
+    }
+
+    private double safePaid(Patient patient, double bill) {
+        if (patient == null) {
+            return 0;
+        }
+        Double paid = patient.getPaid();
+        double value = paid == null ? 0 : paid;
+        if (value < 0) {
+            value = 0;
+        }
+        if (bill < 0) {
+            return value;
+        }
+        return Math.min(value, bill);
     }
 
     private Long parseLong(String value) {
