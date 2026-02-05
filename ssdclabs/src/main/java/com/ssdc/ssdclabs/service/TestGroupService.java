@@ -246,8 +246,15 @@ public class TestGroupService {
         if (testIds == null) {
             return;
         }
+        Set<Long> seen = new java.util.HashSet<>();
         int position = 0;
         for (Long testId : testIds) {
+            if (testId == null) {
+                continue;
+            }
+            if (!seen.add(testId)) {
+                continue;
+            }
             Test test = testRepo.findByIdAndLabId(
                     Objects.requireNonNull(testId, "testId"),
                     Objects.requireNonNull(group.getLabId(), "labId"))
