@@ -446,7 +446,27 @@ public class ReportService {
         List<ReportResult> results = resultRepo.findByPatient_Id(
             Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(patientId, "patientId"));
+        Set<Long> uniqueTestIds = results.stream()
+            .map(r -> r.getTest() == null ? null : r.getTest().getId())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(HashSet::new));
+
         Map<Long, Integer> paramCount = new HashMap<>();
+        if (!uniqueTestIds.isEmpty()) {
+            List<TestParameterRepository.TestParamCount> counts =
+                paramRepo.countByTestIds(new ArrayList<>(uniqueTestIds));
+            for (TestParameterRepository.TestParamCount c : counts) {
+                if (c == null || c.getTestId() == null || c.getParamCount() == null) {
+                    continue;
+                }
+                long testId = c.getTestId();
+                long count = c.getParamCount();
+                if (count > Integer.MAX_VALUE) {
+                    count = Integer.MAX_VALUE;
+                }
+                paramCount.put(testId, (int) count);
+            }
+        }
 
         List<PatientTestResultDTO> response = new ArrayList<>();
         for (ReportResult result : results) {
@@ -457,10 +477,7 @@ public class ReportService {
             if (testId == null) {
                 continue;
             }
-            int count = paramCount.computeIfAbsent(
-                testId,
-                id -> paramRepo.findByTest_IdOrderByIdAsc(id).size()
-            );
+            int count = paramCount.getOrDefault(testId, 0);
             String rawSubTest = normalizeSubTest(result.getSubTest());
             boolean isLineRow = rawSubTest != null && rawSubTest.contains("::");
 

@@ -23,6 +23,19 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             String labId,
             LocalDate visitDate);
 
+    // Fetch doctor to avoid N+1 (UI lists need doctor name).
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate = :visitDate
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Patient> findByLabIdAndVisitDateWithDoctorOrderByVisitDateDescIdDesc(
+            @Param("labId") String labId,
+            @Param("visitDate") LocalDate visitDate);
+
     /* Doctor filter */
     // Ordered for reports: latest visit first, then newest id.
     List<Patient> findByLabIdAndDoctor_IdOrderByVisitDateDescIdDesc(
@@ -63,6 +76,21 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             String labId,
             String name,
             String mobile);
+
+    // Single search query (with optional filters) that fetches doctor to avoid N+1.
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
+          AND (:name = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')))
+          AND (:mobile = '' OR p.mobile LIKE CONCAT('%', :mobile, '%'))
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Patient> searchWithDoctorOrderByVisitDateDescIdDesc(
+            @Param("labId") String labId,
+            @Param("name") String name,
+            @Param("mobile") String mobile);
 
     // Aggregate totals ordered by highest billing first (for accounts).
     @Query("""

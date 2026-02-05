@@ -82,7 +82,7 @@ public class PatientService {
     public List<Patient> findByDate(@NonNull String labId,
                                     @NonNull LocalDate date) {
         // Ordered for recency + stability across reloads.
-        return patientRepo.findByLabIdAndVisitDateOrderByVisitDateDescIdDesc(
+        return patientRepo.findByLabIdAndVisitDateWithDoctorOrderByVisitDateDescIdDesc(
             Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(date, "date"));
     }
@@ -94,23 +94,11 @@ public class PatientService {
         String nameQuery = name == null ? "" : name.trim();
         String mobileQuery = mobile == null ? "" : mobile.trim();
 
-        if (nameQuery.isEmpty() && mobileQuery.isEmpty()) {
-            return patientRepo.findByLabIdOrderByVisitDateDescIdDesc(labId);
-        }
-        if (nameQuery.isEmpty()) {
-            return patientRepo.findByLabIdAndMobileContainingOrderByVisitDateDescIdDesc(
-                labId,
-                mobileQuery);
-        }
-        if (mobileQuery.isEmpty()) {
-            return patientRepo.findByLabIdAndNameContainingIgnoreCaseOrderByVisitDateDescIdDesc(
-                labId,
-                nameQuery);
-        }
-        return patientRepo.findByLabIdAndNameContainingIgnoreCaseAndMobileContainingOrderByVisitDateDescIdDesc(
-            labId,
+        return patientRepo.searchWithDoctorOrderByVisitDateDescIdDesc(
+            Objects.requireNonNull(labId, "labId"),
             nameQuery,
-            mobileQuery);
+            mobileQuery
+        );
     }
 
     /* DELETE PATIENT + ALL RELATED DATA */

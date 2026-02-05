@@ -14,6 +14,8 @@ public interface ReportResultRepository
     @Query("""
         SELECT r
         FROM ReportResult r
+        LEFT JOIN FETCH r.test t
+        LEFT JOIN FETCH r.parameter p
         WHERE r.patient.id = :patientId
           AND r.patient.labId = :labId
     """)
@@ -23,6 +25,8 @@ public interface ReportResultRepository
     @Query("""
         SELECT r
         FROM ReportResult r
+        LEFT JOIN FETCH r.test t
+        LEFT JOIN FETCH r.parameter p
         WHERE r.patient.id IN :patientIds
           AND r.patient.labId = :labId
     """)
