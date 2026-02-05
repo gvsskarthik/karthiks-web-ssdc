@@ -187,6 +187,15 @@ function openPatient(patient){
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
 
+  if (String(patient?.status || "").trim().toUpperCase() === "COMPLETED") {
+    alert("Report is COMPLETED (locked). Editing is disabled.");
+    parent.loadPage(
+      "home/sub-tasks/pt/reports.html",
+      "reports"
+    );
+    return;
+  }
+
   parent.loadPage(
     "home/sub-tasks/pt/enter-values.html",
     "reports"

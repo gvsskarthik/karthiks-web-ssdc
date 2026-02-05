@@ -4,10 +4,13 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.service.PatientService;
@@ -70,5 +73,24 @@ public class PatientController {
             Objects.requireNonNull(principal.getName(), "labId"),
             Objects.requireNonNull(id, "id")
         );
+    }
+
+    @PutMapping("/{id}/status")
+    public @NonNull Patient updateStatus(@PathVariable @NonNull Long id,
+                                         @RequestBody @NonNull Map<String, String> body,
+                                         @NonNull Principal principal) {
+        String status = body.get("status");
+        if (status == null || status.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
+        }
+        try {
+            return service.updateStatus(
+                Objects.requireNonNull(principal.getName(), "labId"),
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(status, "status")
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 }

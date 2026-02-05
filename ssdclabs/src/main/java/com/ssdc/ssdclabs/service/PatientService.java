@@ -19,6 +19,9 @@ import com.ssdc.ssdclabs.repository.ReportResultRepository;
 @Service
 public class PatientService {
 
+    public static final String STATUS_NOT_COMPLETE = "NOT COMPLETE";
+    public static final String STATUS_COMPLETED = "COMPLETED";
+
     private final PatientRepository patientRepo;
     private final ReportResultRepository resultRepo;
     private final DoctorRepository doctorRepo;
@@ -40,7 +43,7 @@ public class PatientService {
             patient.setVisitDate(LocalDate.now(ZoneId.of("Asia/Kolkata")));
         }
         if (patient.getStatus() == null) {
-            patient.setStatus("NOT COMPLETE");
+            patient.setStatus(STATUS_NOT_COMPLETE);
         }
         if (patient.getGender() == null) {
             patient.setGender(Gender.ANY);
@@ -49,6 +52,29 @@ public class PatientService {
         String doctorName = patient.getDoctorName();
         Doctor doctor = resolveDoctor(labId, doctorName);
         patient.setDoctor(doctor);
+        return Objects.requireNonNull(patientRepo.save(patient), "saved patient");
+    }
+
+    @Transactional
+    public @NonNull Patient updateStatus(@NonNull String labId,
+                                         @NonNull Long patientId,
+                                         @NonNull String status) {
+        String normalized = status.trim().toUpperCase();
+        String finalStatus;
+        if (STATUS_COMPLETED.equals(normalized)) {
+            finalStatus = STATUS_COMPLETED;
+        } else if (STATUS_NOT_COMPLETE.equals(normalized)) {
+            finalStatus = STATUS_NOT_COMPLETE;
+        } else {
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        Patient patient = patientRepo.findByIdAndLabId(
+            Objects.requireNonNull(patientId, "patientId"),
+            Objects.requireNonNull(labId, "labId")
+        ).orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+
+        patient.setStatus(finalStatus);
         return Objects.requireNonNull(patientRepo.save(patient), "saved patient");
     }
 

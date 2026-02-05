@@ -12,9 +12,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ssdc.ssdclabs.dto.PatientTestResultDTO;
 import com.ssdc.ssdclabs.dto.PatientTestSelectionDTO;
@@ -48,6 +50,16 @@ public class ReportService {
         this.patientRepo = patientRepo;
     }
 
+    private boolean isCompleted(Patient patient) {
+        if (patient == null) {
+            return false;
+        }
+        String status = patient.getStatus();
+        return PatientService.STATUS_COMPLETED.equalsIgnoreCase(
+            status == null ? "" : status.trim()
+        );
+    }
+
     @Transactional
     public void saveSelectedTests(String labId,
                                   List<PatientTestSelectionDTO> selections) {
@@ -63,6 +75,9 @@ public class ReportService {
         Patient patient = patientRepo.findByIdAndLabId(patientId, labId).orElse(null);
         if (patient == null) {
             return;
+        }
+        if (isCompleted(patient)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Report is completed and locked");
         }
 
         Set<Long> selectedTestIds = selections.stream()
@@ -216,6 +231,9 @@ public class ReportService {
             if (patient == null) {
                 seq++;
                 continue;
+            }
+            if (isCompleted(patient)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Report is completed and locked");
             }
             Test test = testCache.computeIfAbsent(
                 safeTestId,

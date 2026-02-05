@@ -5,6 +5,81 @@ const patient =
 let results = [];
 let selectedTestIds = [];
 
+function isCompletedStatus(status){
+  return String(status || "").trim().toUpperCase() === "COMPLETED";
+}
+
+function persistPatient(){
+  try {
+    localStorage.setItem("currentPatient", JSON.stringify(patient || {}));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+function syncReportLockUi(){
+  const completed = isCompletedStatus(patient?.status);
+  const btnPrint = document.getElementById("btnPrint");
+  const btnDownload = document.getElementById("btnDownload");
+  const btnWhatsapp = document.getElementById("btnWhatsapp");
+  const btnComplete = document.getElementById("btnComplete");
+
+  [btnPrint, btnDownload, btnWhatsapp].forEach(btn => {
+    if (btn) {
+      btn.disabled = !completed;
+    }
+  });
+
+  if (btnComplete) {
+    btnComplete.disabled = completed;
+  }
+}
+
+function markCompleted(){
+  if (!patient || !patient.id) {
+    alert("Patient ID missing");
+    return;
+  }
+  if (isCompletedStatus(patient.status)) {
+    syncReportLockUi();
+    return;
+  }
+
+  const btnComplete = document.getElementById("btnComplete");
+  if (btnComplete) {
+    btnComplete.disabled = true;
+  }
+
+  fetch(`${API_BASE_URL}/patients/${patient.id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "COMPLETED" })
+  })
+    .then(async (res) => {
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(text || "Failed to mark completed");
+      }
+      return text ? JSON.parse(text) : null;
+    })
+    .then((updated) => {
+      patient.status = "COMPLETED";
+      if (updated && typeof updated === "object" && updated.status) {
+        patient.status = updated.status;
+      }
+      persistPatient();
+      syncReportLockUi();
+      alert("Report marked as COMPLETED. Editing is locked.");
+    })
+    .catch((err) => {
+      console.error(err);
+      if (btnComplete) {
+        btnComplete.disabled = false;
+      }
+      alert(err?.message || "Failed to mark completed");
+    });
+}
+
 /* ================= PATIENT DETAILS ================= */
 document.getElementById("pName").innerText =
   patient.name || "";
@@ -25,6 +100,8 @@ document.getElementById("pDate").innerText =
   patient.visitDate || (window.formatIstDateDisplay
     ? window.formatIstDateDisplay(new Date())
     : new Date().toLocaleDateString());
+
+syncReportLockUi();
 
 /* ================= RANGE CHECK ================= */
 function isOutOfRange(value, normalText, gender){

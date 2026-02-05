@@ -11,6 +11,29 @@ if (!patient || !patient.id) {
   throw new Error("Patient ID missing");
 }
 
+const reportLocked =
+  String(patient?.status || "").trim().toUpperCase() === "COMPLETED";
+
+function applyLockedUi(){
+  if (!reportLocked) {
+    return;
+  }
+  const saveBtn = document.getElementById("btnSaveResults");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "LOCKED";
+  }
+  document.querySelectorAll(".order-input").forEach(el => {
+    el.disabled = true;
+  });
+  document.querySelectorAll(".result-input").forEach(el => {
+    el.disabled = true;
+  });
+  document.querySelectorAll(".add-line-btn,.remove-line-row-btn").forEach(el => {
+    el.disabled = true;
+  });
+}
+
 /* ================= SHOW PATIENT ================= */
 document.getElementById("pName").innerText = patient.name || "";
 document.getElementById("pAddress").innerText = patient.address || "";
@@ -104,7 +127,9 @@ function loadSelectedIds(){
   const local =
     JSON.parse(localStorage.getItem("selectedTests") || "[]");
   if (local.length) {
-    saveSelectedTestsToDb(local);
+    if (!reportLocked) {
+      saveSelectedTestsToDb(local);
+    }
     return Promise.resolve(local);
   }
 
@@ -816,6 +841,9 @@ function findDynamicRowsInGroup(body, groupKey){
 }
 
 function handleAddLineClick(event) {
+  if (reportLocked) {
+    return;
+  }
   const removeRowBtn = event.target.closest(".remove-line-row-btn");
   if (removeRowBtn) {
     const body = document.getElementById("resultBody");
@@ -943,6 +971,11 @@ function collectResults() {
 
 /* ================= SAVE ONLY ================= */
 function saveOnly() {
+  if (reportLocked) {
+    alert("Report is COMPLETED (locked). Editing is disabled.");
+    location.href = "reports.html";
+    return;
+  }
 
   const results = collectResults();
   let selectedIds = [];
