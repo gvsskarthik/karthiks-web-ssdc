@@ -57,6 +57,7 @@ const amountInput = document.getElementById("amount");
 const discountInput = document.getElementById("discount");
 const paidInput = document.getElementById("paid");
 const dueInput = document.getElementById("due");
+const billTotalValue = document.getElementById("billTotal");
 const billItems = document.getElementById("billItems");
 let lastPricingEdited = null; // "discount" | "payable"
 let lastPaymentEdited = null; // "paid" | "due"
@@ -442,6 +443,9 @@ function syncBillTotals(baseTotal){
 
 function updateBillFromSelection(){
   const baseTotal = renderBillItems();
+  if (billTotalValue) {
+    billTotalValue.textContent = `₹${formatMoney(baseTotal)}`;
+  }
   syncBillTotals(baseTotal);
 }
 
