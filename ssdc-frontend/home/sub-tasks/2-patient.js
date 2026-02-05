@@ -152,6 +152,12 @@ function renderTable(data){
       isCompleted ? "status is-completed" : "status is-not-completed";
     const statusText =
       String(p?.status || "").trim() || "NOT COMPLETE";
+
+    const amount = Number(p?.amount) || 0;
+    const paid = Number(p?.paid) || 0;
+    const dueRaw = Math.max(0, amount - paid);
+    const dueText = dueRaw > 0 ? `₹${dueRaw}` : "-";
+    const dueClass = dueRaw > 0 ? "due is-due" : "due is-no-due";
     tableBody.innerHTML+=`
     <tr>
       <td class="${checkClass}">
@@ -165,7 +171,8 @@ function renderTable(data){
       <td class="${snoClass}">${i+1}</td>
       <td class="name">${p.name || "-"}</td>
       <td class="doctor">${p.doctor||'-'}</td>
-      <td class="amount">₹${p.amount}</td>
+      <td class="amount">₹${amount}</td>
+      <td class="${dueClass}">${dueText}</td>
       <td class="status-col"><span class="${statusClass}">${statusText}</span></td>
       <td class="options">
         <div class="menu">
@@ -184,7 +191,7 @@ function renderTable(data){
 
 function renderEmpty(){
   tableBody.innerHTML=`<tr>
-    <td colspan="7" class="no-data">
+    <td colspan="8" class="no-data">
       No patients found
     </td></tr>`;
 }
