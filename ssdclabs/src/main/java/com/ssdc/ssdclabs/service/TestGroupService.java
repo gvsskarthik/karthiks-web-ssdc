@@ -107,6 +107,7 @@ public class TestGroupService {
                 group.getCost(),
                 group.getCategory(),
                 group.getActive(),
+                group.getShowGroupName(),
                 testIdsByGroup.getOrDefault(
                     group.getId(),
                     Collections.emptyList()
@@ -133,6 +134,7 @@ public class TestGroupService {
             group.getCost(),
             group.getCategory(),
             group.getActive(),
+            group.getShowGroupName(),
             testIds,
             deserializeReportLayout(group.getReportLayout())
         );
@@ -167,6 +169,11 @@ public class TestGroupService {
         if (payload.active != null) {
             group.setActive(payload.active);
         }
+        if (payload.showGroupName != null) {
+            group.setShowGroupName(payload.showGroupName);
+        } else {
+            group.setShowGroupName(true);
+        }
         group.setReportLayout(serializeReportLayout(payload.reportLayout));
         group = groupRepo.save(group);
 
@@ -196,6 +203,9 @@ public class TestGroupService {
         group.setCategory(payload.category);
         if (payload.active != null) {
             group.setActive(payload.active);
+        }
+        if (payload.showGroupName != null) {
+            group.setShowGroupName(payload.showGroupName);
         }
 
         Set<Long> existingTestIds = mapRepo.findByGroup_Id(id).stream()

@@ -10,6 +10,7 @@ public class TestGroupDetailDTO {
     public Double cost;
     public String category;
     public Boolean active;
+    public Boolean showGroupName;
     public List<Long> testIds;
     public Object reportLayout;
 
@@ -19,6 +20,7 @@ public class TestGroupDetailDTO {
                               Double cost,
                               String category,
                               Boolean active,
+                              Boolean showGroupName,
                               List<Long> testIds,
                               Object reportLayout) {
         this.id = id;
@@ -27,6 +29,7 @@ public class TestGroupDetailDTO {
         this.cost = cost;
         this.category = category;
         this.active = active;
+        this.showGroupName = showGroupName;
         this.testIds = testIds;
         this.reportLayout = reportLayout;
     }

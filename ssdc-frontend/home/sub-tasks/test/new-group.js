@@ -4,6 +4,7 @@ const shortcut = document.getElementById("shortcut");
 const category = document.getElementById("category");
 const cost = document.getElementById("cost");
 const active = document.getElementById("active");
+const showGroupName = document.getElementById("showGroupName");
 const slotList = document.getElementById("slotList");
 const addTestBtn = document.getElementById("addTestBtn");
 const addGroupBtn = document.getElementById("addGroupBtn");
@@ -854,6 +855,11 @@ async function loadData(){
         if (typeof group.active === "boolean") {
           active.checked = group.active;
         }
+        if (typeof group.showGroupName === "boolean") {
+          showGroupName.checked = group.showGroupName;
+        } else {
+          showGroupName.checked = true;
+        }
         const layout = parseReportLayout(group.reportLayout);
         const ids = Array.isArray(group.testIds) ? group.testIds : [];
         const used = new Set();
@@ -987,16 +993,17 @@ async function saveGroup(){
     return;
   }
 
-  const payload = {
-    groupName: nameValue,
-    shortcut: shortcutValue,
-    category: categoryValue || null,
-    cost: costNumber,
-    active: active.checked,
-    testIds: finalTestIds,
-    reportLayout: {
-      version: 1,
-      directTestIds: normalizedDirectIds,
+	  const payload = {
+	    groupName: nameValue,
+	    shortcut: shortcutValue,
+	    category: categoryValue || null,
+	    cost: costNumber,
+	    active: active.checked,
+	    showGroupName: showGroupName ? showGroupName.checked : true,
+	    testIds: finalTestIds,
+	    reportLayout: {
+	      version: 1,
+	      directTestIds: normalizedDirectIds,
       subGroups: normalizedSubGroups
     }
   };

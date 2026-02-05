@@ -9,6 +9,7 @@ public class TestGroupPayload {
     public Double cost;
     public String category;
     public Boolean active;
+    public Boolean showGroupName;
     public List<Long> testIds;
     public Object reportLayout;
 }

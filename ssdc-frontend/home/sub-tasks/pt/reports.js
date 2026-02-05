@@ -1135,6 +1135,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
 
   function renderGroupWithLayout(group){
     const layout = group.__layout;
+    const groupShowName = group?.showGroupName !== false;
     const groupTestSet = new Set((group.testIds || []).map(id => Number(id)).filter(id => Number.isFinite(id)));
 
     const directIds = [];
@@ -1196,11 +1197,13 @@ function renderReport(tests, resultList, selectedIds, groupList){
       return;
     }
 
-    out.push(`
-      <tr class="group-header-row" data-testid="${escapeHtml(firstTestId)}">
-        <td colspan="4"><h4 class="group-heading">${escapeHtml(group.groupName || "Group")}</h4></td>
-      </tr>
-    `);
+    if (groupShowName) {
+      out.push(`
+        <tr class="group-header-row" data-testid="${escapeHtml(firstTestId)}">
+          <td colspan="4"><h4 class="group-heading">${escapeHtml(group.groupName || "Group")}</h4></td>
+        </tr>
+      `);
+    }
 
     directIds.forEach(id => {
       renderOneTest(testById.get(id), "");
@@ -1209,14 +1212,17 @@ function renderReport(tests, resultList, selectedIds, groupList){
     subGroups.forEach(sub => {
       const attachId = sub.testIds[0];
       if (sub.showName) {
+        const prefix = groupShowName ? INDENT_1 : "";
         out.push(`
           <tr class="section-header" data-testid="${escapeHtml(attachId)}">
-            <td colspan="4">${INDENT_1}<b>${escapeHtml(sub.name)}</b></td>
+            <td colspan="4">${prefix}<b>${escapeHtml(sub.name)}</b></td>
           </tr>
         `);
       }
 
-      const prefix = sub.showName ? INDENT_2 : "";
+      const prefix = sub.showName
+        ? (groupShowName ? INDENT_2 : INDENT_1)
+        : "";
       sub.testIds.forEach(id => {
         renderOneTest(testById.get(id), prefix);
       });

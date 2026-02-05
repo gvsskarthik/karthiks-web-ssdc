@@ -49,6 +49,13 @@ public class TestGroup {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(
+        name = "show_group_name",
+        nullable = false,
+        columnDefinition = "TINYINT(1) DEFAULT 1"
+    )
+    private Boolean showGroupName = true;
+
     @Column(name = "report_layout", columnDefinition = "TEXT")
     private String reportLayout;
 
@@ -81,6 +88,13 @@ public class TestGroup {
     public Boolean getActive() { return active; }
     @SuppressWarnings("unused")
     public void setActive(Boolean active) { this.active = active; }
+
+    @SuppressWarnings("unused")
+    public Boolean getShowGroupName() { return showGroupName; }
+    @SuppressWarnings("unused")
+    public void setShowGroupName(Boolean showGroupName) {
+        this.showGroupName = showGroupName;
+    }
 
     @SuppressWarnings("unused")
     public String getReportLayout() { return reportLayout; }
