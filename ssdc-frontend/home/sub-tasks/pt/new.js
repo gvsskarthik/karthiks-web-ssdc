@@ -69,6 +69,24 @@ let patientSearchRequestId = 0;
 let lastPatientSearchKey = "";
 const PATIENT_SEARCH_DELAY_MS = 50;
 
+function navigateToEnterValues(){
+  try {
+    if (parent && typeof parent.loadPage === "function") {
+      parent.loadPage("home/sub-tasks/pt/enter-values.html");
+      return true;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  try {
+    window.location.href = "enter-values.html";
+    return true;
+  } catch (err) {
+    console.error(err);
+  }
+  return false;
+}
+
 searchInput.addEventListener("input", updateSuggestions);
 searchInput.addEventListener("keydown", handleSuggestionKeys);
 suggestions.addEventListener("click", handleSuggestionClick);
@@ -944,10 +962,8 @@ patientForm.addEventListener("submit", e => {
   if (current && current.id) {
     // Keep the user's selection order; reports.html will group by category but keep this order within category.
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    try {
-      parent.loadPage("home/sub-tasks/pt/enter-values.html");
-    } catch (err) {
-      console.error(err);
+    const ok = navigateToEnterValues();
+    if (!ok) {
       alert("Failed to open results page");
       isSubmittingPatient = false;
       if (savePatientBtn) {
@@ -977,7 +993,14 @@ patientForm.addEventListener("submit", e => {
     localStorage.setItem("currentPatient", JSON.stringify(p));
     // Keep the user's selection order; reports.html will group by category but keep this order within category.
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    parent.loadPage("home/sub-tasks/pt/enter-values.html");
+    const ok = navigateToEnterValues();
+    if (!ok) {
+      alert("Patient saved, but failed to open results page");
+      isSubmittingPatient = false;
+      if (savePatientBtn) {
+        savePatientBtn.disabled = false;
+      }
+    }
   })
   .catch(err => {
     console.error(err);
