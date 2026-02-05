@@ -55,8 +55,11 @@ const nameInput = document.getElementById("name");
 const mobileInput = document.getElementById("mobile");
 const amountInput = document.getElementById("amount");
 const discountInput = document.getElementById("discount");
+const paidInput = document.getElementById("paid");
+const dueInput = document.getElementById("due");
 const billItems = document.getElementById("billItems");
-let lastBillEdited = null;
+let lastPricingEdited = null; // "discount" | "payable"
+let lastPaymentEdited = null; // "paid" | "due"
 let isAutoBillUpdate = false;
 let searchTimer = null;
 let patientSearchController = null;
@@ -96,7 +99,7 @@ discountInput.addEventListener("input", () => {
   if (isAutoBillUpdate) {
     return;
   }
-  lastBillEdited = "discount";
+  lastPricingEdited = "discount";
   updateBillFromSelection();
 });
 
@@ -104,7 +107,23 @@ amountInput.addEventListener("input", () => {
   if (isAutoBillUpdate) {
     return;
   }
-  lastBillEdited = "total";
+  lastPricingEdited = "payable";
+  updateBillFromSelection();
+});
+
+paidInput.addEventListener("input", () => {
+  if (isAutoBillUpdate) {
+    return;
+  }
+  lastPaymentEdited = "paid";
+  updateBillFromSelection();
+});
+
+dueInput.addEventListener("input", () => {
+  if (isAutoBillUpdate) {
+    return;
+  }
+  lastPaymentEdited = "due";
   updateBillFromSelection();
 });
 
@@ -384,20 +403,41 @@ function renderBillItems(){
 }
 
 function syncBillTotals(baseTotal){
-  let discount = parseMoney(discountInput.value);
-  let total = parseMoney(amountInput.value);
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-  if (lastBillEdited === "discount") {
-    total = baseTotal - discount;
-  } else if (lastBillEdited === "total") {
-    discount = baseTotal - total;
+  let discount = parseMoney(discountInput.value);
+  let payable = parseMoney(amountInput.value);
+  let paid = parseMoney(paidInput.value);
+  let due = parseMoney(dueInput.value);
+
+  // Pricing: baseTotal <-> (discount, payable)
+  if (lastPricingEdited === "discount") {
+    discount = clamp(discount, 0, baseTotal);
+    payable = baseTotal - discount;
+  } else if (lastPricingEdited === "payable") {
+    payable = clamp(payable, 0, baseTotal);
+    discount = baseTotal - payable;
   } else {
     discount = 0;
-    total = baseTotal;
+    payable = baseTotal;
+  }
+
+  // Payment: payable <-> (paid, due)
+  if (lastPaymentEdited === "paid") {
+    paid = clamp(paid, 0, payable); // Option 1: paid cannot exceed payable
+    due = payable - paid;
+  } else if (lastPaymentEdited === "due") {
+    due = clamp(due, 0, payable);
+    paid = payable - due;
+  } else {
+    paid = 0;
+    due = payable;
   }
 
   setInputValue(discountInput, formatMoney(discount));
-  setInputValue(amountInput, formatMoney(total));
+  setInputValue(paidInput, formatMoney(paid));
+  setInputValue(amountInput, formatMoney(payable));
+  setInputValue(dueInput, formatMoney(due));
 }
 
 function updateBillFromSelection(){
@@ -413,9 +453,12 @@ function selectPatient(p){
   document.getElementById("mobile").value  = p.mobile || "";
   document.getElementById("address").value = p.address || "";
   document.getElementById("doctor").value  = p.doctor || "SELF";
-  lastBillEdited = null;
+  lastPricingEdited = null;
+  lastPaymentEdited = null;
   setInputValue(discountInput, "");
+  setInputValue(paidInput, "");
   setInputValue(amountInput, "");
+  setInputValue(dueInput, "");
   updateBillFromSelection();
 
   // Prefill only; keep visits separate
@@ -869,18 +912,19 @@ patientForm.addEventListener("submit", e => {
     JSON.parse(localStorage.getItem("currentPatient") || "null");
   localStorage.removeItem("prefillPatient");
 
-  const payload = {
-    name: document.getElementById("name").value.trim(),
-    age: Number(document.getElementById("age").value),
-    gender: document.getElementById("gender").value,
-    mobile: document.getElementById("mobile").value.trim(),
-    address: document.getElementById("address").value.trim(),
-    doctor: document.getElementById("doctor").value || "SELF",
-    visitDate: document.getElementById("visitDate").value,
-    amount: parseMoney(amountInput.value),
-    discount: parseMoney(discountInput.value),
-    status: "NOT COMPLETE"
-  };
+	  const payload = {
+	    name: document.getElementById("name").value.trim(),
+	    age: Number(document.getElementById("age").value),
+	    gender: document.getElementById("gender").value,
+	    mobile: document.getElementById("mobile").value.trim(),
+	    address: document.getElementById("address").value.trim(),
+	    doctor: document.getElementById("doctor").value || "SELF",
+	    visitDate: document.getElementById("visitDate").value,
+	    amount: parseMoney(amountInput.value),
+	    discount: parseMoney(discountInput.value),
+	    paid: parseMoney(paidInput.value),
+	    status: "NOT COMPLETE"
+	  };
 
   // ✅ EXISTING PATIENT → no save
   if (current && current.id) {

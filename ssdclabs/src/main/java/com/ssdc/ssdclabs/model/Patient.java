@@ -65,6 +65,8 @@ public class Patient {
     @Column(nullable = false)
     private Double discount = 0.0;
 
+    private Double paid = 0.0;
+
     private String status;
 
     private LocalDate visitDate;
@@ -125,6 +127,10 @@ public class Patient {
     public Double getDiscount() { return discount; }
     @SuppressWarnings("unused")
     public void setDiscount(Double discount) { this.discount = discount; }
+
+    public Double getPaid() { return paid == null ? 0.0 : paid; }
+    @SuppressWarnings("unused")
+    public void setPaid(Double paid) { this.paid = paid; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
