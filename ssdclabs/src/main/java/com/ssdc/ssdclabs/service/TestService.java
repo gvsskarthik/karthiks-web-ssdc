@@ -4,15 +4,21 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ssdc.ssdclabs.dto.TestNormalValueDTO;
 import com.ssdc.ssdclabs.dto.NormalRangePayload;
@@ -77,9 +83,54 @@ public class TestService {
                 Objects.requireNonNull(id, "id"),
                 Objects.requireNonNull(labId, "labId"))
             .orElseThrow(() -> new RuntimeException("Test not found"));
+
+        if (payload.testName != null) {
+            test.setTestName(payload.testName.trim());
+        }
+        if (payload.category != null) {
+            test.setCategory(payload.category.trim());
+        }
+        if (payload.shortcut != null) {
+            test.setShortcut(payload.shortcut.trim());
+        }
+        if (payload.cost != null) {
+            test.setCost(payload.cost);
+        }
+        if (payload.active != null) {
+            test.setActive(payload.active);
+        }
+        if (payload.showTestNameInReport != null) {
+            test.setShowTestNameInReport(payload.showTestNameInReport);
+        }
+
+        boolean shouldRebuild =
+            payload.parameters != null
+            || payload.units != null
+            || payload.normalValues != null;
+
         List<TestParameter> existingParams =
             paramRepo.findByTest_IdOrderByIdAsc(test.getId());
-        applyPayload(test, payload, existingParams);
+
+        if (shouldRebuild) {
+            boolean allowParameterRemoval = !testRepo.isTestUsed(labId, test.getId());
+            List<TestParameter> params = updateParametersFromPayload(
+                test,
+                payload,
+                existingParams,
+                allowParameterRemoval
+            );
+            test.setTestType(determineTestType(params));
+        } else if (test.getTestType() == null) {
+            test.setTestType(determineTestType(existingParams));
+        }
+
+        if (test.getActive() == null) {
+            test.setActive(true);
+        }
+        if (test.getShowTestNameInReport() == null) {
+            test.setShowTestNameInReport(true);
+        }
+
         Test saved = testRepo.save(test);
         return toView(saved);
     }
@@ -166,6 +217,237 @@ public class TestService {
             return TestType.QUALITATIVE;
         }
         return TestType.SINGLE;
+    }
+
+    private List<TestParameter> updateParametersFromPayload(
+            Test test,
+            TestPayload payload,
+            List<TestParameter> existingParams,
+            boolean allowRemoval) {
+        if (payload.parameters != null) {
+            return updateParametersFromStructuredPayload(
+                test,
+                payload.parameters,
+                existingParams,
+                allowRemoval
+            );
+        }
+
+        if (payload.units == null && payload.normalValues == null) {
+            return existingParams == null ? List.of() : existingParams;
+        }
+
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "Legacy parameter updates are not supported."
+        );
+    }
+
+    private List<TestParameter> updateParametersFromStructuredPayload(
+            Test test,
+            List<TestParameterPayload> payloadParams,
+            List<TestParameter> existingParams,
+            boolean allowRemoval) {
+        List<TestParameterPayload> cleaned = new ArrayList<>();
+        if (payloadParams != null) {
+            for (TestParameterPayload payloadParam : payloadParams) {
+                if (payloadParam != null) {
+                    cleaned.add(payloadParam);
+                }
+            }
+        }
+
+        if (cleaned.isEmpty()) {
+            if (existingParams != null && !existingParams.isEmpty()) {
+                return existingParams;
+            }
+            TestParameter param = new TestParameter();
+            param.setTest(test);
+            param.setName(test.getTestName() == null ? "Parameter 1" : test.getTestName());
+            param.setValueType(ValueType.NUMBER);
+            param.setNormalRanges(new ArrayList<>());
+            paramRepo.save(param);
+            return List.of(param);
+        }
+
+        boolean hasIds = false;
+        for (TestParameterPayload payloadParam : cleaned) {
+            if (payloadParam.id != null) {
+                hasIds = true;
+                break;
+            }
+        }
+
+        if (hasIds) {
+            return updateParametersById(test, cleaned, existingParams, allowRemoval);
+        }
+
+        return updateParametersByIndex(test, cleaned, existingParams, allowRemoval);
+    }
+
+    private List<TestParameter> updateParametersById(
+            Test test,
+            List<TestParameterPayload> payloadParams,
+            List<TestParameter> existingParams,
+            boolean allowRemoval) {
+        Map<Long, TestParameter> existingById = new HashMap<>();
+        if (existingParams != null) {
+            for (TestParameter param : existingParams) {
+                if (param != null && param.getId() != null) {
+                    existingById.put(param.getId(), param);
+                }
+            }
+        }
+
+        Set<Long> seenExistingIds = new HashSet<>();
+        List<TestParameter> updated = new ArrayList<>();
+
+        int totalParams = payloadParams.size();
+        int index = 0;
+        for (TestParameterPayload payloadParam : payloadParams) {
+            TestParameter param;
+            if (payloadParam.id != null) {
+                param = existingById.get(payloadParam.id);
+                if (param == null) {
+                    throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid parameter id: " + payloadParam.id
+                    );
+                }
+                seenExistingIds.add(payloadParam.id);
+            } else {
+                param = new TestParameter();
+                param.setTest(test);
+            }
+
+            applyStructuredParameterUpdate(param, payloadParam, index, totalParams, test);
+            if (param.getId() == null) {
+                paramRepo.save(param);
+            }
+            updated.add(param);
+            index++;
+        }
+
+        List<TestParameter> removed = new ArrayList<>();
+        if (existingParams != null) {
+            for (TestParameter param : existingParams) {
+                if (param == null || param.getId() == null) {
+                    continue;
+                }
+                if (!seenExistingIds.contains(param.getId())) {
+                    removed.add(param);
+                }
+            }
+        }
+
+        if (!removed.isEmpty()) {
+            if (!allowRemoval) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cannot remove parameters because this test is already used in reports."
+                );
+            }
+            paramRepo.deleteAll(removed);
+        }
+
+        return updated;
+    }
+
+    private List<TestParameter> updateParametersByIndex(
+            Test test,
+            List<TestParameterPayload> payloadParams,
+            List<TestParameter> existingParams,
+            boolean allowRemoval) {
+        int existingCount = existingParams == null ? 0 : existingParams.size();
+        int incomingCount = payloadParams.size();
+
+        if (incomingCount < existingCount && !allowRemoval) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Cannot remove parameters because this test is already used in reports."
+            );
+        }
+        if (incomingCount < existingCount) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Cannot remove parameters without parameter ids. Please refresh and try again."
+            );
+        }
+
+        List<TestParameter> updated = new ArrayList<>();
+        int totalParams = incomingCount;
+        for (int i = 0; i < incomingCount; i++) {
+            TestParameterPayload payloadParam = payloadParams.get(i);
+            TestParameter param;
+            if (i < existingCount) {
+                param = existingParams.get(i);
+            } else {
+                param = new TestParameter();
+                param.setTest(test);
+            }
+
+            applyStructuredParameterUpdate(param, payloadParam, i, totalParams, test);
+            if (param.getId() == null) {
+                paramRepo.save(param);
+            }
+            updated.add(param);
+        }
+
+        return updated;
+    }
+
+    private void applyStructuredParameterUpdate(
+            TestParameter param,
+            TestParameterPayload payloadParam,
+            int index,
+            int totalParams,
+            Test test) {
+        String name = trimToNull(payloadParam.name);
+        if (name == null) {
+            name = resolveParamName(
+                List.of(),
+                index,
+                totalParams,
+                test.getTestName()
+            );
+        }
+
+        param.setName(name);
+        param.setUnit(trimToNull(payloadParam.unit));
+        param.setDefaultResult(serializeDefaultResults(payloadParam.defaultResults));
+        param.setAllowNewLines(
+            payloadParam.allowNewLines != null ? payloadParam.allowNewLines : Boolean.FALSE
+        );
+
+        List<NormalRange> ranges = new ArrayList<>();
+        if (payloadParam.normalRanges != null) {
+            for (NormalRangePayload raw : payloadParam.normalRanges) {
+                NormalRange range = buildNormalRange(raw);
+                if (range != null) {
+                    range.setParameter(param);
+                    ranges.add(range);
+                }
+            }
+        }
+        replaceNormalRanges(param, ranges);
+
+        ValueType valueType = payloadParam.valueType;
+        if (valueType == null) {
+            valueType = determineValueType(ranges);
+        }
+        if (valueType == null) {
+            valueType = ValueType.NUMBER;
+        }
+        param.setValueType(valueType);
+    }
+
+    private void replaceNormalRanges(TestParameter param, List<NormalRange> ranges) {
+        if (param.getNormalRanges() == null) {
+            param.setNormalRanges(ranges);
+            return;
+        }
+        param.getNormalRanges().clear();
+        param.getNormalRanges().addAll(ranges);
     }
 
     private List<TestParameter> buildParametersFromPayload(

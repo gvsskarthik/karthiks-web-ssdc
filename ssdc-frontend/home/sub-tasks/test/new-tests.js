@@ -87,6 +87,12 @@ function ensureAtLeastOneParameter() {
 function addParameter(prefill = null) {
   const card = document.createElement("div");
   card.className = "param-card";
+  if (prefill && prefill.id != null) {
+    const parsed = Number(prefill.id);
+    if (Number.isFinite(parsed)) {
+      card.dataset.paramId = String(parsed);
+    }
+  }
   const paramId = `param-${paramIdCounter++}`;
   const nameId = `${paramId}-name`;
   const unitId = `${paramId}-unit`;
@@ -348,6 +354,7 @@ function applyTestToForm(test) {
   if (params.length) {
     params.forEach(param => {
       addParameter({
+        id: param?.id,
         name: param?.name || "",
         unit: param?.unit || "",
         valueType: param?.valueType || "",
@@ -419,6 +426,8 @@ function collectPayload() {
   const parameters = [];
 
   cards.forEach(card => {
+    const rawParamId = card.dataset.paramId;
+    const paramIdValue = rawParamId == null ? null : Number(rawParamId);
     const nameInput = card.querySelector(".param-name");
     const unitInput = card.querySelector(".param-unit");
     const typeSelect = card.querySelector(".param-type");
@@ -456,6 +465,7 @@ function collectPayload() {
 
     const nameRaw = nameInput.value.trim();
     parameters.push({
+      id: Number.isFinite(paramIdValue) ? paramIdValue : null,
       name: nameRaw || null,
       unit: unitInput.value.trim() || null,
       valueType: typeSelect.value,

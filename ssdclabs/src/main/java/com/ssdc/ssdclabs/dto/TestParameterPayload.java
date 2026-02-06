@@ -6,6 +6,7 @@ import com.ssdc.ssdclabs.model.ValueType;
 
 public class TestParameterPayload {
 
+    public Long id;
     public String name;
     public String unit;
     public ValueType valueType;
