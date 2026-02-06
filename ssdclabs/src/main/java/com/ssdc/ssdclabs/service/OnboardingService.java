@@ -183,6 +183,11 @@ public class OnboardingService {
             clone.setActive(template.getActive());
             clone.setDisplayOrder(template.getDisplayOrder());
             clone.setTestType(template.getTestType());
+            clone.setShowTestNameInReport(
+                Boolean.FALSE.equals(template.getShowTestNameInReport())
+                    ? Boolean.FALSE
+                    : Boolean.TRUE
+            );
 
             List<TestParameter> templateParams =
                 paramRepo.findByTest_IdOrderByIdAsc(template.getId());

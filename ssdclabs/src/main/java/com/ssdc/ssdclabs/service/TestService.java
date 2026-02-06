@@ -123,6 +123,9 @@ public class TestService {
         if (payload.active != null) {
             test.setActive(payload.active);
         }
+        if (payload.showTestNameInReport != null) {
+            test.setShowTestNameInReport(payload.showTestNameInReport);
+        }
 
         boolean shouldRebuild =
             payload.parameters != null
@@ -144,6 +147,10 @@ public class TestService {
 
         if (test.getActive() == null) {
             test.setActive(true);
+        }
+
+        if (test.getShowTestNameInReport() == null) {
+            test.setShowTestNameInReport(true);
         }
     }
 
@@ -552,6 +559,7 @@ public class TestService {
             test.getShortcut(),
             test.getCost(),
             test.getActive(),
+            Boolean.FALSE.equals(test.getShowTestNameInReport()) ? Boolean.FALSE : Boolean.TRUE,
             units,
             normalValues,
             parameterViews

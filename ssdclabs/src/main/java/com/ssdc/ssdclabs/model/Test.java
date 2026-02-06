@@ -59,6 +59,9 @@ public class Test {
 
     private String category;
 
+    @Column(name = "show_test_name_in_report")
+    private Boolean showTestNameInReport = true;
+
     @OneToMany(
         mappedBy = "test",
         cascade = CascadeType.ALL,
@@ -97,6 +100,11 @@ public class Test {
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+
+    public Boolean getShowTestNameInReport() { return showTestNameInReport; }
+    public void setShowTestNameInReport(Boolean showTestNameInReport) {
+        this.showTestNameInReport = showTestNameInReport;
+    }
 
     @SuppressWarnings("unused")
     public List<TestParameter> getParameters() { return parameters; }

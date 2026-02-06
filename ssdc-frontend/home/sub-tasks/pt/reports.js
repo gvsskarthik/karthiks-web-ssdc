@@ -901,6 +901,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
       return;
     }
     const prefix = prefixHtml || "";
+    const showTestNameInReport = test?.showTestNameInReport !== false;
 
     const params = Array.isArray(test.parameters) ? test.parameters : [];
     const hasParams = params.length > 0;
@@ -955,11 +956,14 @@ function renderReport(tests, resultList, selectedIds, groupList){
     }
 
     if (isMultiParam || isMultiUnits) {
-      out.push(`
-        <tr class="test-header-row" data-testid="${escapeHtml(testId)}">
-          <td colspan="4">${prefix}${escapeHtml(test.testName)}</td>
-        </tr>
-      `);
+      const hideHeaderRow = isMultiParam && !showTestNameInReport;
+      if (!hideHeaderRow) {
+        out.push(`
+          <tr class="test-header-row" data-testid="${escapeHtml(testId)}">
+            <td colspan="4">${prefix}${escapeHtml(test.testName)}</td>
+          </tr>
+        `);
+      }
 
       const normalizedItems = {};
       Object.entries(rawItemMap).forEach(([key, value]) => {

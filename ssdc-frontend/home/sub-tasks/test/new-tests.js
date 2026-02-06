@@ -1,6 +1,7 @@
 const paramList = document.getElementById("paramList");
 const addParamBtn = document.getElementById("addParamBtn");
 const hasParametersInput = document.getElementById("hasParameters");
+const showTestNameInReportInput = document.getElementById("showTestNameInReport");
 const saveBtn = document.getElementById("saveBtn");
 const formMessage = document.getElementById("formMessage");
 const shortcutInput = document.getElementById("shortcut");
@@ -43,6 +44,25 @@ function toggleParameters() {
   [...paramList.querySelectorAll(".param-name")].forEach(input => {
     input.disabled = !enabled;
   });
+
+  if (showTestNameInReportInput) {
+    if (!enabled) {
+      if (!showTestNameInReportInput.disabled) {
+        showTestNameInReportInput.dataset.prevChecked =
+          showTestNameInReportInput.checked ? "1" : "0";
+      }
+      showTestNameInReportInput.checked = true;
+      showTestNameInReportInput.disabled = true;
+    } else {
+      showTestNameInReportInput.disabled = false;
+      const prev = showTestNameInReportInput.dataset.prevChecked;
+      if (prev === "0" || prev === "1") {
+        showTestNameInReportInput.checked = prev === "1";
+        delete showTestNameInReportInput.dataset.prevChecked;
+      }
+    }
+  }
+
   updateRemoveButtons();
 }
 
@@ -308,6 +328,11 @@ function applyTestToForm(test) {
   cost.value = test?.cost == null ? "" : String(test.cost);
   active.checked = test?.active !== false;
 
+  if (showTestNameInReportInput) {
+    showTestNameInReportInput.checked = test?.showTestNameInReport !== false;
+    delete showTestNameInReportInput.dataset.prevChecked;
+  }
+
   editingShortcutNormalized = normalizeShortcut(test?.shortcut);
 
   const params = Array.isArray(test?.parameters) ? test.parameters : [];
@@ -353,6 +378,9 @@ function collectPayload() {
   const category = document.getElementById("category");
   const cost = document.getElementById("cost");
   const active = document.getElementById("active");
+  const showTestNameInReport = showTestNameInReportInput
+    ? Boolean(showTestNameInReportInput.checked)
+    : true;
   if (!testName.value.trim()) {
     testName.classList.add("error");
     errors.push("Test name is required.");
@@ -448,6 +476,7 @@ function collectPayload() {
     category: category.value.trim(),
     cost: costValue,
     active: active.checked,
+    showTestNameInReport: showTestNameInReport,
     parameters: parameters
   };
 }

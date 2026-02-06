@@ -10,6 +10,7 @@ public class TestViewDTO {
     public String shortcut;
     public Double cost;
     public Boolean active;
+    public Boolean showTestNameInReport;
     public List<TestUnitDTO> units;
     public List<TestNormalValueDTO> normalValues;
     public List<TestParameterViewDTO> parameters;
@@ -20,6 +21,7 @@ public class TestViewDTO {
                        String shortcut,
                        Double cost,
                        Boolean active,
+                       Boolean showTestNameInReport,
                        List<TestUnitDTO> units,
                        List<TestNormalValueDTO> normalValues,
                        List<TestParameterViewDTO> parameters) {
@@ -29,6 +31,7 @@ public class TestViewDTO {
         this.shortcut = shortcut;
         this.cost = cost;
         this.active = active;
+        this.showTestNameInReport = showTestNameInReport;
         this.units = units;
         this.normalValues = normalValues;
         this.parameters = parameters;
