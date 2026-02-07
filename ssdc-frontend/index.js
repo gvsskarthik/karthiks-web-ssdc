@@ -28,6 +28,16 @@ function clearToken() {
   }
 }
 
+function lockSessionSync() {
+  try {
+    if (typeof window.__ssdcLockSessionSync === "function") {
+      window.__ssdcLockSessionSync();
+    }
+  } catch (err) {
+    // ignore
+  }
+}
+
 function authUrl(path) {
   const base = window.API_BASE_URL || "/api";
   return base.replace(/\/$/, "") + path;
@@ -49,6 +59,19 @@ async function postJson(url, body) {
 // If already logged in, go to dashboard.
 if (getToken()) {
   window.location.href = "dashboard.html";
+}
+
+// If the user starts typing on the login page, prevent cross-tab session sync
+// from overriding a manual login to a different user.
+try {
+  const labIdInput = document.getElementById("loginLabId");
+  const passInput = document.getElementById("loginPass");
+  [labIdInput, passInput].filter(Boolean).forEach((el) => {
+    el.addEventListener("input", lockSessionSync);
+    el.addEventListener("focus", lockSessionSync);
+  });
+} catch (err) {
+  // ignore
 }
 
 // Show email verification result (from verify link redirect).
@@ -87,10 +110,13 @@ try {
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  lockSessionSync();
   const labId = normalizeLabId(document.getElementById("loginLabId").value);
   const password = document.getElementById("loginPass").value;
 
   try {
+    // Clear any previously synced session in this tab before logging in.
+    clearToken();
     const data = await postJson(authUrl("/auth/login"), { labId, password });
     if (!data || !data.token) {
       throw new Error("Login failed");

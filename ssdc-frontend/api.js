@@ -261,6 +261,54 @@
     window.__ssdcSessionSyncInstalled = true;
 
     let pendingRequestId = null;
+    let sessionSyncLocked = false;
+    let loginAutoApplyTimer = null;
+
+    function clearLoginAutoApplyTimer() {
+      if (loginAutoApplyTimer) {
+        try {
+          window.clearTimeout(loginAutoApplyTimer);
+        } catch (err) {
+          // ignore
+        }
+        loginAutoApplyTimer = null;
+      }
+    }
+
+    function lockSessionSync() {
+      sessionSyncLocked = true;
+      pendingRequestId = null;
+      clearLoginAutoApplyTimer();
+    }
+
+    // Expose lock for login page to prevent "cross-tab auto-login" from
+    // overriding a manual login to a different user.
+    try {
+      window.__ssdcLockSessionSync = lockSessionSync;
+    } catch (err) {
+      // ignore
+    }
+
+    function isLoginFormDirty() {
+      try {
+        const form = document.getElementById("loginForm");
+        if (!form) {
+          return false;
+        }
+        const labId = document.getElementById("loginLabId");
+        const pass = document.getElementById("loginPass");
+        const hasValues =
+          (labId && String(labId.value || "").trim()) ||
+          (pass && String(pass.value || "").trim());
+        if (hasValues) {
+          return true;
+        }
+        const active = document.activeElement;
+        return Boolean(active && form.contains(active));
+      } catch (err) {
+        return false;
+      }
+    }
 
     function parsePayload(raw) {
       try {
@@ -317,8 +365,46 @@
         if (!pendingRequestId || payload.id !== pendingRequestId) {
           return;
         }
+        if (sessionSyncLocked) {
+          pendingRequestId = null;
+          return;
+        }
         if (getAuthToken()) {
           pendingRequestId = null;
+          return;
+        }
+
+        // On the login page, only auto-apply the shared session if the user
+        // hasn't started typing (prevents landing in the "wrong user").
+        const isLoginPage = Boolean(document.getElementById("loginForm"));
+        if (isLoginPage) {
+          if (isLoginFormDirty()) {
+            pendingRequestId = null;
+            return;
+          }
+          clearLoginAutoApplyTimer();
+          loginAutoApplyTimer = window.setTimeout(() => {
+            loginAutoApplyTimer = null;
+            if (sessionSyncLocked || getAuthToken() || isLoginFormDirty()) {
+              pendingRequestId = null;
+              return;
+            }
+            setAuthToken(payload.token);
+            if (payload.labName) {
+              setLabName(payload.labName);
+            }
+            try {
+              applyLabNameToDom(payload.labName);
+            } catch (err) {
+              // ignore
+            }
+            pendingRequestId = null;
+            try {
+              window.location.href = "dashboard.html";
+            } catch (err) {
+              // ignore
+            }
+          }, 400);
           return;
         }
 
@@ -333,14 +419,6 @@
         }
 
         pendingRequestId = null;
-
-        try {
-          if (document.getElementById("loginForm")) {
-            window.location.href = "dashboard.html";
-          }
-        } catch (err) {
-          // ignore
-        }
       }
     });
 
