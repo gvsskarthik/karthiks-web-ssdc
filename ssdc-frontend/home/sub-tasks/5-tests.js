@@ -294,60 +294,74 @@ function openGroup(group){
 }
 
 /* DELETE */
-function deleteTest(id){
-  if(!confirm("Delete test?")) return;
+async function deleteTest(id){
+  const ok = await window.ssdcConfirm("Delete test?", {
+    title: "Confirm Delete",
+    okText: "Delete",
+    okVariant: "danger"
+  });
+  if (!ok) return;
 
-  fetch(API_BASE_URL + "/tests/" + id,{
-    method:"DELETE"
-  })
-  .then(res=>{
-    if(!res.ok){
-      return res.text().then(msg=>alert(msg));
+  try {
+    const res = await fetch(API_BASE_URL + "/tests/" + id, {
+      method: "DELETE"
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      await window.ssdcAlert(msg || "Delete failed");
+      return;
     }
     location.reload();
-  })
-  .catch(()=>{
-    alert("Server error");
-  });
+  } catch (e) {
+    await window.ssdcAlert("Server error");
+  }
 }
-function deleteGroup(id){
- if(confirm("Delete group?"))
-  fetch(API_BASE_URL + "/groups/" + id,{method:"DELETE"})
-   .then(()=>location.reload());
+async function deleteGroup(id){
+  const ok = await window.ssdcConfirm("Delete group?", {
+    title: "Confirm Delete",
+    okText: "Delete",
+    okVariant: "danger"
+  });
+  if (!ok) return;
+
+  try {
+    await fetch(API_BASE_URL + "/groups/" + id, { method: "DELETE" });
+    location.reload();
+  } catch (e) {
+    await window.ssdcAlert("Server error");
+  }
 }
 /* TOGGLE ACTIVE */
-function toggleActive(id, state){
-  fetch(`${API_BASE_URL}/tests/${id}/active`,{
-    method:"PUT",
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ active: state })
-  })
-  .then(res=>{
+async function toggleActive(id, state){
+  try {
+    const res = await fetch(`${API_BASE_URL}/tests/${id}/active`, {
+      method:"PUT",
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ active: state })
+    });
     if(!res.ok){
-      alert("Failed to update test status");
+      await window.ssdcAlert("Failed to update test status");
       location.reload(); // revert UI
     }
-  })
-  .catch(()=>{
-    alert("Server error");
+  } catch (e) {
+    await window.ssdcAlert("Server error");
     location.reload();
-  });
+  }
 }
 
-function toggleGroupActive(id, state){
-  fetch(`${API_BASE_URL}/groups/${id}/active`,{
-    method:"PUT",
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ active: state })
-  })
-  .then(res=>{
+async function toggleGroupActive(id, state){
+  try {
+    const res = await fetch(`${API_BASE_URL}/groups/${id}/active`,{
+      method:"PUT",
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ active: state })
+    });
     if(!res.ok){
-      alert("Failed to update group status");
+      await window.ssdcAlert("Failed to update group status");
       location.reload(); // revert UI
     }
-  })
-  .catch(()=>{
-    alert("Server error");
+  } catch (e) {
+    await window.ssdcAlert("Server error");
     location.reload();
-  });
+  }
 }

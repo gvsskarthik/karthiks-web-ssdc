@@ -247,8 +247,13 @@ function updateCount(){
   selectedCount.innerText=`${c} items selected`;
 }
 
-function deleteOne(id){
-  if(!confirm("Delete patient and all related data?")) return;
+async function deleteOne(id){
+  const ok = await window.ssdcConfirm("Delete patient and all related data?", {
+    title: "Confirm Delete",
+    okText: "Delete",
+    okVariant: "danger"
+  });
+  if (!ok) return;
 
   fetch(`${API_BASE_URL}/patients/${id}`, {
     method: "DELETE"
@@ -269,18 +274,23 @@ function deleteOne(id){
   })
   .catch(err => {
     console.error(err);
-    alert("Failed to delete patient");
+    window.ssdcAlert("Failed to delete patient");
   });
 }
 
-function deleteSelected(){
+async function deleteSelected(){
   const checked = document.querySelectorAll(".row-check:checked");
   if(!checked.length){
-    alert("No patients selected");
+    await window.ssdcAlert("No patients selected");
     return;
   }
 
-  if(!confirm("Delete selected patients and all related data?")) return;
+  const ok = await window.ssdcConfirm("Delete selected patients and all related data?", {
+    title: "Confirm Bulk Delete",
+    okText: "Delete",
+    okVariant: "danger"
+  });
+  if (!ok) return;
 
   const ids = [...checked].map(cb => Number(cb.dataset.id));
 
@@ -308,17 +318,17 @@ function deleteSelected(){
   })
   .catch(err => {
     console.error(err);
-    alert("Bulk delete failed");
+    window.ssdcAlert("Bulk delete failed");
   });
 }
 
-function editPatient(id){
-  alert("Edit coming soon");
+async function editPatient(id){
+  await window.ssdcAlert("Edit coming soon");
 }
 
-function openBill(patient){
+async function openBill(patient){
   if (!patient || !patient.id) {
-    alert("Patient not found");
+    await window.ssdcAlert("Patient not found");
     return;
   }
 

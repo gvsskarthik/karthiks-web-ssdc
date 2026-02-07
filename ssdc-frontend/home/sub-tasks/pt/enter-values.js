@@ -7,7 +7,9 @@ const patient =
   JSON.parse(localStorage.getItem("currentPatient") || "{}");
 
 if (!patient || !patient.id) {
-  alert("Patient ID missing. Please open patient from Patient / Reports page.");
+  window.ssdcAlert("Patient ID missing. Please open patient from Patient / Reports page.", {
+    title: "Missing Patient"
+  });
   throw new Error("Patient ID missing");
 }
 
@@ -112,11 +114,11 @@ function savePrintSettings() {
     })
     .then((saved) => {
       setPrintSettingsForm(saved);
-      alert("Letterhead spacing saved for this Lab ID.");
+      window.ssdcAlert("Letterhead spacing saved for this Lab ID.", { title: "Saved" });
     })
     .catch((err) => {
       console.error(err);
-      alert(err?.message || "Failed to save print settings");
+      window.ssdcAlert(err?.message || "Failed to save print settings", { title: "Error" });
     });
 }
 
@@ -204,7 +206,7 @@ loadSavedResults()
       localStorage.setItem("selectedTests", JSON.stringify(ids));
     }
     if (!ids.length) {
-      alert("No tests selected");
+      window.ssdcAlert("No tests selected");
       return;
     }
 
@@ -970,9 +972,11 @@ function collectResults() {
 }
 
 /* ================= SAVE ONLY ================= */
-function saveOnly() {
+async function saveOnly() {
   if (reportLocked) {
-    alert("Report is COMPLETED (locked). Editing is disabled.");
+    await window.ssdcAlert("Report is COMPLETED (locked). Editing is disabled.", {
+      title: "Locked"
+    });
     location.href = "reports.html";
     return;
   }
@@ -1032,7 +1036,7 @@ function saveOnly() {
         })
         .catch(err => {
           console.error(err);
-          alert(err?.message || "Failed to save results");
+          window.ssdcAlert(err?.message || "Failed to save results", { title: "Error" });
         });
     });
 }

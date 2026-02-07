@@ -133,7 +133,7 @@ function sanitizeFileName(value){
 
 function downloadExcel(){
   if (!exportRows.length) {
-    alert("No records to export");
+    window.ssdcAlert("No records to export", { title: "Nothing to Export" });
     return;
   }
 

@@ -341,11 +341,13 @@ function init(){
     }
   });
 
-  applyDateRange.addEventListener("click", () => {
+  applyDateRange.addEventListener("click", async () => {
     const fromDate = parseDateValue(dateFromInput.value);
     const toDate = parseDateValue(dateToInput.value);
     if (fromDate && toDate && fromDate > toDate) {
-      alert("From date must be before To date.");
+      await window.ssdcAlert("From date must be before To date.", {
+        title: "Invalid Date Range"
+      });
       return;
     }
     dateRange = { from: fromDate, to: toDate };

@@ -114,3 +114,151 @@ table td {
     min-width: 640px;
   }
 }
+
+/* ================= SSDC Soft Popups (Alert / Confirm / Prompt) ================= */
+.ssdc-popup-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(30, 38, 45, 0.30);
+  backdrop-filter: blur(4px);
+  z-index: 999999;
+}
+
+.ssdc-popup-overlay.show {
+  display: flex;
+}
+
+.ssdc-popup-card {
+  width: min(92vw, 520px);
+  max-height: min(82vh, 620px);
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-line);
+  box-shadow:
+    0 26px 70px rgba(28, 41, 61, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  padding: 18px 16px;
+}
+
+.ssdc-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ssdc-popup-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.ssdc-popup-x {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-surface);
+  color: var(--theme-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-inset);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.ssdc-popup-x:hover {
+  filter: brightness(0.985);
+  transform: translateY(-1px);
+}
+
+.ssdc-popup-x:active {
+  transform: translateY(1px);
+}
+
+.ssdc-popup-message {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  color: var(--theme-ink);
+  opacity: 0.92;
+  margin: 0 0 14px;
+}
+
+.ssdc-popup-input-wrap {
+  margin: 10px 0 0;
+}
+
+.ssdc-popup-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-field-bg);
+  color: var(--theme-ink);
+  box-shadow: var(--shadow-inset);
+  outline: none;
+}
+
+.ssdc-popup-input:focus {
+  border-color: var(--theme-accent);
+  box-shadow:
+    0 0 0 3px rgba(15, 118, 110, 0.15),
+    var(--shadow-inset);
+}
+
+.ssdc-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.ssdc-popup-btn {
+  border: none;
+  border-radius: 999px;
+  height: 40px;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ssdc-popup-btn:hover {
+  filter: brightness(0.985);
+  transform: translateY(-1px);
+}
+
+.ssdc-popup-btn:active {
+  transform: translateY(1px);
+}
+
+.ssdc-popup-btn.primary {
+  background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-2));
+  color: #fff;
+  box-shadow: var(--shadow-accent);
+}
+
+.ssdc-popup-btn.secondary {
+  background: var(--theme-surface);
+  color: var(--theme-ink);
+  border: 1px solid var(--theme-line);
+  box-shadow: none;
+}
+
+.ssdc-popup-btn.primary.ssdc-danger {
+  background: linear-gradient(135deg, var(--theme-danger), #e05749);
+  box-shadow: 0 12px 24px rgba(192, 57, 43, 0.18);
+}

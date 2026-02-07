@@ -523,6 +523,366 @@
     }
   }
 
+  // ===== Soft popups (replace alert/confirm/prompt) =====
+  let popupChain = Promise.resolve();
+  let popupUi = null;
+
+  function enqueuePopup(task) {
+    const run = () => Promise.resolve().then(task);
+    const next = popupChain.then(run, run);
+    popupChain = next.catch(() => {});
+    return next;
+  }
+
+  function waitForDomReady() {
+    return new Promise((resolve) => {
+      const ready = () => Boolean(document && document.body && document.head);
+      if (ready()) {
+        resolve();
+        return;
+      }
+      const tick = () => {
+        if (ready()) {
+          resolve();
+        } else {
+          window.setTimeout(tick, 50);
+        }
+      };
+      tick();
+    });
+  }
+
+  function ensurePopupUi() {
+    if (popupUi) {
+      return Promise.resolve(popupUi);
+    }
+
+    return waitForDomReady().then(() => {
+      const existing = document.getElementById("ssdc-popup-overlay");
+      if (existing) {
+        popupUi = {
+          overlay: existing,
+          card: existing.querySelector(".ssdc-popup-card"),
+          title: existing.querySelector(".ssdc-popup-title"),
+          close: existing.querySelector(".ssdc-popup-x"),
+          message: existing.querySelector(".ssdc-popup-message"),
+          inputWrap: existing.querySelector(".ssdc-popup-input-wrap"),
+          input: existing.querySelector(".ssdc-popup-input"),
+          actions: existing.querySelector(".ssdc-popup-actions"),
+          ok: existing.querySelector("[data-ssdc-popup-ok]"),
+          cancel: existing.querySelector("[data-ssdc-popup-cancel]")
+        };
+        return popupUi;
+      }
+
+      const overlay = document.createElement("div");
+      overlay.id = "ssdc-popup-overlay";
+      overlay.className = "ssdc-popup-overlay";
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.innerHTML = `
+        <div class="ssdc-popup-card" role="dialog" aria-modal="true" tabindex="-1">
+          <div class="ssdc-popup-header">
+            <h3 class="ssdc-popup-title"></h3>
+            <button type="button" class="ssdc-popup-x" aria-label="Close">×</button>
+          </div>
+          <div class="ssdc-popup-message"></div>
+          <div class="ssdc-popup-input-wrap" style="display:none;">
+            <input class="ssdc-popup-input" />
+          </div>
+          <div class="ssdc-popup-actions">
+            <button type="button" class="ssdc-popup-btn secondary" data-ssdc-popup-cancel>Cancel</button>
+            <button type="button" class="ssdc-popup-btn primary" data-ssdc-popup-ok>OK</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      popupUi = {
+        overlay,
+        card: overlay.querySelector(".ssdc-popup-card"),
+        title: overlay.querySelector(".ssdc-popup-title"),
+        close: overlay.querySelector(".ssdc-popup-x"),
+        message: overlay.querySelector(".ssdc-popup-message"),
+        inputWrap: overlay.querySelector(".ssdc-popup-input-wrap"),
+        input: overlay.querySelector(".ssdc-popup-input"),
+        actions: overlay.querySelector(".ssdc-popup-actions"),
+        ok: overlay.querySelector("[data-ssdc-popup-ok]"),
+        cancel: overlay.querySelector("[data-ssdc-popup-cancel]")
+      };
+      return popupUi;
+    });
+  }
+
+  function getFocusable(container) {
+    const root = container || document;
+    return [...root.querySelectorAll(
+      "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+    )]
+      .filter((el) => el && !el.disabled && el.getAttribute("aria-hidden") !== "true")
+      .filter((el) => {
+        try {
+          return (el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+        } catch (err) {
+          return false;
+        }
+      });
+  }
+
+  function showSoftPopup(config) {
+    const opts = config && typeof config === "object" ? config : {};
+    const kind = String(opts.kind || "alert");
+    const titleText = opts.title == null ? "" : String(opts.title);
+    const messageText = opts.message == null ? "" : String(opts.message);
+    const okText = opts.okText == null ? "OK" : String(opts.okText);
+    const cancelText = opts.cancelText == null ? "Cancel" : String(opts.cancelText);
+    const okVariant = String(opts.okVariant || "");
+    const inputType = opts.inputType == null ? "text" : String(opts.inputType);
+    const inputValue = opts.inputValue == null ? "" : String(opts.inputValue);
+    const inputPlaceholder = opts.inputPlaceholder == null ? "" : String(opts.inputPlaceholder);
+
+    return enqueuePopup(async () => {
+      const ui = await ensurePopupUi();
+
+      const host = ui.overlay;
+      const card = ui.card;
+      const okBtn = ui.ok;
+      const cancelBtn = ui.cancel;
+      const closeBtn = ui.close;
+      const titleEl = ui.title;
+      const msgEl = ui.message;
+      const inputWrap = ui.inputWrap;
+      const inputEl = ui.input;
+
+      let prevFocus = null;
+      try {
+        prevFocus = document.activeElement;
+      } catch (err) {
+        prevFocus = null;
+      }
+
+      titleEl.textContent = titleText;
+      titleEl.style.display = titleText ? "" : "none";
+      msgEl.textContent = messageText;
+
+      okBtn.textContent = okText;
+      cancelBtn.textContent = cancelText;
+
+      okBtn.classList.remove("ssdc-danger");
+      if (okVariant === "danger") {
+        okBtn.classList.add("ssdc-danger");
+      }
+
+      const needsCancel = kind === "confirm" || kind === "prompt";
+      cancelBtn.style.display = needsCancel ? "" : "none";
+
+      const needsInput = kind === "prompt";
+      inputWrap.style.display = needsInput ? "" : "none";
+      if (needsInput) {
+        inputEl.type = inputType === "password" ? "password" : "text";
+        inputEl.value = inputValue;
+        inputEl.placeholder = inputPlaceholder;
+      } else {
+        inputEl.value = "";
+        inputEl.placeholder = "";
+      }
+
+      host.classList.add("show");
+      host.setAttribute("aria-hidden", "false");
+
+      return new Promise((resolve) => {
+        let finished = false;
+
+        const restoreFocus = () => {
+          try {
+            if (prevFocus && typeof prevFocus.focus === "function") {
+              prevFocus.focus();
+            }
+          } catch (err) {
+            // ignore
+          }
+        };
+
+        const cleanup = () => {
+          okBtn.removeEventListener("click", onOk);
+          cancelBtn.removeEventListener("click", onCancel);
+          closeBtn.removeEventListener("click", onCancel);
+          host.removeEventListener("click", onOverlayClick);
+          document.removeEventListener("keydown", onKeyDown, true);
+          host.classList.remove("show");
+          host.setAttribute("aria-hidden", "true");
+        };
+
+        const finish = (value) => {
+          if (finished) {
+            return;
+          }
+          finished = true;
+          cleanup();
+          restoreFocus();
+          resolve(value);
+        };
+
+        const okValue = () => {
+          if (kind === "prompt") {
+            return inputEl.value;
+          }
+          return true;
+        };
+
+        const cancelValue = () => {
+          if (kind === "prompt") {
+            return null;
+          }
+          if (kind === "confirm") {
+            return false;
+          }
+          return true;
+        };
+
+        const onOk = () => finish(okValue());
+        const onCancel = () => finish(cancelValue());
+
+        const onOverlayClick = (event) => {
+          if (event && event.target === host) {
+            onCancel();
+          }
+        };
+
+        const onKeyDown = (event) => {
+          if (!event) {
+            return;
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onCancel();
+            return;
+          }
+          if (event.key === "Enter") {
+            const active = document.activeElement;
+            const isTextArea = active && active.tagName === "TEXTAREA";
+            if (!isTextArea) {
+              event.preventDefault();
+              onOk();
+            }
+            return;
+          }
+          if (event.key === "Tab") {
+            const focusable = getFocusable(card);
+            if (!focusable.length) {
+              event.preventDefault();
+              return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const current = document.activeElement;
+            if (event.shiftKey) {
+              if (current === first || !card.contains(current)) {
+                event.preventDefault();
+                last.focus();
+              }
+              return;
+            }
+            if (current === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
+        };
+
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+        closeBtn.addEventListener("click", onCancel);
+        host.addEventListener("click", onOverlayClick);
+        document.addEventListener("keydown", onKeyDown, true);
+
+        window.setTimeout(() => {
+          try {
+            if (needsInput) {
+              inputEl.focus();
+              inputEl.select();
+              return;
+            }
+            okBtn.focus();
+          } catch (err) {
+            // ignore
+          }
+        }, 0);
+      });
+    });
+  }
+
+  function ssdcAlert(message, options) {
+    const topWin = safeTopWindow();
+    if (topWin !== window) {
+      try {
+        if (typeof topWin.ssdcAlert === "function") {
+          return topWin.ssdcAlert(message, options);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    const opts = options && typeof options === "object" ? options : {};
+    return showSoftPopup({
+      kind: "alert",
+      title: opts.title,
+      message,
+      okText: opts.okText || "OK",
+      okVariant: opts.okVariant
+    }).then(() => {});
+  }
+
+  function ssdcConfirm(message, options) {
+    const topWin = safeTopWindow();
+    if (topWin !== window) {
+      try {
+        if (typeof topWin.ssdcConfirm === "function") {
+          return topWin.ssdcConfirm(message, options);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    const opts = options && typeof options === "object" ? options : {};
+    return showSoftPopup({
+      kind: "confirm",
+      title: opts.title,
+      message,
+      okText: opts.okText || "OK",
+      cancelText: opts.cancelText || "Cancel",
+      okVariant: opts.okVariant
+    }).then((value) => Boolean(value));
+  }
+
+  function ssdcPrompt(message, options) {
+    const topWin = safeTopWindow();
+    if (topWin !== window) {
+      try {
+        if (typeof topWin.ssdcPrompt === "function") {
+          return topWin.ssdcPrompt(message, options);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    const opts = options && typeof options === "object" ? options : {};
+    return showSoftPopup({
+      kind: "prompt",
+      title: opts.title,
+      message,
+      okText: opts.okText || "OK",
+      cancelText: opts.cancelText || "Cancel",
+      okVariant: opts.okVariant,
+      inputType: opts.inputType || "text",
+      inputValue: opts.inputValue || "",
+      inputPlaceholder: opts.inputPlaceholder || ""
+    }).then((value) => (value == null ? null : String(value)));
+  }
+
+  window.ssdcAlert = ssdcAlert;
+  window.ssdcConfirm = ssdcConfirm;
+  window.ssdcPrompt = ssdcPrompt;
+
   function broadcastLogout(reason) {
     try {
       if (!canUseStorage()) {
@@ -865,7 +1225,9 @@
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
+  padding: 18px;
+  background: rgba(30, 38, 45, 0.30);
+  backdrop-filter: blur(4px);
   z-index: 999999;
 }
 #ssdc-idle-warning-overlay.show {
@@ -873,12 +1235,14 @@
 }
 #ssdc-idle-warning-overlay .ssdc-idle-box {
   width: min(92vw, 420px);
-  border-radius: 14px;
+  border-radius: var(--radius-lg, 22px);
   padding: 18px 16px;
-  background: rgba(20, 20, 20, 0.98);
-  color: #fff;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: var(--theme-surface, #fffaf2);
+  color: var(--theme-ink, #1e262d);
+  box-shadow:
+    0 26px 70px rgba(28, 41, 61, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--theme-line, #e3d9c9);
 }
 #ssdc-idle-warning-overlay .ssdc-idle-title {
   font-size: 18px;
@@ -887,12 +1251,12 @@
 }
 #ssdc-idle-warning-overlay .ssdc-idle-countdown {
   font-size: 14px;
-  opacity: 0.92;
+  color: var(--theme-muted, #6b737c);
   margin: 0;
 }
 #ssdc-idle-warning-overlay .ssdc-idle-hint {
   font-size: 12px;
-  opacity: 0.75;
+  color: var(--theme-muted, #6b737c);
   margin: 10px 0 0;
 }
 `;

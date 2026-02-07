@@ -71,7 +71,7 @@ async function importAll() {
 async function importSelected() {
   const ids = getSelectedIds();
   if (!ids.length) {
-    alert("Select at least one test.");
+    await window.ssdcAlert("Select at least one test.");
     return;
   }
   setStatus("Importing selected tests...");
@@ -94,13 +94,13 @@ if (!getToken()) {
   window.location.href = "index.html";
 } else {
   document.getElementById("btnAll").addEventListener("click", () => {
-    importAll().catch((e) => alert(e.message || "Import failed"));
+    importAll().catch((e) => window.ssdcAlert(e.message || "Import failed"));
   });
   document.getElementById("btnSelected").addEventListener("click", () => {
-    importSelected().catch((e) => alert(e.message || "Import failed"));
+    importSelected().catch((e) => window.ssdcAlert(e.message || "Import failed"));
   });
   document.getElementById("btnSkip").addEventListener("click", () => {
-    skip().catch((e) => alert(e.message || "Skip failed"));
+    skip().catch((e) => window.ssdcAlert(e.message || "Skip failed"));
   });
   loadTemplateTests().catch((e) => setStatus(e.message || "Failed to load tests"));
 }

@@ -82,7 +82,7 @@ public class TestService {
         Test test = testRepo.findByIdAndLabId(
                 Objects.requireNonNull(id, "id"),
                 Objects.requireNonNull(labId, "labId"))
-            .orElseThrow(() -> new RuntimeException("Test not found"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Test not found"));
 
         if (payload.testName != null) {
             test.setTestName(payload.testName.trim());
@@ -142,7 +142,7 @@ public class TestService {
         Test test = testRepo.findByIdAndLabId(
                 Objects.requireNonNull(id, "id"),
                 Objects.requireNonNull(labId, "labId"))
-            .orElseThrow(() -> new RuntimeException("Test not found"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Test not found"));
         test.setActive(active);
         testRepo.save(test);
     }
@@ -152,7 +152,7 @@ public class TestService {
         Test test = testRepo.findByIdAndLabId(
                 Objects.requireNonNull(id, "id"),
                 Objects.requireNonNull(labId, "labId"))
-            .orElseThrow(() -> new RuntimeException("Test not found"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Test not found"));
         testRepo.deleteById(test.getId());
     }
 

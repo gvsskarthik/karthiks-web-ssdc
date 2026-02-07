@@ -190,7 +190,7 @@ function openEdit(id) {
   closeAllMenus();
   const doctor = doctors.find(d => d.id === id);
   if (!doctor) {
-    alert("Doctor not found");
+    window.ssdcAlert("Doctor not found");
     return;
   }
   editDoctorId = id;
@@ -209,29 +209,31 @@ function closeEditModal() {
   editModal.style.display = "none";
 }
 
-function deleteDoctor(id) {
+async function deleteDoctor(id) {
   closeAllMenus();
-  if (!confirm("Delete doctor permanently?")) return;
-
-  fetch(`${API_BASE_URL}/doctors/${id}`, {
-    method: "DELETE"
-  })
-  .then(res => {
-    if (!res.ok) {
-      return res.text().then(text => {
-        throw new Error(text || "Failed to delete doctor");
-      });
-    }
-    return res;
-  })
-  .then(() => loadDoctors())
-  .catch(err => {
-    console.error("Error deleting doctor", err);
-    alert(err.message || "Error deleting doctor");
+  const ok = await window.ssdcConfirm("Delete doctor permanently?", {
+    title: "Confirm Delete",
+    okText: "Delete",
+    okVariant: "danger"
   });
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || "Failed to delete doctor");
+    }
+    loadDoctors();
+  } catch (err) {
+    console.error("Error deleting doctor", err);
+    await window.ssdcAlert(err.message || "Error deleting doctor", { title: "Error" });
+  }
 }
 
-editForm.addEventListener("submit", function (e) {
+editForm.addEventListener("submit", async function (e) {
   e.preventDefault();
   if (editDoctorId == null) return;
 
@@ -249,24 +251,21 @@ editForm.addEventListener("submit", function (e) {
     doctor.commissionRate = commissionRate;
   }
 
-  fetch(API_BASE_URL + "/doctors", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(doctor)
-  })
-  .then(res => {
+  try {
+    const res = await fetch(API_BASE_URL + "/doctors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(doctor)
+    });
     if (!res.ok) {
       throw new Error("Failed to save doctor");
     }
-  })
-  .then(() => {
     closeEditModal();
     loadDoctors();
-  })
-  .catch(err => {
+  } catch (err) {
     console.error("Error saving doctor", err);
-    alert(err.message || "Error saving doctor");
-  });
+    await window.ssdcAlert(err.message || "Error saving doctor", { title: "Error" });
+  }
 });
 
 cancelEdit.addEventListener("click", closeEditModal);

@@ -931,7 +931,7 @@ patientForm.addEventListener("submit", e => {
   }
 
   if (!selected.size) {
-    alert("Select at least one test");
+    window.ssdcAlert("Select at least one test");
     return;
   }
 
@@ -964,7 +964,7 @@ patientForm.addEventListener("submit", e => {
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
     const ok = navigateToEnterValues();
     if (!ok) {
-      alert("Failed to open results page");
+      window.ssdcAlert("Failed to open results page");
       isSubmittingPatient = false;
       if (savePatientBtn) {
         savePatientBtn.disabled = false;
@@ -995,7 +995,7 @@ patientForm.addEventListener("submit", e => {
     localStorage.setItem("selectedTests", JSON.stringify([...selected]));
     const ok = navigateToEnterValues();
     if (!ok) {
-      alert("Patient saved, but failed to open results page");
+      window.ssdcAlert("Patient saved, but failed to open results page");
       isSubmittingPatient = false;
       if (savePatientBtn) {
         savePatientBtn.disabled = false;
@@ -1004,7 +1004,7 @@ patientForm.addEventListener("submit", e => {
   })
   .catch(err => {
     console.error(err);
-    alert("Failed to save patient");
+    window.ssdcAlert("Failed to save patient");
     isSubmittingPatient = false;
     if (savePatientBtn) {
       savePatientBtn.disabled = false;

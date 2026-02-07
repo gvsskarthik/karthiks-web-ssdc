@@ -1,4 +1,4 @@
-document.getElementById("doctorForm").addEventListener("submit", function(e) {
+document.getElementById("doctorForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
   const commissionRateRaw = document.getElementById("commissionRate").value.trim();
@@ -15,17 +15,19 @@ document.getElementById("doctorForm").addEventListener("submit", function(e) {
     doctor.commissionRate = commissionRate;
   }
 
-  fetch(API_BASE_URL + "/doctors", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(doctor)
-  })
-  .then(() => {
-    alert("Doctor saved successfully");
+  try {
+    const res = await fetch(API_BASE_URL + "/doctors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(doctor)
+    });
+    if (!res.ok) {
+      throw new Error("Error saving doctor");
+    }
+    await window.ssdcAlert("Doctor saved successfully", { title: "Saved" });
     window.location.href = "../6-doctor.html";
-  })
-  .catch(err => {
+  } catch (err) {
     console.error("Error saving doctor", err);
-    alert("Error saving doctor");
-  });
+    await window.ssdcAlert("Error saving doctor", { title: "Error" });
+  }
 });

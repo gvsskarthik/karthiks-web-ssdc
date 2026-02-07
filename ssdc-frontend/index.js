@@ -28,6 +28,22 @@ function clearToken() {
   }
 }
 
+async function softAlert(message) {
+  if (typeof window.ssdcAlert === "function") {
+    await window.ssdcAlert(message);
+    return;
+  }
+  console.warn("Popup:", message);
+}
+
+async function softPrompt(message, options) {
+  if (typeof window.ssdcPrompt === "function") {
+    return await window.ssdcPrompt(message, options);
+  }
+  console.warn("Prompt requested but ssdcPrompt is unavailable:", message);
+  return null;
+}
+
 function lockSessionSync() {
   try {
     if (typeof window.__ssdcLockSessionSync === "function") {
@@ -75,38 +91,40 @@ try {
 }
 
 // Show email verification result (from verify link redirect).
-try {
-  const url = new URL(window.location.href);
-  const loggedOut = url.searchParams.get("loggedOut");
-  const reason = url.searchParams.get("reason");
-  if (loggedOut === "1" && reason) {
-    if (reason === "idle") {
-      alert("Logged out due to inactivity");
-    } else if (reason === "passwordChanged") {
-      alert("Password changed. Please login again.");
-    } else if (reason === "expired") {
-      alert("Session expired. Please login again.");
-    } else {
-      alert("You have been logged out.");
+(async () => {
+  try {
+    const url = new URL(window.location.href);
+    const loggedOut = url.searchParams.get("loggedOut");
+    const reason = url.searchParams.get("reason");
+    if (loggedOut === "1" && reason) {
+      if (reason === "idle") {
+        await softAlert("Logged out due to inactivity");
+      } else if (reason === "passwordChanged") {
+        await softAlert("Password changed. Please login again.");
+      } else if (reason === "expired") {
+        await softAlert("Session expired. Please login again.");
+      } else {
+        await softAlert("You have been logged out.");
+      }
+      url.searchParams.delete("loggedOut");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.toString());
     }
-    url.searchParams.delete("loggedOut");
-    url.searchParams.delete("reason");
-    window.history.replaceState({}, "", url.toString());
-  }
 
-  const verified = url.searchParams.get("verified");
-  if (verified === "1") {
-    alert("Email verified! Now login with Lab ID + password.");
-    url.searchParams.delete("verified");
-    window.history.replaceState({}, "", url.toString());
-  } else if (verified === "0") {
-    alert("Email verification failed or expired. Please resend verification link.");
-    url.searchParams.delete("verified");
-    window.history.replaceState({}, "", url.toString());
+    const verified = url.searchParams.get("verified");
+    if (verified === "1") {
+      await softAlert("Email verified! Now login with Lab ID + password.");
+      url.searchParams.delete("verified");
+      window.history.replaceState({}, "", url.toString());
+    } else if (verified === "0") {
+      await softAlert("Email verification failed or expired. Please resend verification link.");
+      url.searchParams.delete("verified");
+      window.history.replaceState({}, "", url.toString());
+    }
+  } catch (e) {
+    // ignore
   }
-} catch (e) {
-  // ignore
-}
+})();
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -128,7 +146,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     window.location.href = "dashboard.html";
   } catch (err) {
     clearToken();
-    alert(err && err.message ? err.message : "Login failed");
+    await softAlert(err && err.message ? err.message : "Login failed");
   }
 });
 
@@ -148,11 +166,11 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
       phone: phone || null,
       password
     });
-    alert((data && data.message) ? data.message : "Verification link sent to email. Please verify then login.");
+    await softAlert((data && data.message) ? data.message : "Verification link sent to email. Please verify then login.");
     document.getElementById("loginLabId").value = labId;
     showLogin();
   } catch (err) {
-    alert(err && err.message ? err.message : "Signup failed");
+    await softAlert(err && err.message ? err.message : "Signup failed");
   }
 });
 
@@ -160,57 +178,67 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
 window.resendVerification = async function () {
   const labId = normalizeLabId(document.getElementById("loginLabId").value);
   if (!labId) {
-    alert("Enter Lab ID first");
+    await softAlert("Enter Lab ID first");
     return;
   }
   try {
     await postJson(authUrl("/auth/resend-verification"), { labId, password: "x" });
-    alert("Verification link sent. Check your email.");
+    await softAlert("Verification link sent. Check your email.");
   } catch (err) {
-    alert(err && err.message ? err.message : "Resend failed");
+    await softAlert(err && err.message ? err.message : "Resend failed");
   }
 };
 
 window.forgotPassword = async function () {
   const labId = normalizeLabId(document.getElementById("loginLabId").value);
   if (!labId) {
-    alert("Enter Lab ID first");
+    await softAlert("Enter Lab ID first");
     return;
   }
   try {
     await postJson(authUrl("/auth/forgot-password"), { labId, password: "x" });
-    alert("Reset link sent to your email.");
+    await softAlert("Reset link sent to your email.");
   } catch (err) {
-    alert(err && err.message ? err.message : "Request failed");
+    await softAlert(err && err.message ? err.message : "Request failed");
   }
 };
 
 // Password reset (from email link)
-try {
-  const url = new URL(window.location.href);
-  const reset = url.searchParams.get("reset");
-  const labId = url.searchParams.get("labId");
-  const token = url.searchParams.get("token");
-  if (reset === "1" && labId && token) {
-    const newPassword = prompt("Enter new password (min 6 chars):");
-    if (newPassword && String(newPassword).trim().length >= 6) {
-      postJson(authUrl("/auth/reset-password"), {
-        labId,
-        token,
-        newPassword
-      }).then(() => {
-        alert("Password updated. Now login.");
-        url.searchParams.delete("reset");
-        url.searchParams.delete("labId");
-        url.searchParams.delete("token");
-        window.history.replaceState({}, "", url.toString());
-      }).catch((e) => {
-        alert(e && e.message ? e.message : "Reset failed");
-      });
-    } else if (newPassword !== null) {
-      alert("Password too short.");
+(async () => {
+  try {
+    const url = new URL(window.location.href);
+    const reset = url.searchParams.get("reset");
+    const labId = url.searchParams.get("labId");
+    const token = url.searchParams.get("token");
+    if (reset === "1" && labId && token) {
+      const newPassword = await softPrompt(
+        "Enter new password (min 6 chars):",
+        {
+          title: "Reset Password",
+          inputType: "password",
+          inputPlaceholder: "New password (min 6 chars)"
+        }
+      );
+      if (newPassword != null && String(newPassword).trim().length >= 6) {
+        try {
+          await postJson(authUrl("/auth/reset-password"), {
+            labId,
+            token,
+            newPassword
+          });
+          await softAlert("Password updated. Now login.");
+          url.searchParams.delete("reset");
+          url.searchParams.delete("labId");
+          url.searchParams.delete("token");
+          window.history.replaceState({}, "", url.toString());
+        } catch (e) {
+          await softAlert(e && e.message ? e.message : "Reset failed");
+        }
+      } else if (newPassword !== null) {
+        await softAlert("Password too short.");
+      }
     }
+  } catch (e) {
+    // ignore
   }
-} catch (e) {
-  // ignore
-}
+})();

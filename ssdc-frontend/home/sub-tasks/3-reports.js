@@ -187,14 +187,16 @@ function renderTable(data){
 
 /* ✅ ENTER VALUES PAGE */
 /* ENTER VALUES */
-function openPatient(patient){
+async function openPatient(patient){
   safeSessionSet(REPORT_DATE_KEY, reportDate.value);
   localStorage.setItem("currentPatient", JSON.stringify(patient));
   localStorage.removeItem("selectedTests");
   localStorage.removeItem("patientResults");
 
   if (String(patient?.status || "").trim().toUpperCase() === "COMPLETED") {
-    alert("Report is COMPLETED (locked). Editing is disabled.");
+    await window.ssdcAlert("Report is COMPLETED (locked). Editing is disabled.", {
+      title: "Locked"
+    });
     parent.loadPage(
       "home/sub-tasks/pt/reports.html",
       "reports"

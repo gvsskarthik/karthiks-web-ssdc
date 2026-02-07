@@ -37,7 +37,7 @@ function syncReportLockUi(){
 
 function markCompleted(){
   if (!patient || !patient.id) {
-    alert("Patient ID missing");
+    window.ssdcAlert("Patient ID missing", { title: "Missing Patient" });
     return;
   }
   if (isCompletedStatus(patient.status)) {
@@ -69,14 +69,14 @@ function markCompleted(){
       }
       persistPatient();
       syncReportLockUi();
-      alert("Report marked as COMPLETED. Editing is locked.");
+      window.ssdcAlert("Report marked as COMPLETED. Editing is locked.", { title: "Completed" });
     })
     .catch((err) => {
       console.error(err);
       if (btnComplete) {
         btnComplete.disabled = false;
       }
-      alert(err?.message || "Failed to mark completed");
+      window.ssdcAlert(err?.message || "Failed to mark completed", { title: "Error" });
     });
 }
 
@@ -1400,7 +1400,7 @@ function shareWhatsApp(){
   let mobile = (patient.mobile || "").replace(/\D/g, "");
 
   if(!mobile){
-    alert("Patient mobile number not available");
+    window.ssdcAlert("Patient mobile number not available", { title: "Missing Mobile" });
     return;
   }
 
