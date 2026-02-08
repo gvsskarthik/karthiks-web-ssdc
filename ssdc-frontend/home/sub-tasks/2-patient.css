@@ -2,6 +2,12 @@ body {
   margin: 0;
   padding: 24px;
   min-height: 100vh;
+  --patients-check-col-width: 0px;
+  --patients-name-col-width: 4cm;
+}
+
+body.select-mode {
+  --patients-check-col-width: 48px;
 }
 
 .page {
@@ -169,6 +175,26 @@ table {
   min-width: 0;
 }
 
+table col.col-check {
+  width: var(--patients-check-col-width);
+}
+
+table col.col-sno {
+  width: 60px;
+}
+
+table col.col-name {
+  width: var(--patients-name-col-width);
+}
+
+table col.col-options {
+  width: 90px;
+}
+
+table col.col-eq {
+  width: calc((100% - var(--patients-check-col-width) - 60px - 90px - var(--patients-name-col-width)) / 4);
+}
+
 thead th {
   text-align: left;
   font-size: 11px;
@@ -176,6 +202,24 @@ thead th {
   letter-spacing: .6px;
   color: var(--muted);
   padding: 0 12px 6px;
+}
+
+thead th.sno,
+tbody td.sno {
+  padding-right: 6px;
+}
+
+thead th.name,
+tbody td.name {
+  padding-left: 6px;
+}
+
+thead th.name,
+thead th.doctor,
+thead th.amount,
+thead th.due,
+thead th.status-col {
+  text-align: center;
 }
 
 tbody tr {
@@ -204,6 +248,14 @@ tbody td {
   border-bottom: 1px solid var(--line);
 }
 
+tbody td.name,
+tbody td.doctor,
+tbody td.amount,
+tbody td.due,
+tbody td.status-col {
+  text-align: center;
+}
+
 .round-left {
   border-left: 1px solid var(--line);
   border-radius: 12px 0 0 12px;
@@ -227,13 +279,14 @@ tbody td.no-data {
 }
 
 .check-col {
-  display: none;
-  width: 48px;
+  width: var(--patients-check-col-width);
   text-align: center;
+  padding: 0;
+  overflow: hidden;
 }
 
-body.select-mode .check-col {
-  display: table-cell;
+body:not(.select-mode) .check-col {
+  visibility: hidden;
 }
 
 .sno {
@@ -242,28 +295,24 @@ body.select-mode .check-col {
 }
 
 .name {
-  width: 240px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .doctor {
-  width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .amount {
-  width: 120px;
   text-align: right;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .due {
-  width: 110px;
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -280,7 +329,6 @@ body.select-mode .check-col {
 }
 
 .status-col {
-  width: 140px;
   white-space: nowrap;
   text-align: center;
 }

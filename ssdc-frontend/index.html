@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <!--suppress SpellCheckingInspection -->
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <!--suppress SpellCheckingInspection -->
   <title>SSDC Login</title>
 
   <link href="vendor/fonts/fonts.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="home/sub-tasks/theme.css">
   <link rel="stylesheet" href="home/sub-tasks/components.css">
   <link rel="stylesheet" href="index.css">
@@ -15,62 +18,127 @@
 
 <body>
 
-<div class="box">
-  <!--suppress SpellCheckingInspection -->
-  <h1>SSDC LABS</h1>
+<div class="main" id="authMain" data-mode="login">
+  <!-- LOGIN -->
+  <div class="container a-container" id="a-container">
+    <form id="loginForm" class="form" autocomplete="on">
+      <h2 class="form__title title">Sign in to SSDC</h2>
+      <span class="form__span">Use Lab ID and password</span>
 
-  <!-- LOGIN FORM -->
-  <form id="loginForm">
-    <label for="loginLabId">Lab ID</label>
-    <input type="text" id="loginLabId" class="input-box" autocomplete="username" required>
+      <label class="sr-only" for="loginLabId">Lab ID</label>
+      <input
+        type="text"
+        id="loginLabId"
+        class="form__input"
+        placeholder="Lab ID"
+        autocomplete="username"
+        required>
 
-    <br><br>
+      <label class="sr-only" for="loginPass">Password</label>
+      <input
+        type="password"
+        id="loginPass"
+        class="form__input"
+        placeholder="Password"
+        autocomplete="current-password"
+        required>
 
-    <label for="loginPass">Password</label>
-    <input type="password" id="loginPass" class="input-box" autocomplete="current-password" required>
+      <button class="form__button button" type="submit">SIGN IN</button>
 
-    <button class="btn" type="submit">Sign In</button>
-    <button type="button" class="toggle-btn" onclick="resendVerification()">
-      Resend verification link
-    </button>
-    <button type="button" class="toggle-btn" onclick="forgotPassword()">
-      Forgot password?
-    </button>
-    <button type="button" class="toggle-btn" onclick="showSignup()">
-      New user? Sign Up
-    </button>
-  </form>
+      <button type="button" class="form__link link-btn" onclick="forgotPassword()">
+        Forgot password?
+      </button>
+      <button type="button" class="form__link link-btn" onclick="resendVerification()">
+        Resend verification link
+      </button>
+      <button type="button" class="form__link link-btn" onclick="showSignup()">
+        New user? Sign Up
+      </button>
+    </form>
+  </div>
 
-  <!-- SIGNUP FORM -->
-  <form id="signupForm" hidden>
-    <label for="signupLabName">Lab Name</label>
-    <input type="text" id="signupLabName" class="input-box" autocomplete="organization" required>
+  <!-- SIGN UP -->
+  <div class="container b-container" id="b-container">
+    <form id="signupForm" class="form" autocomplete="on">
+      <h2 class="form__title title">Create Account</h2>
+      <span class="form__span">Sign up with your lab details</span>
 
-    <br><br>
+      <label class="sr-only" for="signupLabName">Lab Name</label>
+      <input
+        type="text"
+        id="signupLabName"
+        class="form__input"
+        placeholder="Lab Name"
+        autocomplete="organization"
+        required>
 
-    <label for="signupLabId">Lab ID (3–6 chars: a-z, 0-9, _)</label>
-    <input type="text" id="signupLabId" class="input-box" autocomplete="username" required>
+      <label class="sr-only" for="signupLabId">Lab ID</label>
+      <input
+        type="text"
+        id="signupLabId"
+        class="form__input"
+        placeholder="Lab ID (3–6 chars: a-z, 0-9, _)"
+        autocomplete="username"
+        required>
 
-    <br><br>
+      <label class="sr-only" for="signupEmail">Email</label>
+      <input
+        type="email"
+        id="signupEmail"
+        class="form__input"
+        placeholder="Email (required for verification)"
+        autocomplete="email"
+        required>
 
-    <label for="signupEmail">Email (required for verification)</label>
-    <input type="email" id="signupEmail" class="input-box" autocomplete="email" required>
+      <label class="sr-only" for="signupPhone">Phone</label>
+      <input
+        type="tel"
+        id="signupPhone"
+        class="form__input"
+        placeholder="Phone (optional)"
+        autocomplete="tel">
 
-    <br><br>
+      <label class="sr-only" for="signupPass">Password</label>
+      <input
+        type="password"
+        id="signupPass"
+        class="form__input"
+        placeholder="Password"
+        autocomplete="new-password"
+        required>
 
-    <label for="signupPhone">Phone</label>
-    <input type="tel" id="signupPhone" class="input-box" autocomplete="tel">
+      <button class="form__button button" type="submit">SIGN UP</button>
+      <button type="button" class="form__link link-btn" onclick="showLogin()">
+        Already have an account? Sign In
+      </button>
+    </form>
+  </div>
 
-    <br><br>
+  <!-- SWITCH PANEL -->
+  <div class="switch" id="switch-cnt">
+    <div class="switch__circle"></div>
+    <div class="switch__circle switch__circle--t"></div>
 
-    <label for="signupPass">Password</label>
-    <input type="password" id="signupPass" class="input-box" autocomplete="new-password" required>
+    <div class="switch__container" id="switch-c1">
+      <h2 class="switch__title title">Hello Friend!</h2>
+      <p class="switch__description description">
+        Enter your lab details and start your journey with SSDC.
+      </p>
+      <button class="switch__button button switch-btn" type="button" data-target="signup">
+        SIGN UP
+      </button>
+    </div>
 
-    <button class="btn" type="submit">Sign Up</button>
-    <button type="button" class="toggle-btn" onclick="showLogin()">
-      Already have an account? Sign In
-    </button>
-  </form>
+    <div class="switch__container is-hidden" id="switch-c2">
+      <h2 class="switch__title title">Welcome Back!</h2>
+      <p class="switch__description description">
+        To stay connected, please sign in with your Lab ID and password.
+      </p>
+      <button class="switch__button button switch-btn" type="button" data-target="login">
+        SIGN IN
+      </button>
+    </div>
+  </div>
 </div>
 
 <script src="api.js"></script>

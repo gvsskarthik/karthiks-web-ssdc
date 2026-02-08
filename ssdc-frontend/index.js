@@ -1,12 +1,130 @@
+function getAuthEls() {
+  return {
+    main: document.getElementById("authMain"),
+    aContainer: document.getElementById("a-container"),
+    bContainer: document.getElementById("b-container"),
+    switchCtn: document.getElementById("switch-cnt"),
+    switchC1: document.getElementById("switch-c1"),
+    switchC2: document.getElementById("switch-c2"),
+    circles: document.querySelectorAll(".switch__circle")
+  };
+}
+
+function setContainerActive(container, active) {
+  if (!container) return;
+
+  try {
+    container.inert = !active;
+  } catch (e) {
+    // ignore
+  }
+
+  try {
+    container.setAttribute("aria-hidden", active ? "false" : "true");
+  } catch (e) {
+    // ignore
+  }
+}
+
+function toggleAuthMode() {
+  const { main, aContainer, bContainer, switchCtn, switchC1, switchC2, circles } = getAuthEls();
+  if (!main || !aContainer || !bContainer || !switchCtn || !switchC1 || !switchC2) {
+    return;
+  }
+
+  switchCtn.classList.add("is-gx");
+  window.setTimeout(() => {
+    switchCtn.classList.remove("is-gx");
+  }, 1500);
+
+  switchCtn.classList.toggle("is-txr");
+  circles.forEach((circle) => circle.classList.toggle("is-txr"));
+
+  switchC1.classList.toggle("is-hidden");
+  switchC2.classList.toggle("is-hidden");
+  aContainer.classList.toggle("is-txl");
+  bContainer.classList.toggle("is-txl");
+  bContainer.classList.toggle("is-z200");
+
+  const isSignup = bContainer.classList.contains("is-z200");
+  main.dataset.mode = isSignup ? "signup" : "login";
+  setContainerActive(aContainer, !isSignup);
+  setContainerActive(bContainer, isSignup);
+}
+
+function applyAuthMode(mode, { animate = false } = {}) {
+  const { main, aContainer, bContainer, switchCtn, switchC1, switchC2, circles } = getAuthEls();
+  const loginForm = document.getElementById("loginForm");
+  const signupForm = document.getElementById("signupForm");
+
+  // Fallback: old/simple toggle if the new UI isn't present.
+  if (!main || !aContainer || !bContainer || !switchCtn || !switchC1 || !switchC2) {
+    if (loginForm && signupForm) {
+      loginForm.hidden = mode === "signup";
+      signupForm.hidden = mode === "login";
+    }
+    return;
+  }
+
+  const isMobile = Boolean(window.matchMedia?.("(max-width: 760px)")?.matches);
+  const shouldAnimate = Boolean(animate && !isMobile);
+  const isSignup = mode === "signup";
+
+  main.dataset.mode = isSignup ? "signup" : "login";
+
+  if (shouldAnimate) {
+    const currentlySignup = bContainer.classList.contains("is-z200");
+    if (currentlySignup !== isSignup) {
+      toggleAuthMode();
+    }
+    return;
+  }
+
+  // Set exact class state without animation.
+  switchCtn.classList.toggle("is-txr", isSignup);
+  circles.forEach((circle) => circle.classList.toggle("is-txr", isSignup));
+
+  switchC1.classList.toggle("is-hidden", isSignup);
+  switchC2.classList.toggle("is-hidden", !isSignup);
+
+  aContainer.classList.toggle("is-txl", isSignup);
+  bContainer.classList.toggle("is-txl", isSignup);
+  bContainer.classList.toggle("is-z200", isSignup);
+
+  setContainerActive(aContainer, !isSignup);
+  setContainerActive(bContainer, isSignup);
+}
+
 function showSignup() {
-  document.getElementById("loginForm").hidden = true;
-  document.getElementById("signupForm").hidden = false;
+  applyAuthMode("signup", { animate: true });
 }
 
 function showLogin() {
-  document.getElementById("signupForm").hidden = true;
-  document.getElementById("loginForm").hidden = false;
+  applyAuthMode("login", { animate: true });
 }
+
+(function initAuthUi() {
+  applyAuthMode("login", { animate: false });
+
+  try {
+    document.querySelectorAll(".switch-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-target");
+        if (target === "signup") {
+          showSignup();
+          return;
+        }
+        if (target === "login") {
+          showLogin();
+          return;
+        }
+        toggleAuthMode();
+      });
+    });
+  } catch (e) {
+    // ignore
+  }
+})();
 
 function normalizeLabId(value) {
   return String(value || "").trim().toLowerCase();
