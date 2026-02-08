@@ -24,6 +24,24 @@ function setContainerActive(container, active) {
   } catch (e) {
     // ignore
   }
+
+  try {
+    container.querySelectorAll("input, select, textarea, button").forEach((el) => {
+      if (active) {
+        if (el.dataset && el.dataset.authUiDisabled === "1") {
+          el.disabled = false;
+          delete el.dataset.authUiDisabled;
+        }
+        return;
+      }
+
+      if (el.disabled) return;
+      if (el.dataset) el.dataset.authUiDisabled = "1";
+      el.disabled = true;
+    });
+  } catch (e) {
+    // ignore
+  }
 }
 
 function toggleAuthMode() {

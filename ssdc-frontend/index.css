@@ -9,14 +9,14 @@
   --auth-transition: 1.25s;
 }
 
-html,
-body {
+html {
   height: 100%;
 }
 
 body {
   margin: 0;
   padding: clamp(16px, 4vw, 32px);
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -24,7 +24,8 @@ body {
   font-size: 12px;
   background-color: var(--auth-neu-1);
   color: var(--auth-gray);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sr-only {
@@ -122,6 +123,12 @@ body {
   box-shadow:
     inset 4px 4px 6px var(--auth-neu-2),
     inset -4px -4px 6px var(--auth-white);
+}
+
+/* Override global input styles from components.css (higher specificity). */
+.main .form input.form__input {
+  background: var(--auth-neu-1);
+  color: inherit;
 }
 
 .button {
