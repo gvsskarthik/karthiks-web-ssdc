@@ -4,11 +4,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 import org.springframework.lang.NonNull;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ssdc.ssdclabs.dto.RecentTaskDTO;
 import com.ssdc.ssdclabs.model.Doctor;
 import com.ssdc.ssdclabs.model.Gender;
 import com.ssdc.ssdclabs.model.Patient;
@@ -117,6 +121,109 @@ public class PatientService {
         // 2️⃣ delete patient
         patientRepo.deleteById(
             patient.getId());
+    }
+
+    public List<RecentTaskDTO> getRecentTasks(@NonNull String labId, int limit) {
+        final int safeLimit = Math.max(1, Math.min(100, limit));
+
+        // Fetch a small recent window using the (lab_id, visit_date) index, then filter in-memory.
+        // This avoids expensive DB-side filtering on status/amount/paid.
+        final int candidateSize = Math.max(200, safeLimit * 25);
+
+        final LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        final LocalDate yesterday = today.minusDays(1);
+
+        final List<Patient> candidates = patientRepo.findRecentPatients(
+            Objects.requireNonNull(labId, "labId"),
+            PageRequest.of(0, candidateSize)
+        );
+
+        record Row(RecentTaskDTO dto, LocalDate date, int group, int sub) {}
+        final ArrayList<Row> rows = new ArrayList<>();
+
+        for (Patient p : candidates) {
+            if (p == null || p.getVisitDate() == null) {
+                continue;
+            }
+
+            final boolean pending = !STATUS_COMPLETED.equalsIgnoreCase(
+                p.getStatus() == null ? "" : p.getStatus().trim()
+            );
+            final double amount = p.getAmount() == null ? 0.0 : p.getAmount();
+            final double paid = p.getPaid();
+            final double due = Math.max(0.0, amount - paid);
+
+            // Only include rows that have any task signal (pending or unpaid).
+            if (!pending && due <= 0.0) {
+                continue;
+            }
+
+            final LocalDate date = p.getVisitDate();
+            final int group = sortGroup(date, pending, due, today, yesterday);
+            final int sub = sortSubGroup(date, pending, due, today, yesterday);
+
+            rows.add(new Row(
+                new RecentTaskDTO(
+                    p.getId() == null ? 0L : p.getId(),
+                    p.getName(),
+                    date.toString(),
+                    due,
+                    pending
+                ),
+                date,
+                group,
+                sub
+            ));
+        }
+
+        rows.sort(Comparator
+            .comparingInt(Row::group)
+            .thenComparing((Row a, Row b) -> {
+                // Past days: newer date first.
+                if (a.group() == 4 || b.group() == 4) {
+                    return b.date().compareTo(a.date());
+                }
+                return 0;
+            })
+            .thenComparingInt(Row::sub)
+            .thenComparingLong((Row r) -> r.dto().id()).reversed()
+        );
+
+        if (rows.size() <= safeLimit) {
+            return rows.stream().map(Row::dto).toList();
+        }
+        return rows.subList(0, safeLimit).stream().map(Row::dto).toList();
+    }
+
+    private static int sortGroup(LocalDate date, boolean pending, double due, LocalDate today, LocalDate yesterday) {
+        if (date == null) {
+            return 5;
+        }
+        final boolean dueOnly = due > 0.0 && !pending;
+        if (date.equals(today)) {
+            // Priority: today's pending, then today's due-only.
+            return pending ? 1 : (dueOnly ? 2 : 4);
+        }
+        if (date.equals(yesterday)) {
+            return 3; // yesterday pending/due
+        }
+        return 4; // past days
+    }
+
+    private static int sortSubGroup(LocalDate date, boolean pending, double due, LocalDate today, LocalDate yesterday) {
+        if (date == null) {
+            return 9;
+        }
+        final boolean dueOnly = due > 0.0 && !pending;
+        if (date.equals(today)) {
+            return 0;
+        }
+        if (date.equals(yesterday)) {
+            // yesterday: pending first, then due-only
+            return pending ? 0 : (dueOnly ? 1 : 2);
+        }
+        // past: pending first, then due-only
+        return pending ? 0 : (dueOnly ? 1 : 2);
     }
 
     private Doctor resolveDoctor(String labId, String doctorName) {

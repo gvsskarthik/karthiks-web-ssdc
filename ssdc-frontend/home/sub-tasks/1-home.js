@@ -392,46 +392,29 @@ function renderRecentTasksTable(tasks) {
 }
 
 function loadRecentTasks() {
-  const todayYmd = getTodayIstYmd();
-  const yesterdayYmd = getYesterdayIstYmd();
-
-  fetch(`${API_BASE_URL}/patients/search`)
+  fetch(`${API_BASE_URL}/patients/tasks/recent?limit=20`)
     .then((res) => safeJson(res))
     .then((list) => {
-      const patients = Array.isArray(list) ? list : [];
       const tasks = [];
 
-      for (const p of patients) {
-        const dateYmd = normalizeYmd(p && p.visitDate);
+      const rows = Array.isArray(list) ? list : [];
+      for (const r of rows) {
+        const dateYmd = normalizeYmd(r && r.date);
         if (!dateYmd) continue;
 
-        const dueAmount = computeDue(p && p.amount, p && p.paid);
-        const due = dueAmount > 0;
-        const pending = !isCompletedStatus(p && p.status);
-
-        if (!pending && !due) continue;
+        const dueAmount = Number(r && r.dueAmount) || 0;
+        const pending = Boolean(r && r.pending);
 
         tasks.push({
-          id: Number(p && p.id) || 0,
-          name: p && p.name ? String(p.name) : "",
+          id: Number(r && r.id) || 0,
+          name: r && r.patientName ? String(r.patientName) : "",
           dateYmd,
           dueAmount,
-          pending,
-          due
+          pending
         });
       }
 
-      // Assign each patient to its highest-priority bucket (no duplicates).
-      const enriched = tasks.map((t) => ({
-        ...t,
-        key: getSortKeyForTask(t, todayYmd, yesterdayYmd)
-      }));
-
-      enriched.sort(compareTasks);
-
-      // Keep the table small and "recent".
-      const MAX_ROWS = 20;
-      renderRecentTasksTable(enriched.slice(0, MAX_ROWS));
+      renderRecentTasksTable(tasks);
     })
     .catch(() => {
       renderRecentTasksTable([]);
