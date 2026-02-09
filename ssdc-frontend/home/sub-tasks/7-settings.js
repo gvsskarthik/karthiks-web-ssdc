@@ -129,7 +129,15 @@
 
   async function changePassword() {
     if (!getToken()) {
-      window.location.href = "../../index.html";
+      if (typeof window.forceLogout === "function") {
+        window.forceLogout();
+      } else {
+        try {
+          (window.top || window).location.href = "/index.html";
+        } catch (e) {
+          window.location.href = "/index.html";
+        }
+      }
       return;
     }
     if (!currentPasswordInput || !newPasswordInput || !confirmPasswordInput || !changePasswordBtn) {
@@ -200,7 +208,15 @@
 
   async function loadProfile() {
     if (!getToken()) {
-      window.location.href = "../../index.html";
+      if (typeof window.forceLogout === "function") {
+        window.forceLogout();
+      } else {
+        try {
+          (window.top || window).location.href = "/index.html";
+        } catch (e) {
+          window.location.href = "/index.html";
+        }
+      }
       return;
     }
 
@@ -230,7 +246,15 @@
 
   async function save() {
     if (!getToken()) {
-      window.location.href = "../../index.html";
+      if (typeof window.forceLogout === "function") {
+        window.forceLogout();
+      } else {
+        try {
+          (window.top || window).location.href = "/index.html";
+        } catch (e) {
+          window.location.href = "/index.html";
+        }
+      }
       return;
     }
 

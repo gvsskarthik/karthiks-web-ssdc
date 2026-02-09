@@ -141,6 +141,24 @@
     }
   }
 
+  function resolveFrontendUrl(path) {
+    const clean = String(path || "").replace(/^\//, "");
+    try {
+      const scripts = document.getElementsByTagName("script");
+      for (let i = 0; i < scripts.length; i++) {
+        const src = scripts[i] && scripts[i].src ? String(scripts[i].src) : "";
+        if (!src) continue;
+        if (/\/api\.js(?:[?#]|$)/.test(src)) {
+          const base = new URL(src, window.location.href);
+          return new URL(clean, base).toString();
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+    return window.location.origin.replace(/\/$/, "") + "/" + clean;
+  }
+
   const apiPrefixAbs = toAbsoluteUrl(window.API_BASE_URL);
 
   function isApiUrl(url) {
@@ -902,7 +920,8 @@
     const topWin = safeTopWindow();
     try {
       const suffix = reason ? `?loggedOut=1&reason=${encodeURIComponent(reason)}` : "";
-      topWin.location.href = "index.html" + suffix;
+      const loginUrl = resolveFrontendUrl("index.html") + suffix;
+      topWin.location.href = loginUrl;
     } catch (err) {
       // ignore
     }
@@ -923,6 +942,33 @@
   window.setLabName = setLabName;
   window.clearLabName = clearLabName;
   window.applyLabNameToDom = applyLabNameToDom;
+
+  function isLoginPageLocation(win) {
+    try {
+      const pathname = String(win && win.location && win.location.pathname ? win.location.pathname : "");
+      if (pathname === "/" || /\/index\.html$/i.test(pathname)) {
+        return true;
+      }
+    } catch (err) {
+      // ignore
+    }
+    try {
+      return Boolean(document.getElementById("loginForm"));
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function enforceLoginIfMissingToken() {
+    if (getAuthToken()) {
+      return;
+    }
+    const topWin = safeTopWindow();
+    if (isLoginPageLocation(topWin)) {
+      return;
+    }
+    redirectToLogin();
+  }
 
   function withAuth(request) {
     const token = getAuthToken();
@@ -1415,6 +1461,12 @@
     } else {
       ensureLabNameApplied();
     }
+  } catch (err) {
+    // ignore
+  }
+
+  try {
+    enforceLoginIfMissingToken();
   } catch (err) {
     // ignore
   }
