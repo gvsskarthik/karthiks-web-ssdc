@@ -270,3 +270,172 @@ function loadYearCount(){
 }
 
 loadYearCount();
+
+function safeJson(res) {
+  return res && typeof res.json === "function"
+    ? res.json().catch(() => null)
+    : Promise.resolve(null);
+}
+
+function getYesterdayIstYmd() {
+  const todayYmd = getTodayIstYmd();
+  const todayUtc = parseYmdToUtcDate(todayYmd);
+  if (!todayUtc) {
+    return todayYmd;
+  }
+  const d = new Date(todayUtc);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return formatUtcDateToIstYmd(d);
+}
+
+function normalizeYmd(value) {
+  const s = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return s;
+  }
+  return "";
+}
+
+function isCompletedStatus(status) {
+  return String(status || "").trim().toUpperCase() === "COMPLETED";
+}
+
+function computeDue(amount, paid) {
+  const bill = Number(amount) || 0;
+  const paidAmt = Number(paid) || 0;
+  return Math.max(0, bill - paidAmt);
+}
+
+function formatInr(amount) {
+  const n = Number(amount) || 0;
+  const hasPaise = Math.abs(n - Math.round(n)) > 1e-6;
+  try {
+    const fmt = new Intl.NumberFormat("en-IN", {
+      minimumFractionDigits: hasPaise ? 2 : 0,
+      maximumFractionDigits: hasPaise ? 2 : 0
+    });
+    return "₹" + fmt.format(n);
+  } catch (e) {
+    return "₹" + (hasPaise ? n.toFixed(2) : String(Math.round(n)));
+  }
+}
+
+function formatYmdToDdMmYy(ymd) {
+  const s = normalizeYmd(ymd);
+  if (!s) return "-";
+  const parts = s.split("-");
+  const yy = parts[0].slice(2);
+  const mm = parts[1];
+  const dd = parts[2];
+  return `${dd}-${mm}-${yy}`;
+}
+
+function getSortKeyForTask(task, todayYmd, yesterdayYmd) {
+  const date = task.dateYmd;
+  const pending = task.pending;
+  const due = task.due;
+
+  if (date === todayYmd) {
+    if (pending) return { group: 1, sub: 0, date, tiebreak: task.id };
+    if (due) return { group: 2, sub: 0, date, tiebreak: task.id };
+  }
+
+  if (date === yesterdayYmd) {
+    if (pending) return { group: 3, sub: 0, date, tiebreak: task.id };
+    if (due) return { group: 3, sub: 1, date, tiebreak: task.id };
+  }
+
+  // Past days: day-wise, with pending before due for the same day.
+  return { group: 4, sub: pending ? 0 : 1, date, tiebreak: task.id };
+}
+
+function compareTasks(a, b) {
+  if (a.key.group !== b.key.group) return a.key.group - b.key.group;
+  if (a.key.group === 4) {
+    if (a.key.date !== b.key.date) return a.key.date < b.key.date ? 1 : -1; // newer first
+  }
+  if (a.key.sub !== b.key.sub) return a.key.sub - b.key.sub;
+  return (Number(b.key.tiebreak) || 0) - (Number(a.key.tiebreak) || 0);
+}
+
+function renderRecentTasksTable(tasks) {
+  const tbody = document.getElementById("recentTasksBody");
+  if (!tbody) {
+    return;
+  }
+
+  tbody.innerHTML = "";
+  if (!tasks.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="no-data">No pending / due tasks</td>
+      </tr>`;
+    return;
+  }
+
+  tasks.forEach((t, idx) => {
+    const statusHtml = t.pending
+      ? `<span class="status pending">Pending</span>`
+      : `<span class="status completed">Completed</span>`;
+
+    const dueClass = t.dueAmount > 0 ? "due is-due" : "due is-no-due";
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="sno">${idx + 1}</td>
+        <td class="name">${t.name || "-"}</td>
+        <td class="date">${formatYmdToDdMmYy(t.dateYmd)}</td>
+        <td class="amount ${dueClass}">${formatInr(t.dueAmount)}</td>
+        <td class="status-col">${statusHtml}</td>
+      </tr>`;
+  });
+}
+
+function loadRecentTasks() {
+  const todayYmd = getTodayIstYmd();
+  const yesterdayYmd = getYesterdayIstYmd();
+
+  fetch(`${API_BASE_URL}/patients/search`)
+    .then((res) => safeJson(res))
+    .then((list) => {
+      const patients = Array.isArray(list) ? list : [];
+      const tasks = [];
+
+      for (const p of patients) {
+        const dateYmd = normalizeYmd(p && p.visitDate);
+        if (!dateYmd) continue;
+
+        const dueAmount = computeDue(p && p.amount, p && p.paid);
+        const due = dueAmount > 0;
+        const pending = !isCompletedStatus(p && p.status);
+
+        if (!pending && !due) continue;
+
+        tasks.push({
+          id: Number(p && p.id) || 0,
+          name: p && p.name ? String(p.name) : "",
+          dateYmd,
+          dueAmount,
+          pending,
+          due
+        });
+      }
+
+      // Assign each patient to its highest-priority bucket (no duplicates).
+      const enriched = tasks.map((t) => ({
+        ...t,
+        key: getSortKeyForTask(t, todayYmd, yesterdayYmd)
+      }));
+
+      enriched.sort(compareTasks);
+
+      // Keep the table small and "recent".
+      const MAX_ROWS = 20;
+      renderRecentTasksTable(enriched.slice(0, MAX_ROWS));
+    })
+    .catch(() => {
+      renderRecentTasksTable([]);
+    });
+}
+
+loadRecentTasks();

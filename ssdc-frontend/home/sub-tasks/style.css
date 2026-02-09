@@ -164,11 +164,51 @@ html {
 }
 
  main .table-data .order table th {
-	padding-bottom: 12px;
-	font-size: 13px;
-	text-align: left;
-	border-bottom: 1px solid var(--grey);
-}
+		padding-bottom: 12px;
+		font-size: 13px;
+		text-align: left;
+		border-bottom: 1px solid var(--grey);
+	}
+
+ main .table-data .order table.recent-tasks {
+		width: 100%;
+		table-layout: fixed;
+	}
+
+ main .table-data .order table.recent-tasks th,
+ main .table-data .order table.recent-tasks td {
+		padding-right: 10px;
+	}
+
+ main .table-data .order table.recent-tasks th:first-child,
+ main .table-data .order table.recent-tasks td:first-child {
+		width: 56px; /* keep Sno close to Name */
+	}
+
+ main .table-data .order table.recent-tasks th:nth-child(2),
+ main .table-data .order table.recent-tasks td:nth-child(2),
+ main .table-data .order table.recent-tasks th:nth-child(3),
+ main .table-data .order table.recent-tasks td:nth-child(3),
+ main .table-data .order table.recent-tasks th:nth-child(4),
+ main .table-data .order table.recent-tasks td:nth-child(4),
+ main .table-data .order table.recent-tasks th:nth-child(5),
+ main .table-data .order table.recent-tasks td:nth-child(5) {
+		width: calc((100% - 56px) / 4); /* equal spacing for Name/Date/Due/Status */
+	}
+
+ main .table-data .order table th.amount,
+ main .table-data .order table td.amount {
+		text-align: right;
+		white-space: nowrap;
+	}
+
+ main .table-data .order table td.date {
+		white-space: nowrap;
+	}
+
+ main .table-data .order table td.status-col {
+		white-space: nowrap;
+	}
 
  main .table-data .order table td {
 		padding: 16px 0;
@@ -190,23 +230,35 @@ html {
 		font-weight: 700;
 	}
 
- main .table-data .order table tr td .status.completed {
-		background: var(--blue);
-	}
-
- main .table-data .order table tr td .status.process {
-		background: var(--yellow);
-	}
-
  main .table-data .order table tr td .status.pending {
-		background: var(--orange);
+		background: var(--red);
 	}
 
- main .table-data .order table tr td:first-child {
+ main .table-data .order table tr td .status.completed {
+		background: #1b7a3f;
+	}
+
+ main .table-data .order table tr td.user {
 		display: flex;
 		align-items: center;
 		grid-gap: 12px;
 		padding-left: 6px;
+	}
+
+ main .table-data .order table .no-data {
+		padding: 22px 0;
+		text-align: center;
+		color: var(--dark-grey);
+	}
+
+ main .table-data .order table td.amount.due.is-due {
+		color: var(--red);
+		font-weight: 700;
+	}
+
+ main .table-data .order table td.amount.due.is-no-due {
+		color: #1b7a3f;
+		font-weight: 700;
 	}
 
  main .table-data .order table tbody tr:hover {
