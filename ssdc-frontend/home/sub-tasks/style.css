@@ -177,7 +177,7 @@ html {
 
  main .table-data .order table.recent-tasks th,
  main .table-data .order table.recent-tasks td {
-		padding-right: 10px;
+		padding: 12px 10px;
 	}
 
  main .table-data .order table.recent-tasks th:first-child,
@@ -194,6 +194,21 @@ html {
  main .table-data .order table.recent-tasks th:nth-child(5),
  main .table-data .order table.recent-tasks td:nth-child(5) {
 		width: calc((100% - 56px) / 4); /* equal spacing for Name/Date/Due/Status */
+	}
+
+ main .table-data .order table.recent-tasks td.date,
+ main .table-data .order table.recent-tasks th:nth-child(3) {
+		text-align: center;
+	}
+
+ main .table-data .order table.recent-tasks td.amount,
+ main .table-data .order table.recent-tasks th.amount {
+		text-align: center; /* prevents big gap before amount */
+	}
+
+ main .table-data .order table.recent-tasks td.status-col,
+ main .table-data .order table.recent-tasks th:nth-child(5) {
+		text-align: center;
 	}
 
  main .table-data .order table th.amount,
