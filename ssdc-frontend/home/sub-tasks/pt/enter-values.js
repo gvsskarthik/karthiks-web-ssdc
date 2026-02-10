@@ -302,6 +302,46 @@ function formatHtmlLines(text){
   return escapeHtml(text).replace(/\r?\n/g, "<br>");
 }
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function appendTextWithLineBreaks(parent, text){
+  if (!parent) return;
+  const value = text == null ? "" : String(text);
+  if (!value) return;
+  const parts = value.split(/\r?\n/);
+  parts.forEach((part, idx) => {
+    if (idx > 0) {
+      parent.appendChild(document.createElement("br"));
+    }
+    parent.appendChild(document.createTextNode(part));
+  });
+}
+
+function makeOrderInput(testId){
+  const input = document.createElement("input");
+  input.className = "order-input";
+  input.type = "text";
+  input.inputMode = "decimal";
+  try { input.dataset.testid = String(testId); } catch (e) { /* ignore */ }
+  input.value = "";
+  return input;
+}
+
+function makeTestNameWrap(testId, testName){
+  const wrap = document.createElement("div");
+  wrap.className = "test-name-wrap";
+  wrap.appendChild(makeOrderInput(testId));
+  const b = document.createElement("b");
+  b.textContent = testName == null ? "" : String(testName);
+  wrap.appendChild(b);
+  return wrap;
+}
+
 function readUnitEntry(entry){
   if (entry === null || entry === undefined) {
     return "";
@@ -517,35 +557,34 @@ function renderResultControl(testId,
                              param,
                              savedValue,
                              defaultValue){
-  const valueType = (param.valueType || "").toUpperCase();
-  const subAttr = subTest ? ` data-sub="${subTest}"` : "";
-  const defaultText =
-    defaultValue == null ? "" : String(defaultValue);
-  const savedText =
-    savedValue == null ? "" : String(savedValue);
-  const safeValue =
-    savedText.trim() !== "" ? savedText : defaultText;
-  const safeAttr = escapeAttr(safeValue);
+  const defaultText = defaultValue == null ? "" : String(defaultValue);
+  const savedText = savedValue == null ? "" : String(savedValue);
+  const safeValue = savedText.trim() !== "" ? savedText : defaultText;
 
-  return `
-    <input class="result-input"
-           id="${inputId}"
-           name="${inputId}"
-           data-testid="${testId}"${subAttr}
-           data-default="${safeAttr}"
-           value="${safeAttr}">
-  `;
+  const input = document.createElement("input");
+  input.className = "result-input";
+  input.id = inputId;
+  input.name = inputId;
+  try { input.dataset.testid = String(testId); } catch (e) { /* ignore */ }
+  if (subTest) {
+    try { input.dataset.sub = String(subTest); } catch (e) { /* ignore */ }
+  }
+  try { input.dataset.default = safeValue; } catch (e) { /* ignore */ }
+  input.value = safeValue;
+  input.defaultValue = safeValue;
+  return input;
 }
 
 /* ================= RENDER TESTS ================= */
 function renderTests(tests) {
   const body = document.getElementById("resultBody");
-  body.innerHTML = "";
+  clearNode(body);
   body.removeEventListener("input", markTouched);
   body.addEventListener("input", markTouched);
   body.removeEventListener("click", handleAddLineClick);
   body.addEventListener("click", handleAddLineClick);
 
+  const frag = document.createDocumentFragment();
   tests.forEach(test => {
     const params = Array.isArray(test.parameters) ? test.parameters : [];
     const hasParams = params.length > 0;
@@ -595,40 +634,49 @@ function renderTests(tests) {
           : ""
       );
 
-      body.innerHTML += `
-        <tr data-testgroup="${escapeAttr(test.id)}"${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
-          <td>
-            <div class="test-name-wrap">
-              <input
-                class="order-input"
-                type="text"
-                inputmode="decimal"
-                data-testid="${escapeAttr(test.id)}"
-                value=""
-              >
-              <b>${escapeHtml(test.testName)}</b>
-            </div>
-          </td>
-          <td>
-            ${inputHtml}
-            ${allowNewLines ? `
-              <button
-                type="button"
-                class="small-btn add-line-btn"
-                data-testid="${test.id}"
-                data-base="${escapeAttr(baseName)}"
-                data-unit="${escapeAttr(unit)}"
-                data-normal="${escapeAttr(normalText || '')}"
-                data-valuetype="${escapeAttr(singleParam.valueType || '')}"
-                data-group="${escapeAttr(groupKey)}"
-              >Add</button>
-              ` : ""}
-          </td>
-          <td>${escapeHtml(unit)}</td>
-          <td class="normal">
-            ${formatHtmlLines(normalText)}
-          </td>
-        </tr>`;
+      {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-testgroup", String(test.id));
+        if (groupKey) {
+          tr.dataset.lineGroup = groupKey;
+        }
+
+        const tdName = document.createElement("td");
+        tdName.appendChild(makeTestNameWrap(test.id, test.testName));
+
+        const tdResult = document.createElement("td");
+        tdResult.appendChild(inputHtml);
+        if (allowNewLines) {
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className = "small-btn add-line-btn";
+          try {
+            addBtn.dataset.testid = String(test.id);
+            addBtn.dataset.base = String(baseName);
+            addBtn.dataset.unit = String(unit);
+            addBtn.dataset.normal = String(normalText || "");
+            addBtn.dataset.valuetype = String(singleParam.valueType || "");
+            addBtn.dataset.group = String(groupKey);
+          } catch (e) {
+            // ignore
+          }
+          addBtn.textContent = "Add";
+          tdResult.appendChild(addBtn);
+        }
+
+        const tdUnit = document.createElement("td");
+        tdUnit.textContent = unit;
+
+        const tdNormal = document.createElement("td");
+        tdNormal.className = "normal";
+        appendTextWithLineBreaks(tdNormal, normalText);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdResult);
+        tr.appendChild(tdUnit);
+        tr.appendChild(tdNormal);
+        frag.appendChild(tr);
+      }
 
       if (allowNewLines) {
         const rendered = new Set();
@@ -648,20 +696,33 @@ function renderTests(tests) {
           );
 
           rendered.add(normalizeKey(subKey));
-          body.innerHTML += `
-            <tr data-testgroup="${escapeAttr(test.id)}" data-line-group="${escapeAttr(groupKey)}">
-              <td></td>
-              <td>
-                ${extraInput}
-                <button
-                  type="button"
-                  class="small-btn remove-line-row-btn"
-                  data-group="${escapeAttr(groupKey)}"
-                >Remove</button>
-              </td>
-              <td>${escapeHtml(unit)}</td>
-              <td class="normal">${formatHtmlLines(normalText)}</td>
-            </tr>`;
+          const tr = document.createElement("tr");
+          tr.setAttribute("data-testgroup", String(test.id));
+          tr.dataset.lineGroup = groupKey;
+
+          const tdEmpty = document.createElement("td");
+          const tdResult = document.createElement("td");
+          tdResult.appendChild(extraInput);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "small-btn remove-line-row-btn";
+          try { removeBtn.dataset.group = groupKey; } catch (e) { /* ignore */ }
+          removeBtn.textContent = "Remove";
+          tdResult.appendChild(removeBtn);
+
+          const tdUnit = document.createElement("td");
+          tdUnit.textContent = unit;
+
+          const tdNormal = document.createElement("td");
+          tdNormal.className = "normal";
+          appendTextWithLineBreaks(tdNormal, normalText);
+
+          tr.appendChild(tdEmpty);
+          tr.appendChild(tdResult);
+          tr.appendChild(tdUnit);
+          tr.appendChild(tdNormal);
+          frag.appendChild(tr);
         }
 
         const extraSaved = savedResults
@@ -689,41 +750,49 @@ function renderTests(tests) {
             ""
           );
 
-          body.innerHTML += `
-            <tr data-testgroup="${escapeAttr(test.id)}" data-line-group="${escapeAttr(groupKey)}">
-              <td></td>
-              <td>
-                ${extraInput}
-                <button
-                  type="button"
-                  class="small-btn remove-line-row-btn"
-                  data-group="${escapeAttr(groupKey)}"
-                >Remove</button>
-              </td>
-              <td>${escapeHtml(unit)}</td>
-              <td class="normal">${formatHtmlLines(normalText)}</td>
-            </tr>`;
+          const tr = document.createElement("tr");
+          tr.setAttribute("data-testgroup", String(test.id));
+          tr.dataset.lineGroup = groupKey;
+
+          const tdEmpty = document.createElement("td");
+          const tdResult = document.createElement("td");
+          tdResult.appendChild(extraInput);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "small-btn remove-line-row-btn";
+          try { removeBtn.dataset.group = groupKey; } catch (e) { /* ignore */ }
+          removeBtn.textContent = "Remove";
+          tdResult.appendChild(removeBtn);
+
+          const tdUnit = document.createElement("td");
+          tdUnit.textContent = unit;
+
+          const tdNormal = document.createElement("td");
+          tdNormal.className = "normal";
+          appendTextWithLineBreaks(tdNormal, normalText);
+
+          tr.appendChild(tdEmpty);
+          tr.appendChild(tdResult);
+          tr.appendChild(tdUnit);
+          tr.appendChild(tdNormal);
+          frag.appendChild(tr);
         });
       }
       return;
     }
 
     /* ===== MULTI VALUE TEST ===== */
-    body.innerHTML +=
-      `<tr data-testgroup="${escapeAttr(test.id)}" class="test-header-row">
-        <td colspan="4">
-          <div class="test-name-wrap">
-            <input
-              class="order-input"
-              type="text"
-              inputmode="decimal"
-              data-testid="${escapeAttr(test.id)}"
-              value=""
-            >
-            <b>${escapeHtml(test.testName)}</b>
-          </div>
-        </td>
-      </tr>`;
+    {
+      const tr = document.createElement("tr");
+      tr.setAttribute("data-testgroup", String(test.id));
+      tr.className = "test-header-row";
+      const td = document.createElement("td");
+      td.colSpan = 4;
+      td.appendChild(makeTestNameWrap(test.id, test.testName));
+      tr.appendChild(td);
+      frag.appendChild(tr);
+    }
 
     const savedBySub = {};
     savedResults.forEach(r => {
@@ -755,10 +824,14 @@ function renderTests(tests) {
       const sectionName = String(param.sectionName || "").trim();
       if (sectionName) {
         if (sectionName !== currentSection) {
-          body.innerHTML += `
-            <tr data-testgroup="${escapeAttr(test.id)}" class="section-header">
-              <td colspan="4">${escapeHtml(sectionName)}</td>
-            </tr>`;
+          const tr = document.createElement("tr");
+          tr.setAttribute("data-testgroup", String(test.id));
+          tr.className = "section-header";
+          const td = document.createElement("td");
+          td.colSpan = 4;
+          td.textContent = sectionName;
+          tr.appendChild(td);
+          frag.appendChild(tr);
           currentSection = sectionName;
         }
       } else {
@@ -775,7 +848,7 @@ function renderTests(tests) {
         : "";
 
       slots.forEach((slot, slotIndex) => {
-        const inputHtml = renderResultControl(
+        const inputEl = renderResultControl(
           test.id,
           `result-${test.id}-${i}-${slotIndex}`,
           slot.subKey,
@@ -786,36 +859,61 @@ function renderTests(tests) {
         const unitText = resolveUnitText(test, param, i);
         const normalText = resolveNormalText(test, param, i);
 
-        body.innerHTML += `
-          <tr data-testgroup="${escapeAttr(test.id)}"${groupKey ? ` data-line-group="${escapeAttr(groupKey)}"` : ""}>
-            <td class="param-indent">${escapeHtml(slot.label)}</td>
-            <td>
-              ${inputHtml}
-              ${param.allowNewLines && slotIndex > 0 ? `
-                <button
-                  type="button"
-                  class="small-btn remove-line-row-btn"
-                  data-group="${escapeAttr(groupKey)}"
-                >Remove</button>` : ""}
-              ${param.allowNewLines && slotIndex === 0 ? `
-                <button
-                  type="button"
-                  class="small-btn add-line-btn"
-                  data-testid="${test.id}"
-                  data-base="${escapeAttr(param.name || '')}"
-                  data-unit="${escapeAttr(unitText)}"
-                  data-normal="${escapeAttr(normalText)}"
-                  data-valuetype="${escapeAttr(param.valueType || '')}"
-                  data-group="${escapeAttr(groupKey)}"
-                >Add</button>
-                ` : ""}
-            </td>
-            <td>${escapeHtml(unitText)}</td>
-            <td class="normal">${formatHtmlLines(normalText)}</td>
-          </tr>`;
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-testgroup", String(test.id));
+        if (groupKey) {
+          tr.dataset.lineGroup = groupKey;
+        }
+
+        const tdLabel = document.createElement("td");
+        tdLabel.className = "param-indent";
+        tdLabel.textContent = slot.label || "";
+
+        const tdResult = document.createElement("td");
+        tdResult.appendChild(inputEl);
+        if (param.allowNewLines && slotIndex > 0) {
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "small-btn remove-line-row-btn";
+          try { removeBtn.dataset.group = groupKey; } catch (e) { /* ignore */ }
+          removeBtn.textContent = "Remove";
+          tdResult.appendChild(removeBtn);
+        }
+        if (param.allowNewLines && slotIndex === 0) {
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className = "small-btn add-line-btn";
+          try {
+            addBtn.dataset.testid = String(test.id);
+            addBtn.dataset.base = String(param.name || "");
+            addBtn.dataset.unit = String(unitText);
+            addBtn.dataset.normal = String(normalText);
+            addBtn.dataset.valuetype = String(param.valueType || "");
+            addBtn.dataset.group = String(groupKey);
+          } catch (e) {
+            // ignore
+          }
+          addBtn.textContent = "Add";
+          tdResult.appendChild(addBtn);
+        }
+
+        const tdUnit = document.createElement("td");
+        tdUnit.textContent = unitText;
+
+        const tdNormal = document.createElement("td");
+        tdNormal.className = "normal";
+        appendTextWithLineBreaks(tdNormal, normalText);
+
+        tr.appendChild(tdLabel);
+        tr.appendChild(tdResult);
+        tr.appendChild(tdUnit);
+        tr.appendChild(tdNormal);
+        frag.appendChild(tr);
       });
     });
   });
+
+  body.appendChild(frag);
 }
 
 let dynamicLineCounter = 0;
@@ -910,7 +1008,7 @@ function handleAddLineClick(event) {
   const inputId = `result-${testId}-dyn-${dynamicLineCounter}`;
 
   const param = { valueType, unit, normalText: normal };
-  const inputHtml = renderResultControl(
+  const inputEl = renderResultControl(
     testId,
     inputId,
     subKey,
@@ -923,26 +1021,38 @@ function handleAddLineClick(event) {
     !!row.querySelector(".param-indent") &&
     row.querySelector(".param-indent").textContent.trim() !== "";
 
-  const newRowHtml = `
-    <tr data-line-group="${escapeAttr(groupKey)}" data-dynamic-line="1">
-      <td class="${hasParamIndent ? "param-indent" : ""}"></td>
-      <td>
-        ${inputHtml}
-        <button
-          type="button"
-          class="small-btn remove-line-row-btn"
-          data-group="${escapeAttr(groupKey)}"
-        >Remove</button>
-      </td>
-      <td>${escapeHtml(unit)}</td>
-      <td class="normal">
-        ${formatHtmlLines(normal)}
-      </td>
-    </tr>
-  `;
+  const newRow = document.createElement("tr");
+  newRow.dataset.lineGroup = groupKey;
+  newRow.dataset.dynamicLine = "1";
+
+  const td1 = document.createElement("td");
+  td1.className = hasParamIndent ? "param-indent" : "";
+
+  const td2 = document.createElement("td");
+  td2.appendChild(inputEl);
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "small-btn remove-line-row-btn";
+  try { removeBtn.dataset.group = groupKey; } catch (e) { /* ignore */ }
+  removeBtn.textContent = "Remove";
+  td2.appendChild(removeBtn);
+
+  const td3 = document.createElement("td");
+  td3.textContent = unit;
+
+  const td4 = document.createElement("td");
+  td4.className = "normal";
+  appendTextWithLineBreaks(td4, normal);
+
+  newRow.appendChild(td1);
+  newRow.appendChild(td2);
+  newRow.appendChild(td3);
+  newRow.appendChild(td4);
 
   const insertAfter = findLastRowInGroup(body, groupKey) || row;
-  insertAfter.insertAdjacentHTML("afterend", newRowHtml);
+  if (insertAfter && insertAfter.parentNode) {
+    insertAfter.parentNode.insertBefore(newRow, insertAfter.nextSibling);
+  }
 }
 
 function markTouched(event) {

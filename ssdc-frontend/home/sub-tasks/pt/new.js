@@ -12,6 +12,21 @@ const searchInput = document.getElementById("search");
 const suggestions = document.getElementById("suggestions");
 const savePatientBtn = document.getElementById("savePatientBtn");
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function appendNoResult(container, message){
+  clearNode(container);
+  const div = document.createElement("div");
+  div.className = "no-result";
+  div.textContent = message;
+  container.appendChild(div);
+}
+
 function getTodayIstDateInput(){
   if (window.getIstDateInputValue) {
     return window.getIstDateInputValue(new Date());
@@ -163,7 +178,10 @@ fetch(API_BASE_URL + "/doctors")
       return;
     }
     seen.add(key);
-    doctor.innerHTML += `<option>${name}</option>`;
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    doctor.appendChild(opt);
   });
 });
 
@@ -246,26 +264,44 @@ function normalizeDigits(value){
 }
 
 function renderExistingPatients(list, mode){
-  existingPatients.innerHTML = "";
+  clearNode(existingPatients);
 
   if (mode === "idle") {
-    existingPatients.innerHTML = `<div class="no-result">Type name or mobile to search</div>`;
+    appendNoResult(existingPatients, "Type name or mobile to search");
     return;
   }
 
   if (!list.length) {
-    existingPatients.innerHTML = `<div class="no-result">No matching patients</div>`;
+    appendNoResult(existingPatients, "No matching patients");
     return;
   }
 
-  const html = list.map((p, index) => `
-    <div class="patient-row">
-      <div><b>${escapeHtml(p?.name || "")}</b><br>${escapeHtml(p?.mobile || "")}</div>
-      <button class="small-btn select-patient-btn" type="button" data-index="${index}">SELECT</button>
-    </div>
-  `).join("");
+  const frag = document.createDocumentFragment();
+  (list || []).forEach((p, index) => {
+    const row = document.createElement("div");
+    row.className = "patient-row";
 
-  existingPatients.innerHTML = html;
+    const info = document.createElement("div");
+    const nameBold = document.createElement("b");
+    nameBold.textContent = p?.name ? String(p.name) : "";
+    info.appendChild(nameBold);
+    info.appendChild(document.createElement("br"));
+    info.appendChild(
+      document.createTextNode(p?.mobile ? String(p.mobile) : "")
+    );
+
+    const btn = document.createElement("button");
+    btn.className = "small-btn select-patient-btn";
+    btn.type = "button";
+    btn.textContent = "SELECT";
+    try { btn.dataset.index = String(index); } catch (e) { /* ignore */ }
+
+    row.appendChild(info);
+    row.appendChild(btn);
+    frag.appendChild(row);
+  });
+
+  existingPatients.appendChild(frag);
 }
 
 function parseMoney(value){
@@ -398,26 +434,36 @@ function buildBillLines(){
 }
 
 function renderBillItems(){
-  billItems.innerHTML = "";
+  clearNode(billItems);
   if (!selected.size) {
-    billItems.innerHTML = `<div class="no-result">No tests selected</div>`;
+    appendNoResult(billItems, "No tests selected");
     return 0;
   }
 
   const { lines, baseTotal } = buildBillLines();
   if (!lines.length) {
-    billItems.innerHTML = `<div class="no-result">No tests selected</div>`;
+    appendNoResult(billItems, "No tests selected");
     return 0;
   }
 
+  const frag = document.createDocumentFragment();
   lines.forEach(line => {
-    billItems.innerHTML += `
-      <div class="bill-row">
-        <div class="bill-name">${line.label}</div>
-        <div class="bill-amount">₹${formatMoney(Number(line.cost) || 0)}</div>
-      </div>
-    `;
+    const row = document.createElement("div");
+    row.className = "bill-row";
+
+    const name = document.createElement("div");
+    name.className = "bill-name";
+    name.textContent = line?.label ? String(line.label) : "-";
+
+    const amount = document.createElement("div");
+    amount.className = "bill-amount";
+    amount.textContent = `₹${formatMoney(Number(line?.cost) || 0)}`;
+
+    row.appendChild(name);
+    row.appendChild(amount);
+    frag.appendChild(row);
   });
+  billItems.appendChild(frag);
 
   return baseTotal;
 }
@@ -603,9 +649,9 @@ function removeSelectedTest(id){
 }
 
 function renderSelectedList(){
-  selectedList.innerHTML = "";
+  clearNode(selectedList);
   if (!selected.size) {
-    selectedList.innerHTML = `<div class="no-result">No tests selected</div>`;
+    appendNoResult(selectedList, "No tests selected");
     return;
   }
 
@@ -638,52 +684,100 @@ function renderSelectedList(){
     });
 
   if (!groupRows.length && !testRows.length) {
-    selectedList.innerHTML = `<div class="no-result">No tests selected</div>`;
+    appendNoResult(selectedList, "No tests selected");
     return;
   }
+
+  const frag = document.createDocumentFragment();
 
   groupRows.forEach(group => {
     const shortcutText = group.shortcut ? ` (${group.shortcut})` : "";
     const cost = resolveGroupCost(group);
-    selectedList.innerHTML += `
-      <div class="selected-item group-item">
-        <label>
-          <input class="selected-checkbox" data-type="group" type="checkbox" checked value="${group.id}">
-          ${group.groupName || "Group"}${shortcutText}
-        </label>
-        <div class="selected-cost">₹${formatMoney(cost)}</div>
-      </div>
-    `;
+    {
+      const wrap = document.createElement("div");
+      wrap.className = "selected-item group-item";
+
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.className = "selected-checkbox";
+      cb.type = "checkbox";
+      cb.checked = true;
+      cb.value = String(group.id);
+      try { cb.dataset.type = "group"; } catch (e) { /* ignore */ }
+
+      label.appendChild(cb);
+      label.appendChild(
+        document.createTextNode(
+          ` ${group.groupName || "Group"}${shortcutText}`
+        )
+      );
+
+      const costDiv = document.createElement("div");
+      costDiv.className = "selected-cost";
+      costDiv.textContent = `₹${formatMoney(cost)}`;
+
+      wrap.appendChild(label);
+      wrap.appendChild(costDiv);
+      frag.appendChild(wrap);
+    }
 
     (group.testIds || [])
       .map(id => ({ id, ...(testInfoMap.get(id) || {}) }))
       .filter(item => item && item.name)
       .forEach(item => {
         const itemShortcut = item.shortcut ? ` (${item.shortcut})` : "";
-        selectedList.innerHTML += `
-          <div class="selected-item group-test">
-            <label>
-              <input class="selected-checkbox" data-type="test" type="checkbox" checked value="${item.id}">
-              ${item.name}${itemShortcut}
-            </label>
-            <div class="selected-cost">₹${formatMoney(Number(item.cost) || 0)}</div>
-          </div>
-        `;
+        const wrap = document.createElement("div");
+        wrap.className = "selected-item group-test";
+
+        const label = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.className = "selected-checkbox";
+        cb.type = "checkbox";
+        cb.checked = true;
+        cb.value = String(item.id);
+        try { cb.dataset.type = "test"; } catch (e) { /* ignore */ }
+
+        label.appendChild(cb);
+        label.appendChild(
+          document.createTextNode(` ${item.name}${itemShortcut}`)
+        );
+
+        const costDiv = document.createElement("div");
+        costDiv.className = "selected-cost";
+        costDiv.textContent = `₹${formatMoney(Number(item.cost) || 0)}`;
+
+        wrap.appendChild(label);
+        wrap.appendChild(costDiv);
+        frag.appendChild(wrap);
       });
   });
 
   testRows.forEach(item => {
     const shortcut = item.shortcut ? ` (${item.shortcut})` : "";
-    selectedList.innerHTML += `
-      <div class="selected-item">
-        <label>
-          <input class="selected-checkbox" data-type="test" type="checkbox" checked value="${item.id}">
-          ${item.name}${shortcut}
-        </label>
-        <div class="selected-cost">₹${formatMoney(Number(item.cost) || 0)}</div>
-      </div>
-    `;
+    const wrap = document.createElement("div");
+    wrap.className = "selected-item";
+
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.className = "selected-checkbox";
+    cb.type = "checkbox";
+    cb.checked = true;
+    cb.value = String(item.id);
+    try { cb.dataset.type = "test"; } catch (e) { /* ignore */ }
+
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(` ${item.name}${shortcut}`));
+
+    const costDiv = document.createElement("div");
+    costDiv.className = "selected-cost";
+    costDiv.textContent = `₹${formatMoney(Number(item.cost) || 0)}`;
+
+    wrap.appendChild(label);
+    wrap.appendChild(costDiv);
+    frag.appendChild(wrap);
   });
+
+  selectedList.appendChild(frag);
 }
 
 function handleSelectedChange(event){
@@ -761,7 +855,7 @@ function updateSuggestions(){
   if (!query) {
     suggestionItems = [];
     activeSuggestionIndex = -1;
-    suggestions.innerHTML = "";
+    clearNode(suggestions);
     suggestions.classList.add("hidden");
     noResult.classList.add("hidden");
     return;
@@ -821,8 +915,9 @@ function updateSuggestions(){
 
   suggestionItems = combined.slice(0, 8);
   activeSuggestionIndex = suggestionItems.length ? 0 : -1;
-  suggestions.innerHTML = "";
+  clearNode(suggestions);
 
+  const frag = document.createDocumentFragment();
   suggestionItems.forEach((item, index) => {
     const shortcut = item.shortcut ? item.shortcut : "";
     const price = formatMoney(Number(item.cost) || 0);
@@ -830,17 +925,40 @@ function updateSuggestions(){
     const meta = item.type === "group"
       ? `Group${shortcut ? " · " + shortcut : ""}`
       : shortcut;
-    suggestions.innerHTML += `
-      <div class="suggestion${activeClass}" data-id="${item.id}" data-type="${item.type}">
-        <div class="suggestion-main">
-          <div class="suggestion-name">${item.name || ""}</div>
-          <div class="suggestion-meta">${meta}</div>
-        </div>
-        <div class="suggestion-cost">₹${price}</div>
-      </div>
-    `;
+
+    const wrap = document.createElement("div");
+    wrap.className = `suggestion${activeClass}`;
+    try {
+      wrap.dataset.id = String(item.id);
+      wrap.dataset.type = String(item.type);
+    } catch (e) {
+      // ignore
+    }
+
+    const main = document.createElement("div");
+    main.className = "suggestion-main";
+
+    const name = document.createElement("div");
+    name.className = "suggestion-name";
+    name.textContent = item.name ? String(item.name) : "";
+
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "suggestion-meta";
+    metaDiv.textContent = meta;
+
+    main.appendChild(name);
+    main.appendChild(metaDiv);
+
+    const cost = document.createElement("div");
+    cost.className = "suggestion-cost";
+    cost.textContent = `₹${price}`;
+
+    wrap.appendChild(main);
+    wrap.appendChild(cost);
+    frag.appendChild(wrap);
   });
 
+  suggestions.appendChild(frag);
   suggestions.classList.toggle("hidden", !suggestionItems.length);
   noResult.classList.toggle("hidden", suggestionItems.length > 0);
 }
