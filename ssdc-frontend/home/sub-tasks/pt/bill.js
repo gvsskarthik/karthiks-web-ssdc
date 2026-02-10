@@ -8,6 +8,38 @@ function setText(id, value){
   }
 }
 
+function clearNode(node) {
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function appendMessageRow(tbody, message) {
+  clearNode(tbody);
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 2;
+  td.textContent = message;
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
+function appendLineItemRow(tbody, name, amountText) {
+  const tr = document.createElement("tr");
+
+  const tdName = document.createElement("td");
+  tdName.textContent = name == null ? "-" : String(name);
+
+  const tdAmount = document.createElement("td");
+  tdAmount.className = "amount";
+  tdAmount.textContent = amountText == null ? "" : String(amountText);
+
+  tr.appendChild(tdName);
+  tr.appendChild(tdAmount);
+  tbody.appendChild(tr);
+}
+
 function formatMoney(value){
   const num = Number(value);
   if (!Number.isFinite(num)) return "0";
@@ -79,7 +111,7 @@ function renderBill(){
   const body = document.getElementById("billBody");
 
   if (!patient || !patient.id) {
-    body.innerHTML = `<tr><td colspan="2">No patient selected</td></tr>`;
+    appendMessageRow(body, "No patient selected");
     setTotals(0, 0, 0);
     return;
   }
@@ -88,7 +120,7 @@ function renderBill(){
     .then(ids => {
       const uniqueIds = [...new Set(ids)];
       if (!uniqueIds.length) {
-        body.innerHTML = `<tr><td colspan="2">No tests found</td></tr>`;
+        appendMessageRow(body, "No tests found");
         const amount = Number(patient.amount) || 0;
         setTotals(0, 0, amount);
         return;
@@ -105,7 +137,7 @@ function renderBill(){
             testList.filter(t => uniqueIds.includes(t.id));
 
           if (!selected.length) {
-            body.innerHTML = `<tr><td colspan="2">No tests found</td></tr>`;
+            appendMessageRow(body, "No tests found");
             const amount = Number(patient.amount) || 0;
             setTotals(0, 0, amount);
             return;
@@ -144,17 +176,14 @@ function renderBill(){
           });
 
           let subtotal = 0;
-          body.innerHTML = "";
+          clearNode(body);
+          const frag = document.createDocumentFragment();
 
           selectedGroups.forEach(group => {
             const cost = resolveGroupCost(group, testMap);
             subtotal += cost;
-            body.innerHTML += `
-              <tr>
-                <td>${group.groupName || "Group"} (Group)</td>
-                <td class="amount">₹${formatMoney(cost)}</td>
-              </tr>
-            `;
+            const groupName = `${group.groupName || "Group"} (Group)`;
+            appendLineItemRow(frag, groupName, `₹${formatMoney(cost)}`);
           });
 
           selected
@@ -162,13 +191,14 @@ function renderBill(){
             .forEach(test => {
               const cost = Number(test.cost) || 0;
               subtotal += cost;
-              body.innerHTML += `
-                <tr>
-                  <td>${test.testName || "-"}</td>
-                  <td class="amount">₹${formatMoney(cost)}</td>
-                </tr>
-              `;
+              appendLineItemRow(
+                frag,
+                test.testName || "-",
+                `₹${formatMoney(cost)}`
+              );
             });
+
+          body.appendChild(frag);
 
           const patientAmount = Number(patient.amount);
           const total = Number.isFinite(patientAmount)
@@ -179,13 +209,13 @@ function renderBill(){
           setTotals(subtotal, discount, total);
         })
         .catch(() => {
-          body.innerHTML = `<tr><td colspan="2">Failed to load tests</td></tr>`;
+          appendMessageRow(body, "Failed to load tests");
           const amount = Number(patient.amount) || 0;
           setTotals(0, 0, amount);
         });
     })
     .catch(() => {
-      body.innerHTML = `<tr><td colspan="2">Failed to load tests</td></tr>`;
+      appendMessageRow(body, "Failed to load tests");
       const amount = Number(patient.amount) || 0;
       setTotals(0, 0, amount);
     });
