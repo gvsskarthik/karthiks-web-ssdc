@@ -139,12 +139,19 @@ dateToggle.addEventListener("click", openDatePicker);
 searchToggle.addEventListener("click", focusSearch);
 
 function renderTable(data){
-  tableBody.innerHTML="";
+  const D = window.ssdcDom;
+  if (!D) {
+    // Fallback (shouldn't happen if common/dom.js is loaded)
+    tableBody.textContent = "";
+  } else {
+    D.clear(tableBody);
+  }
   if(!data.length){ renderEmpty(); return; }
 
   const checkClass = selectMode ? "check-col round-left" : "check-col";
   const snoClass = selectMode ? "sno" : "sno round-left";
 
+  const frag = document.createDocumentFragment();
   data.forEach((p,i)=>{
     const isCompleted =
       String(p?.status || "").trim().toUpperCase() === "COMPLETED";
@@ -158,42 +165,138 @@ function renderTable(data){
     const dueRaw = Math.max(0, amount - paid);
     const dueText = dueRaw > 0 ? `₹${dueRaw}` : "-";
     const dueClass = dueRaw > 0 ? "due is-due" : "due is-no-due";
-    tableBody.innerHTML+=`
-    <tr>
-      <td class="${checkClass}">
-        <input type="checkbox"
-               id="patient-${p.id}"
-               name="patient-${p.id}"
-               class="row-check"
-               data-id="${p.id}"
-               onchange="updateCount()">
-      </td>
-      <td class="${snoClass}">${i+1}</td>
-      <td class="name">${p.name || "-"}</td>
-      <td class="doctor">${p.doctor||'-'}</td>
-      <td class="amount">₹${amount}</td>
-      <td class="${dueClass}">${dueText}</td>
-      <td class="status-col"><span class="${statusClass}">${statusText}</span></td>
-      <td class="options">
-        <div class="menu">
-          <button class="menu-btn" type="button" onclick="toggleMenu(${p.id})">⋮</button>
-          <div class="menu-list" id="menu-${p.id}">
-            <div onclick="enterSelectMode()">Select</div>
-            <div onclick="editPatient(${p.id})">Edit</div>
-            <div onclick='openBill(${JSON.stringify(p)})'>Bill</div>
-            <div class="danger" onclick="deleteOne(${p.id})">Delete</div>
-          </div>
-        </div>
-      </td>
-    </tr>`;
+
+    const tr = document.createElement("tr");
+
+    // checkbox
+    {
+      const td = document.createElement("td");
+      td.className = checkClass;
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = `patient-${p.id}`;
+      cb.name = `patient-${p.id}`;
+      cb.className = "row-check";
+      try { cb.dataset.id = String(p.id); } catch (e) { /* ignore */ }
+      cb.addEventListener("change", updateCount);
+      td.appendChild(cb);
+      tr.appendChild(td);
+    }
+
+    // sno
+    {
+      const td = document.createElement("td");
+      td.className = snoClass;
+      td.textContent = String(i + 1);
+      tr.appendChild(td);
+    }
+
+    // name
+    {
+      const td = document.createElement("td");
+      td.className = "name";
+      td.textContent = p?.name ? String(p.name) : "-";
+      tr.appendChild(td);
+    }
+
+    // doctor
+    {
+      const td = document.createElement("td");
+      td.className = "doctor";
+      td.textContent = p?.doctor ? String(p.doctor) : "-";
+      tr.appendChild(td);
+    }
+
+    // amount
+    {
+      const td = document.createElement("td");
+      td.className = "amount";
+      td.textContent = `₹${amount}`;
+      tr.appendChild(td);
+    }
+
+    // due
+    {
+      const td = document.createElement("td");
+      td.className = dueClass;
+      td.textContent = dueText;
+      tr.appendChild(td);
+    }
+
+    // status
+    {
+      const td = document.createElement("td");
+      td.className = "status-col";
+      const span = document.createElement("span");
+      span.className = statusClass;
+      span.textContent = statusText;
+      td.appendChild(span);
+      tr.appendChild(td);
+    }
+
+    // options menu
+    {
+      const td = document.createElement("td");
+      td.className = "options";
+
+      const menu = document.createElement("div");
+      menu.className = "menu";
+
+      const btn = document.createElement("button");
+      btn.className = "menu-btn";
+      btn.type = "button";
+      btn.textContent = "⋮";
+      btn.addEventListener("click", () => toggleMenu(p.id));
+
+      const list = document.createElement("div");
+      list.className = "menu-list";
+      list.id = `menu-${p.id}`;
+
+      const itemSelect = document.createElement("div");
+      itemSelect.textContent = "Select";
+      itemSelect.addEventListener("click", enterSelectMode);
+
+      const itemEdit = document.createElement("div");
+      itemEdit.textContent = "Edit";
+      itemEdit.addEventListener("click", () => editPatient(p.id));
+
+      const itemBill = document.createElement("div");
+      itemBill.textContent = "Bill";
+      itemBill.addEventListener("click", () => openBill(p));
+
+      const itemDelete = document.createElement("div");
+      itemDelete.className = "danger";
+      itemDelete.textContent = "Delete";
+      itemDelete.addEventListener("click", () => deleteOne(p.id));
+
+      list.appendChild(itemSelect);
+      list.appendChild(itemEdit);
+      list.appendChild(itemBill);
+      list.appendChild(itemDelete);
+
+      menu.appendChild(btn);
+      menu.appendChild(list);
+      td.appendChild(menu);
+      tr.appendChild(td);
+    }
+
+    frag.appendChild(tr);
   });
+
+  tableBody.appendChild(frag);
 }
 
 function renderEmpty(){
-  tableBody.innerHTML=`<tr>
-    <td colspan="8" class="no-data">
-      No patients found
-    </td></tr>`;
+  const D = window.ssdcDom;
+  if (D) D.clear(tableBody);
+
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 8;
+  td.className = "no-data";
+  td.textContent = "No patients found";
+  tr.appendChild(td);
+  tableBody.appendChild(tr);
 }
 
 function closeMenus(){
