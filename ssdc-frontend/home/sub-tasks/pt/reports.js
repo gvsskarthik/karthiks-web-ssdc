@@ -5,6 +5,57 @@ const patient =
 let results = [];
 let selectedTestIds = [];
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function appendTextWithLineBreaks(parent, text){
+  if (!parent) return;
+  const value = text == null ? "" : String(text);
+  if (!value) return;
+  const parts = value.split(/\r?\n/);
+  parts.forEach((part, idx) => {
+    if (idx > 0) {
+      parent.appendChild(document.createElement("br"));
+    }
+    parent.appendChild(document.createTextNode(part));
+  });
+}
+
+function appendMessageRow(tbody, message){
+  clearNode(tbody);
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 4;
+  td.textContent = message == null ? "" : String(message);
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
+function appendIndentText(node, level){
+  if (!node) return;
+  const count = Math.max(0, Number(level) || 0);
+  if (!count) return;
+  node.appendChild(document.createTextNode("\u00A0".repeat(4 * count)));
+}
+
+function setTbodyFromHtml(tbody, html){
+  if (!tbody) {
+    return;
+  }
+  const safeHtml = String(html == null ? "" : html);
+  clearNode(tbody);
+  if (!safeHtml) {
+    return;
+  }
+  const range = document.createRange();
+  range.selectNodeContents(tbody);
+  tbody.appendChild(range.createContextualFragment(safeHtml));
+}
+
 function isCompletedStatus(status){
   return String(status || "").trim().toUpperCase() === "COMPLETED";
 }
@@ -431,6 +482,56 @@ function pushRowsWithNormalLines(out, opts){
   }
 }
 
+function pushRowsWithNormalLinesDom(frag, opts){
+  const testId = opts?.testId;
+  const col1Node = opts?.col1Node || null;
+  const col1Text = opts?.col1Text ?? "";
+  const col2Text = opts?.col2Text ?? "";
+  const col3Text = opts?.col3Text ?? "";
+  const col2Class = opts?.col2Class ?? "";
+  const normalText = opts?.normalText ?? "";
+
+  const normalLines = splitLinesForTable(normalText);
+
+  const makeRow = (normalLine, first) => {
+    const tr = document.createElement("tr");
+    if (testId != null) {
+      tr.dataset.testid = String(testId);
+    }
+
+    const td1 = document.createElement("td");
+    const td2 = document.createElement("td");
+    const td3 = document.createElement("td");
+    const td4 = document.createElement("td");
+
+    if (first) {
+      if (col1Node) {
+        td1.appendChild(col1Node);
+      } else {
+        td1.textContent = col1Text == null ? "" : String(col1Text);
+      }
+      td2.textContent = col2Text == null ? "" : String(col2Text);
+      td3.textContent = col3Text == null ? "" : String(col3Text);
+      if (col2Class) {
+        td2.className = col2Class;
+      }
+    }
+
+    td4.textContent = normalLine == null ? "" : String(normalLine);
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    frag.appendChild(tr);
+  };
+
+  makeRow(normalLines[0] || "", true);
+  for (let i = 1; i < normalLines.length; i++) {
+    makeRow(normalLines[i] || "", false);
+  }
+}
+
 function asArray(value){
   return Array.isArray(value) ? value : [];
 }
@@ -782,19 +883,19 @@ function renderReport(tests, resultList, selectedIds, groupList){
     : deriveSelectedFromResultsList(safeResults);
 
   if (!ids.length) {
-    body.innerHTML = `<tr><td colspan="4">No results found</td></tr>`;
+    appendMessageRow(body, "No results found");
     renderScreenPages();
     return;
   }
   if (!safeTests.length) {
-    body.innerHTML = `<tr><td colspan="4">Loading report...</td></tr>`;
+    appendMessageRow(body, "Loading report...");
     renderScreenPages();
     return;
   }
 
   const selectedTests = safeTests.filter(t => ids.includes(Number(t?.id)));
   if (!selectedTests.length) {
-    body.innerHTML = `<tr><td colspan="4">No tests found</td></tr>`;
+    appendMessageRow(body, "No tests found");
     renderScreenPages();
     return;
   }
@@ -1249,7 +1350,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
     renderOneTest(test, "");
   });
 
-  body.innerHTML = out.join("");
+  setTbodyFromHtml(body, out.join(""));
   renderScreenPages();
 }
 
@@ -1264,7 +1365,7 @@ if (cachedResults.length || cachedSelectedIds.length) {
 } else {
   const body = document.getElementById("reportBody");
   if (body) {
-    body.innerHTML = `<tr><td colspan="4">Loading report...</td></tr>`;
+    appendMessageRow(body, "Loading report...");
   }
   renderScreenPages();
 }
@@ -1438,7 +1539,7 @@ function isHeaderLikeRow(row){
   return false;
 }
 
-function buildPatientBoxHtml(){
+function buildPatientBoxNode(){
   const pName = document.getElementById("pName")?.textContent || "";
   const pDate = document.getElementById("pDate")?.textContent || "";
   const pAddress = document.getElementById("pAddress")?.textContent || "";
@@ -1446,22 +1547,60 @@ function buildPatientBoxHtml(){
   const pDoctor = document.getElementById("pDoctor")?.textContent || "";
   const pMobile = document.getElementById("pMobile")?.textContent || "";
 
-  return `
-    <div class="patient-box">
-      <div class="row">
-        <div><span class="label">PATIENT</span> : <span>${escapeHtml(pName)}</span></div>
-        <div><span class="label">DATE</span> : <span>${escapeHtml(pDate)}</span></div>
-      </div>
-      <div class="row">
-        <div><span class="label">ADDRESS</span> : <span>${escapeHtml(pAddress)}</span></div>
-        <div><span class="label">AGE / SEX</span> : <span>${escapeHtml(pAgeSex)}</span></div>
-      </div>
-      <div class="row">
-        <div><span class="label">REF BY Dr.</span> : <span>${escapeHtml(pDoctor)}</span></div>
-        <div><span class="label">MOBILE</span> : <span>${escapeHtml(pMobile)}</span></div>
-      </div>
-    </div>
-  `;
+  const makeField = (labelText, valueText) => {
+    const wrap = document.createElement("div");
+    const label = document.createElement("span");
+    label.className = "label";
+    label.textContent = labelText;
+    wrap.appendChild(label);
+    wrap.appendChild(document.createTextNode(" : "));
+    const value = document.createElement("span");
+    value.textContent = valueText == null ? "" : String(valueText);
+    wrap.appendChild(value);
+    return wrap;
+  };
+
+  const box = document.createElement("div");
+  box.className = "patient-box";
+
+  const row1 = document.createElement("div");
+  row1.className = "row";
+  row1.appendChild(makeField("PATIENT", pName));
+  row1.appendChild(makeField("DATE", pDate));
+
+  const row2 = document.createElement("div");
+  row2.className = "row";
+  row2.appendChild(makeField("ADDRESS", pAddress));
+  row2.appendChild(makeField("AGE / SEX", pAgeSex));
+
+  const row3 = document.createElement("div");
+  row3.className = "row";
+  row3.appendChild(makeField("REF BY Dr.", pDoctor));
+  row3.appendChild(makeField("MOBILE", pMobile));
+
+  box.appendChild(row1);
+  box.appendChild(row2);
+  box.appendChild(row3);
+  return box;
+}
+
+function buildHeaderNode(){
+  const header = document.createElement("div");
+  header.className = "header";
+
+  const h2 = document.createElement("h2");
+  h2.setAttribute("spellcheck", "false");
+  h2.setAttribute("data-ssdc-lab-name", "");
+  h2.textContent = "SAI SREE SWETHA DIAGNOSTICS";
+
+  const p = document.createElement("p");
+  const b = document.createElement("b");
+  b.textContent = "BLOOD EXAMINATION REPORT";
+  p.appendChild(b);
+
+  header.appendChild(h2);
+  header.appendChild(p);
+  return header;
 }
 
 function renderScreenPages(){
@@ -1480,34 +1619,24 @@ function renderScreenPages(){
   const footerBlock = printCard.querySelector(".report-table tfoot .report-footer");
   const sourceRows = Array.from(tbody.querySelectorAll("tr"));
 
-  pages.innerHTML = "";
+  clearNode(pages);
 
   if (!sourceRows.length) {
     return;
   }
 
   const showHeader = mode !== "letterhead";
-  const headerHtml = showHeader ? `
-      <div class="header">
-        <h2 spellcheck="false" data-ssdc-lab-name>SAI SREE SWETHA DIAGNOSTICS</h2>
-        <p><b>BLOOD EXAMINATION REPORT</b></p>
-      </div>
-    ` : "";
-  const patientHtml = buildPatientBoxHtml();
-  const footerHtml = `
-    ${footerLegend ? footerLegend.outerHTML : ""}
-    ${footerBlock ? footerBlock.outerHTML : ""}
-  `;
-  const colsHtml = colsRow
-    ? colsRow.outerHTML
-    : `
-      <tr class="report-cols">
-        <th>TEST</th>
-        <th>RESULT</th>
-        <th>UNIT</th>
-        <th>NORMAL VALUES</th>
-      </tr>
-    `;
+
+  const colsFallback = () => {
+    const tr = document.createElement("tr");
+    tr.className = "report-cols";
+    ["TEST", "RESULT", "UNIT", "NORMAL VALUES"].forEach(text => {
+      const th = document.createElement("th");
+      th.textContent = text;
+      tr.appendChild(th);
+    });
+    return tr;
+  };
 
   function createPage(){
     const card = document.createElement("div");
@@ -1517,13 +1646,11 @@ function renderScreenPages(){
     content.className = "report-page-content";
 
     if (showHeader) {
-      const head = document.createElement("div");
-      head.innerHTML = headerHtml;
-      content.appendChild(head);
+      content.appendChild(buildHeaderNode());
     }
 
     const patient = document.createElement("div");
-    patient.innerHTML = patientHtml;
+    patient.appendChild(buildPatientBoxNode());
 
     const tableWrap = document.createElement("div");
     tableWrap.className = "report-page-table-wrap";
@@ -1532,7 +1659,7 @@ function renderScreenPages(){
     table.className = "report-table";
 
     const thead = document.createElement("thead");
-    thead.innerHTML = colsHtml;
+    thead.appendChild(colsRow ? colsRow.cloneNode(true) : colsFallback());
 
     const pageBody = document.createElement("tbody");
 
@@ -1542,7 +1669,12 @@ function renderScreenPages(){
 
     const footer = document.createElement("div");
     footer.className = "report-page-footer";
-    footer.innerHTML = footerHtml;
+    if (footerLegend) {
+      footer.appendChild(footerLegend.cloneNode(true));
+    }
+    if (footerBlock) {
+      footer.appendChild(footerBlock.cloneNode(true));
+    }
 
     content.appendChild(patient);
     content.appendChild(tableWrap);
