@@ -10,10 +10,21 @@ const selectedCount = document.getElementById("selectedCount");
 const newPatientBtn = document.getElementById("newPatientBtn");
 const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
 const bulkCancelBtn = document.getElementById("bulkCancelBtn");
+const searchPager = document.getElementById("searchPager");
+const searchPrevBtn = document.getElementById("searchPrevBtn");
+const searchNextBtn = document.getElementById("searchNextBtn");
+const searchPageInfo = document.getElementById("searchPageInfo");
 
 let allPatients = [];
 let selectMode = false;
 let isAutoDate = true;
+let isSearchMode = false;
+let searchPage = 0;
+let searchHasMore = false;
+let searchController = null;
+let searchRequestId = 0;
+
+const SEARCH_PAGE_LIMIT = 50;
 
 const PATIENTS_DATE_KEY = "SSDC_PATIENTS_SELECTED_DATE";
 
@@ -68,6 +79,40 @@ function getLocalDateInputValue(date = new Date()) {
 }
 loadByDate(datePicker.value);
 
+function safeJson(res) {
+  return res && typeof res.json === "function"
+    ? res.json().catch(() => null)
+    : Promise.resolve(null);
+}
+
+function setSearchPagerVisible(visible) {
+  if (!searchPager) return;
+  searchPager.classList.toggle("hidden", !visible);
+}
+
+function updateSearchPager() {
+  const visible = isSearchMode;
+  setSearchPagerVisible(visible);
+  if (!visible) return;
+
+  if (searchPageInfo) {
+    searchPageInfo.textContent = `Page ${searchPage + 1}`;
+  }
+  if (searchPrevBtn) {
+    searchPrevBtn.disabled = searchPage <= 0;
+  }
+  if (searchNextBtn) {
+    searchNextBtn.disabled = !searchHasMore;
+  }
+}
+
+function cancelSearchRequest() {
+  if (searchController) {
+    try { searchController.abort(); } catch (e) { /* ignore */ }
+    searchController = null;
+  }
+}
+
 function setDateToToday(){
   const today = getLocalDateInputValue();
   if (datePicker.value !== today) {
@@ -114,17 +159,91 @@ window.addEventListener("pageshow", (event) => {
 });
 
 function loadByDate(date){
+  cancelSearchRequest();
+  isSearchMode = false;
+  searchPage = 0;
+  searchHasMore = false;
+  updateSearchPager();
+
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)
     .then(r=>r.json())
     .then(d=>{ allPatients=d; renderTable(d); })
     .catch(()=>renderEmpty());
 }
 
+function loadSearchPage(page){
+  const q = String(searchBox.value || "").trim();
+  if (!q) {
+    isSearchMode = false;
+    searchPage = 0;
+    searchHasMore = false;
+    updateSearchPager();
+    renderTable(allPatients);
+    return;
+  }
+
+  cancelSearchRequest();
+  searchController = new AbortController();
+  const requestId = ++searchRequestId;
+
+  const params = new URLSearchParams();
+  params.set("name", q);
+  params.set("mobile", "");
+  params.set("page", String(Math.max(0, page)));
+  params.set("limit", String(SEARCH_PAGE_LIMIT));
+
+  fetch(`${API_BASE_URL}/patients/search?${params.toString()}`, {
+    signal: searchController.signal
+  })
+    .then(async (res) => {
+      if (!res || !res.ok) {
+        const data = await safeJson(res);
+        const msg =
+          (data && typeof data.message === "string" && data.message.trim())
+            ? data.message.trim()
+            : "Enter name or mobile";
+        if (requestId === searchRequestId) {
+          isSearchMode = false;
+          searchPage = 0;
+          searchHasMore = false;
+          updateSearchPager();
+          window.ssdcAlert?.(msg);
+          renderTable(allPatients);
+        }
+        return null;
+      }
+      return res.json();
+    })
+    .then((list) => {
+      if (list == null) return;
+      if (requestId !== searchRequestId) return;
+
+      const safe = Array.isArray(list) ? list : [];
+      isSearchMode = true;
+      searchPage = Math.max(0, page);
+      searchHasMore = safe.length >= SEARCH_PAGE_LIMIT;
+      updateSearchPager();
+      renderTable(safe);
+    })
+    .catch((err) => {
+      if (err && err.name === "AbortError") {
+        return;
+      }
+      console.error(err);
+    });
+}
+
 function searchPatient(){
-  const q = searchBox.value.toLowerCase();
-  renderTable(allPatients.filter(p =>
-    (p.name||"").toLowerCase().includes(q)
-  ));
+  const q = String(searchBox.value || "").trim();
+  if (!q) {
+    isSearchMode = false;
+    searchPage = 0;
+    searchHasMore = false;
+    updateSearchPager();
+    renderTable(allPatients);
+    return;
+  }
+  loadSearchPage(0);
 }
 
 function openDatePicker(){
@@ -316,6 +435,21 @@ function renderEmpty(){
   td.textContent = "No patients found";
   tr.appendChild(td);
   tableBody.appendChild(tr);
+}
+
+if (searchPrevBtn) {
+  searchPrevBtn.addEventListener("click", () => {
+    if (!isSearchMode) return;
+    if (searchPage <= 0) return;
+    loadSearchPage(searchPage - 1);
+  });
+}
+if (searchNextBtn) {
+  searchNextBtn.addEventListener("click", () => {
+    if (!isSearchMode) return;
+    if (!searchHasMore) return;
+    loadSearchPage(searchPage + 1);
+  });
 }
 
 function closeMenus(){

@@ -6,6 +6,10 @@ const patientForm = document.getElementById("patientForm");
 const visitDate = document.getElementById("visitDate");
 const doctor = document.getElementById("doctor");
 const existingPatients = document.getElementById("existingPatients");
+const existingPatientsPager = document.getElementById("existingPatientsPager");
+const existingPrevBtn = document.getElementById("existingPrevBtn");
+const existingNextBtn = document.getElementById("existingNextBtn");
+const existingPageInfo = document.getElementById("existingPageInfo");
 const selectedList = document.getElementById("selectedTests");
 const noResult = document.getElementById("noResult");
 const searchInput = document.getElementById("search");
@@ -188,6 +192,118 @@ fetch(API_BASE_URL + "/doctors")
 /* LOAD EXISTING PATIENTS (LIVE SEARCH) */
 renderExistingPatients([], "idle");
 
+const EXISTING_PATIENTS_PAGE_LIMIT = 5;
+const EXISTING_PATIENTS_PAGE_FETCH = 6; // fetch 1 extra to detect "Next"
+let existingPatientsQuery = { name: "", mobile: "" };
+let existingPatientsPage = 0;
+let existingPatientsHasMore = false;
+let existingPatientsLoading = false;
+
+function safeJson(res){
+  return res && typeof res.json === "function"
+    ? res.json().catch(() => null)
+    : Promise.resolve(null);
+}
+
+function updateExistingPager(){
+  if (!existingPatientsPager) {
+    return;
+  }
+
+  const hasQuery = Boolean(existingPatientsQuery?.name || existingPatientsQuery?.mobile);
+  const hasResults = existingList.length > 0;
+  const shouldShow = !existingPatientsLoading && hasQuery && hasResults;
+
+  existingPatientsPager.classList.toggle("hidden", !shouldShow);
+
+  if (existingPageInfo) {
+    existingPageInfo.textContent = `Page ${existingPatientsPage + 1}`;
+  }
+  if (existingPrevBtn) {
+    existingPrevBtn.disabled = existingPatientsLoading || existingPatientsPage <= 0;
+  }
+  if (existingNextBtn) {
+    existingNextBtn.disabled = existingPatientsLoading || !existingPatientsHasMore;
+  }
+}
+
+function loadExistingPatientsPage(page){
+  const nameQuery = existingPatientsQuery.name;
+  const mobileQuery = existingPatientsQuery.mobile;
+  if (!nameQuery && !mobileQuery) {
+    existingPatientsPage = 0;
+    existingPatientsHasMore = false;
+    updateExistingPager();
+    return;
+  }
+
+  if (patientSearchController) {
+    patientSearchController.abort();
+  }
+  patientSearchController = new AbortController();
+  const requestId = ++patientSearchRequestId;
+
+  const params = new URLSearchParams();
+  params.set("name", nameQuery);
+  params.set("mobile", mobileQuery);
+  params.set("page", String(Math.max(0, page)));
+  params.set("limit", String(EXISTING_PATIENTS_PAGE_FETCH));
+
+  existingPatientsLoading = true;
+  updateExistingPager();
+
+  fetch(`${API_BASE_URL}/patients/search?${params.toString()}`, {
+    signal: patientSearchController.signal
+  })
+  .then(async (res) => {
+    if (!res || !res.ok) {
+      const data = await safeJson(res);
+      // Option A: backend blocks empty searches. Also handle generic failures.
+      const message =
+        (data && typeof data.message === "string" && data.message.trim())
+          ? data.message.trim()
+          : "Enter name or mobile";
+      if (requestId === patientSearchRequestId) {
+        existingList.splice(0, existingList.length);
+        existingPatientsLoading = false;
+        existingPatientsPage = 0;
+        existingPatientsHasMore = false;
+        renderExistingPatients([], "idle", message);
+        updateExistingPager();
+      }
+      return null;
+    }
+    return res.json();
+  })
+  .then((list) => {
+    if (list == null) {
+      return;
+    }
+    if (requestId !== patientSearchRequestId) {
+      return;
+    }
+    const safe = Array.isArray(list) ? list : [];
+    existingPatientsHasMore = safe.length >= EXISTING_PATIENTS_PAGE_FETCH;
+    existingPatientsPage = Math.max(0, page);
+    existingPatientsLoading = false;
+    const shown = safe.length > EXISTING_PATIENTS_PAGE_LIMIT
+      ? safe.slice(0, EXISTING_PATIENTS_PAGE_LIMIT)
+      : safe;
+    existingList.splice(0, existingList.length, ...shown);
+    renderExistingPatients(shown);
+    updateExistingPager();
+  })
+  .catch(err => {
+    if (err && err.name === "AbortError") {
+      return;
+    }
+    console.error(err);
+    existingPatientsLoading = false;
+    existingPatientsHasMore = false;
+    updateExistingPager();
+  });
+}
+
 function escapeHtml(value){
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -213,7 +329,12 @@ function applyPatientFilter(){
     }
     lastPatientSearchKey = "";
     existingList.splice(0, existingList.length);
+    existingPatientsQuery = { name: "", mobile: "" };
+    existingPatientsPage = 0;
+    existingPatientsHasMore = false;
+    existingPatientsLoading = false;
     renderExistingPatients([], "idle");
+    updateExistingPager();
     return;
   }
 
@@ -228,34 +349,11 @@ function applyPatientFilter(){
     }
     lastPatientSearchKey = searchKey;
 
-    if (patientSearchController) {
-      patientSearchController.abort();
-    }
-    patientSearchController = new AbortController();
-    const requestId = ++patientSearchRequestId;
-
-    const params = new URLSearchParams();
-    params.set("name", nameQuery);
-    params.set("mobile", mobileQuery);
-
-    fetch(`${API_BASE_URL}/patients/search?${params.toString()}`, {
-      signal: patientSearchController.signal
-    })
-    .then(r => r.json())
-    .then(list => {
-      if (requestId !== patientSearchRequestId) {
-        return;
-      }
-      const safe = Array.isArray(list) ? list : [];
-      existingList.splice(0, existingList.length, ...safe);
-      renderExistingPatients(safe);
-    })
-    .catch(err => {
-      if (err && err.name === "AbortError") {
-        return;
-      }
-      console.error(err);
-    });
+    existingPatientsQuery = { name: nameQuery, mobile: mobileQuery };
+    existingPatientsPage = 0;
+    existingPatientsHasMore = false;
+    existingPatientsLoading = false;
+    loadExistingPatientsPage(0);
   }, PATIENT_SEARCH_DELAY_MS);
 }
 
@@ -263,11 +361,11 @@ function normalizeDigits(value){
   return String(value || "").replace(/\D/g, "");
 }
 
-function renderExistingPatients(list, mode){
+function renderExistingPatients(list, mode, overrideIdleMessage){
   clearNode(existingPatients);
 
   if (mode === "idle") {
-    appendNoResult(existingPatients, "Type name or mobile to search");
+    appendNoResult(existingPatients, overrideIdleMessage || "Type name or mobile to search");
     return;
   }
 
@@ -302,6 +400,21 @@ function renderExistingPatients(list, mode){
   });
 
   existingPatients.appendChild(frag);
+}
+
+if (existingPrevBtn) {
+  existingPrevBtn.addEventListener("click", () => {
+    if (existingPatientsLoading) return;
+    if (existingPatientsPage <= 0) return;
+    loadExistingPatientsPage(existingPatientsPage - 1);
+  });
+}
+if (existingNextBtn) {
+  existingNextBtn.addEventListener("click", () => {
+    if (existingPatientsLoading) return;
+    if (!existingPatientsHasMore) return;
+    loadExistingPatientsPage(existingPatientsPage + 1);
+  });
 }
 
 function parseMoney(value){

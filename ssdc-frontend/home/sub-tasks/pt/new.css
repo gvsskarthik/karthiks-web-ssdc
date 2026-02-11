@@ -112,6 +112,25 @@ label {
   gap: 10px;
 }
 
+.existing-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.existing-page-info {
+  font-size: 12px;
+  color: var(--theme-muted);
+  margin: 0 auto;
+}
+
+.existing-pager .small-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .patient-row {
   display: flex;
   justify-content: space-between;
