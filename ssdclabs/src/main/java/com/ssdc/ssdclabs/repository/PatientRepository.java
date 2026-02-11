@@ -140,15 +140,18 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("labId") String labId,
             Pageable pageable);
 
-    @Query("""
-        SELECT
-            COALESCE(SUM(CASE WHEN p.visitDate = :today THEN 1 ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN p.visitDate BETWEEN :weekStart AND :today THEN 1 ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN p.visitDate BETWEEN :monthStart AND :today THEN 1 ELSE 0 END), 0),
-            COALESCE(SUM(CASE WHEN p.visitDate BETWEEN :yearStart AND :today THEN 1 ELSE 0 END), 0)
-        FROM Patient p
-        WHERE p.labId = :labId
-    """)
+    @Query(
+        value = """
+            SELECT
+                COALESCE(SUM(CASE WHEN p.visit_date = :today THEN 1 ELSE 0 END), 0) AS todayCount,
+                COALESCE(SUM(CASE WHEN p.visit_date BETWEEN :weekStart AND :today THEN 1 ELSE 0 END), 0) AS weekCount,
+                COALESCE(SUM(CASE WHEN p.visit_date BETWEEN :monthStart AND :today THEN 1 ELSE 0 END), 0) AS monthCount,
+                COALESCE(SUM(CASE WHEN p.visit_date BETWEEN :yearStart AND :today THEN 1 ELSE 0 END), 0) AS yearCount
+            FROM patients p
+            WHERE p.lab_id = :labId
+        """,
+        nativeQuery = true
+    )
     Object[] findHomeSummaryCounts(
             @Param("labId") String labId,
             @Param("today") LocalDate today,
