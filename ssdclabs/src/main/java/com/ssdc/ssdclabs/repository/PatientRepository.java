@@ -94,6 +94,31 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("name") String name,
             @Param("mobile") String mobile);
 
+    @Query("""
+        SELECT p.id
+        FROM Patient p
+        WHERE p.labId = :labId
+          AND (:name = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')))
+          AND (:mobile = '' OR p.mobile LIKE CONCAT('%', :mobile, '%'))
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Long> searchIdsOrderByVisitDateDescIdDesc(
+            @Param("labId") String labId,
+            @Param("name") String name,
+            @Param("mobile") String mobile,
+            Pageable pageable);
+
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
+          AND p.id IN :ids
+    """)
+    List<Patient> findByLabIdAndIdInWithDoctor(
+            @Param("labId") String labId,
+            @Param("ids") List<Long> ids);
+
     // Aggregate totals ordered by highest billing first (for accounts).
     @Query("""
         SELECT d.id AS doctorId,

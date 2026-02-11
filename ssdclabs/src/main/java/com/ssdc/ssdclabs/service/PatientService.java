@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.lang.NonNull;
 import org.springframework.data.domain.PageRequest;
@@ -95,14 +97,47 @@ public class PatientService {
     public List<Patient> searchPatients(@NonNull String labId,
                                         String name,
                                         String mobile) {
-        String nameQuery = name == null ? "" : name.trim();
-        String mobileQuery = mobile == null ? "" : mobile.trim();
+        return searchPatientsPaged(labId, name, mobile, 0, 50);
+    }
 
-        return patientRepo.searchWithDoctorOrderByVisitDateDescIdDesc(
-            Objects.requireNonNull(labId, "labId"),
+    public List<Patient> searchPatientsPaged(@NonNull String labId,
+                                            String name,
+                                            String mobile,
+                                            int page,
+                                            int limit) {
+        final String safeLabId = Objects.requireNonNull(labId, "labId");
+        final String nameQuery = name == null ? "" : name.trim();
+        final String mobileQuery = mobile == null ? "" : mobile.trim();
+
+        final int safePage = Math.max(0, page);
+        final int safeLimit = Math.max(1, Math.min(200, limit));
+
+        final List<Long> ids = patientRepo.searchIdsOrderByVisitDateDescIdDesc(
+            safeLabId,
             nameQuery,
-            mobileQuery
+            mobileQuery,
+            PageRequest.of(safePage, safeLimit)
         );
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+
+        // Fetch with doctor (avoid N+1), then re-apply the desired order.
+        final List<Patient> rows = patientRepo.findByLabIdAndIdInWithDoctor(safeLabId, ids);
+
+        final Map<Long, Integer> order = new HashMap<>(ids.size() * 2);
+        for (int i = 0; i < ids.size(); i++) {
+            order.put(ids.get(i), i);
+        }
+
+        rows.sort(Comparator.comparingInt((Patient p) -> {
+            if (p == null || p.getId() == null) {
+                return Integer.MAX_VALUE;
+            }
+            return order.getOrDefault(p.getId(), Integer.MAX_VALUE);
+        }));
+
+        return rows;
     }
 
     /* DELETE PATIENT + ALL RELATED DATA */

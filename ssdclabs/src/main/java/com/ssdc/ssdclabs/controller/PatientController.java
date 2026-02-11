@@ -48,11 +48,26 @@ public class PatientController {
     public List<Patient> searchPatients(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String mobile,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int limit,
             @NonNull Principal principal) {
-        return service.searchPatients(
+        final String nameQuery = name == null ? "" : name.trim();
+        final String mobileQuery = mobile == null ? "" : mobile.trim();
+        if (nameQuery.isEmpty() && mobileQuery.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enter name or mobile");
+        }
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0");
+        }
+        if (limit < 1 || limit > 200) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "limit must be 1..200");
+        }
+        return service.searchPatientsPaged(
             Objects.requireNonNull(principal.getName(), "labId"),
-            name,
-            mobile
+            nameQuery,
+            mobileQuery,
+            page,
+            limit
         );
     }
 
