@@ -776,7 +776,8 @@ function getOrderedSelectedIds(){
       const ar = categoryPriority(a.category);
       const br = categoryPriority(b.category);
       if (ar !== br) return ar - br;
-      return (b.rank ?? 0) - (a.rank ?? 0);
+      // Selected priority: first-selected comes first (older first).
+      return (a.rank ?? 0) - (b.rank ?? 0);
     })
     .map(item => item.id);
 }
@@ -832,7 +833,8 @@ function renderSelectedList(){
       if (ar !== br) return ar - br;
       const aRank = selectedRank.get(a.id) ?? 0;
       const bRank = selectedRank.get(b.id) ?? 0;
-      return bRank - aRank;
+      // Selected priority: first-selected comes first (older first).
+      return aRank - bRank;
     });
 
   if (!groupRows.length && !testRows.length) {
