@@ -2,7 +2,6 @@ package com.ssdc.ssdclabs.controller;
 
 import java.security.Principal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -12,7 +11,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ssdc.ssdclabs.dto.RecentTaskDTO;
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.service.PatientService;
 
@@ -34,14 +32,6 @@ public class PatientController {
             Objects.requireNonNull(principal.getName(), "labId"),
             Objects.requireNonNull(patient, "patient")
         );
-    }
-
-    /* TODAY */
-    @GetMapping("/today")
-    public List<Patient> todayPatients(@NonNull Principal principal) {
-        return service.findByDate(
-            Objects.requireNonNull(principal.getName(), "labId"),
-            Objects.requireNonNull(LocalDate.now(ZoneId.of("Asia/Kolkata")), "today"));
     }
 
     /* BY DATE */
@@ -66,21 +56,8 @@ public class PatientController {
         );
     }
 
-    @GetMapping("/tasks/recent")
-    public List<RecentTaskDTO> recentTasks(
-            @RequestParam(defaultValue = "20") int limit,
-            @NonNull Principal principal) {
-        if (limit < 1 || limit > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "limit must be 1..100");
-        }
-        return service.getRecentTasks(
-            Objects.requireNonNull(principal.getName(), "labId"),
-            limit
-        );
-    }
-
     /* DELETE */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     public void deletePatient(@PathVariable @NonNull Long id,
                               @NonNull Principal principal) {
         service.deletePatient(
@@ -89,7 +66,7 @@ public class PatientController {
         );
     }
 
-    @PutMapping("/{id}/status")
+    @PutMapping("/{id:\\d+}/status")
     public @NonNull Patient updateStatus(@PathVariable @NonNull Long id,
                                          @RequestBody @NonNull Map<String, String> body,
                                          @NonNull Principal principal) {
