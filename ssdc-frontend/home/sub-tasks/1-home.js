@@ -120,10 +120,16 @@ function loadHomeSummary(){
     .then((data) => {
       const obj = (data && typeof data === "object") ? data : {};
 
-      setText("home-today-count", Number(obj.todayCount) || 0);
+      const todayCount = Number(obj.todayCount) || 0;
+      const todayPending = Number(obj.todayPendingCount) || 0;
+      const todayCompleted = Math.max(0, todayCount - todayPending);
+
+      setText("home-today-count", todayCount);
       setText("home-week-count", Number(obj.weekCount) || 0);
       setText("home-month-count", Number(obj.monthCount) || 0);
       setText("home-year-count", Number(obj.yearCount) || 0);
+      setText("home-today-pending-count", todayPending);
+      setText("home-today-completed-count", todayCompleted);
 
       const tasks = [];
       const rows = Array.isArray(obj.recentTasks) ? obj.recentTasks : [];
@@ -146,4 +152,3 @@ function loadHomeSummary(){
 }
 
 loadHomeSummary();
-

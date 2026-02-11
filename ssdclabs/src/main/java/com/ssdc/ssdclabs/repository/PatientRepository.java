@@ -199,4 +199,19 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end
     );
+
+    @Query("""
+        SELECT COUNT(p)
+        FROM Patient p
+        WHERE p.labId = :labId
+          AND p.visitDate = :visitDate
+          AND (
+            p.status IS NULL
+            OR UPPER(TRIM(p.status)) <> 'COMPLETED'
+          )
+    """)
+    long countPendingByLabIdAndVisitDate(
+            @Param("labId") String labId,
+            @Param("visitDate") LocalDate visitDate
+    );
 }

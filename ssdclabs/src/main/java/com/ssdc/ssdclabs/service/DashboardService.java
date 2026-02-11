@@ -37,6 +37,7 @@ public class DashboardService {
         final LocalDate yearStart = today.withDayOfYear(1);
 
         final long todayCount = patientRepo.countByLabIdAndVisitDate(safeLabId, today);
+        final long todayPendingCount = patientRepo.countPendingByLabIdAndVisitDate(safeLabId, today);
         final long weekCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, weekStart, today);
         final long monthCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, monthStart, today);
         final long yearCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, yearStart, today);
@@ -45,6 +46,7 @@ public class DashboardService {
 
         return new HomeSummaryDTO(
             todayCount,
+            todayPendingCount,
             weekCount,
             monthCount,
             yearCount,

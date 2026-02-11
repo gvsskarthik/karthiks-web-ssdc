@@ -201,14 +201,13 @@ function loadSearchPage(page){
         const msg =
           (data && typeof data.message === "string" && data.message.trim())
             ? data.message.trim()
-            : "Enter name or mobile";
+            : "Search failed";
         if (requestId === searchRequestId) {
           isSearchMode = false;
           searchPage = 0;
           searchHasMore = false;
           updateSearchPager();
-          window.ssdcAlert?.(msg);
-          renderTable(allPatients);
+          renderMessageRow(msg);
         }
         return null;
       }
@@ -230,6 +229,9 @@ function loadSearchPage(page){
         return;
       }
       console.error(err);
+      if (requestId === searchRequestId) {
+        renderMessageRow("Search failed. Please try again.");
+      }
     });
 }
 
@@ -433,6 +435,19 @@ function renderEmpty(){
   td.colSpan = 8;
   td.className = "no-data";
   td.textContent = "No patients found";
+  tr.appendChild(td);
+  tableBody.appendChild(tr);
+}
+
+function renderMessageRow(message){
+  const D = window.ssdcDom;
+  if (D) D.clear(tableBody);
+
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 8;
+  td.className = "no-data";
+  td.textContent = String(message || "No data");
   tr.appendChild(td);
   tableBody.appendChild(tr);
 }

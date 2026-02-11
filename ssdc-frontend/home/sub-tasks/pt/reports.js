@@ -564,13 +564,18 @@ function resolveNormalText(test, param, index){
 
   const testNormals = asArray(test?.normalValues || test?.normal_values)
     .map(readNormalEntry)
-    .map(normalizeNormalForDisplay)
-    .filter(Boolean);
+    .map(normalizeNormalForDisplay);
   if (testNormals.length) {
-    if (typeof index === "number" && testNormals[index]) {
-      return testNormals[index];
+    // IMPORTANT: keep index alignment with parameters.
+    // Do not filter empty strings before index lookup, otherwise values "shift"
+    // to the wrong parameter when some parameters have no normal values.
+    if (typeof index === "number") {
+      return testNormals[index] || "";
     }
-    return normalizeNormalForDisplay(testNormals.join("\n"));
+    const filtered = testNormals.filter(Boolean);
+    if (filtered.length) {
+      return normalizeNormalForDisplay(filtered.join("\n"));
+    }
   }
 
   return normalizeNormalForDisplay(test?.normalValue || test?.normal_value);

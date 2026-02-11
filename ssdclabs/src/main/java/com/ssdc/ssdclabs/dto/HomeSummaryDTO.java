@@ -4,9 +4,9 @@ import java.util.List;
 
 public record HomeSummaryDTO(
     long todayCount,
+    long todayPendingCount,
     long weekCount,
     long monthCount,
     long yearCount,
     List<RecentTaskDTO> recentTasks
 ) {}
-
