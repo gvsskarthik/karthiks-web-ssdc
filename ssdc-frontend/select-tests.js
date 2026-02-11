@@ -33,7 +33,9 @@ async function loadTemplateTests() {
   setStatus("Loading template tests...");
   const data = await fetchJson(api("/onboarding/template-tests"));
   const rows = document.getElementById("testRows");
-  rows.innerHTML = "";
+  while (rows && rows.firstChild) {
+    rows.removeChild(rows.firstChild);
+  }
 
   if (!Array.isArray(data) || data.length === 0) {
     setStatus("No template tests available (or onboarding already completed).");
@@ -42,15 +44,35 @@ async function loadTemplateTests() {
 
   data.forEach((t) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td style="padding:10px;">
-        <input class="test-check" type="checkbox" value="${t.id}">
-      </td>
-      <td style="padding:10px;">${t.testName || "-"}</td>
-      <td style="padding:10px;">${t.shortcut || "-"}</td>
-      <td style="padding:10px;">${t.category || "-"}</td>
-      <td style="padding:10px;">₹${t.cost ?? 0}</td>
-    `;
+    const tdCheck = document.createElement("td");
+    tdCheck.style.padding = "10px";
+    const check = document.createElement("input");
+    check.className = "test-check";
+    check.type = "checkbox";
+    check.value = String(t?.id ?? "");
+    tdCheck.appendChild(check);
+
+    const tdName = document.createElement("td");
+    tdName.style.padding = "10px";
+    tdName.textContent = t?.testName || "-";
+
+    const tdShortcut = document.createElement("td");
+    tdShortcut.style.padding = "10px";
+    tdShortcut.textContent = t?.shortcut || "-";
+
+    const tdCategory = document.createElement("td");
+    tdCategory.style.padding = "10px";
+    tdCategory.textContent = t?.category || "-";
+
+    const tdCost = document.createElement("td");
+    tdCost.style.padding = "10px";
+    tdCost.textContent = `₹${t?.cost ?? 0}`;
+
+    tr.appendChild(tdCheck);
+    tr.appendChild(tdName);
+    tr.appendChild(tdShortcut);
+    tr.appendChild(tdCategory);
+    tr.appendChild(tdCost);
     rows.appendChild(tr);
   });
 

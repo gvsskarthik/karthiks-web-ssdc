@@ -597,22 +597,57 @@
       overlay.id = "ssdc-popup-overlay";
       overlay.className = "ssdc-popup-overlay";
       overlay.setAttribute("aria-hidden", "true");
-      overlay.innerHTML = `
-        <div class="ssdc-popup-card" role="dialog" aria-modal="true" tabindex="-1">
-          <div class="ssdc-popup-header">
-            <h3 class="ssdc-popup-title"></h3>
-            <button type="button" class="ssdc-popup-x" aria-label="Close">×</button>
-          </div>
-          <div class="ssdc-popup-message"></div>
-          <div class="ssdc-popup-input-wrap" style="display:none;">
-            <input class="ssdc-popup-input" />
-          </div>
-          <div class="ssdc-popup-actions">
-            <button type="button" class="ssdc-popup-btn secondary" data-ssdc-popup-cancel>Cancel</button>
-            <button type="button" class="ssdc-popup-btn primary" data-ssdc-popup-ok>OK</button>
-          </div>
-        </div>
-      `;
+      const card = document.createElement("div");
+      card.className = "ssdc-popup-card";
+      card.setAttribute("role", "dialog");
+      card.setAttribute("aria-modal", "true");
+      card.tabIndex = -1;
+
+      const header = document.createElement("div");
+      header.className = "ssdc-popup-header";
+
+      const title = document.createElement("h3");
+      title.className = "ssdc-popup-title";
+
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "ssdc-popup-x";
+      close.setAttribute("aria-label", "Close");
+      close.textContent = "×";
+
+      header.appendChild(title);
+      header.appendChild(close);
+
+      const message = document.createElement("div");
+      message.className = "ssdc-popup-message";
+
+      const inputWrap = document.createElement("div");
+      inputWrap.className = "ssdc-popup-input-wrap";
+      inputWrap.style.display = "none";
+      const input = document.createElement("input");
+      input.className = "ssdc-popup-input";
+      inputWrap.appendChild(input);
+
+      const actions = document.createElement("div");
+      actions.className = "ssdc-popup-actions";
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "ssdc-popup-btn secondary";
+      cancel.setAttribute("data-ssdc-popup-cancel", "");
+      cancel.textContent = "Cancel";
+      const ok = document.createElement("button");
+      ok.type = "button";
+      ok.className = "ssdc-popup-btn primary";
+      ok.setAttribute("data-ssdc-popup-ok", "");
+      ok.textContent = "OK";
+      actions.appendChild(cancel);
+      actions.appendChild(ok);
+
+      card.appendChild(header);
+      card.appendChild(message);
+      card.appendChild(inputWrap);
+      card.appendChild(actions);
+      overlay.appendChild(card);
       document.body.appendChild(overlay);
 
       popupUi = {
@@ -1308,18 +1343,33 @@
 `;
       document.head.appendChild(style);
 
-      overlayEl = document.createElement("div");
-      overlayEl.id = "ssdc-idle-warning-overlay";
-      overlayEl.innerHTML = `
-        <div class="ssdc-idle-box" role="alertdialog" aria-live="assertive">
-          <div class="ssdc-idle-title">Logged out due to inactivity</div>
-          <p class="ssdc-idle-countdown" id="ssdc-idle-countdown">Time left: 120 seconds</p>
-          <p class="ssdc-idle-hint">Move mouse / press any key to stay logged in.</p>
-        </div>
-      `;
-      document.body.appendChild(overlayEl);
-      countdownEl = document.getElementById("ssdc-idle-countdown");
-    }
+	      overlayEl = document.createElement("div");
+	      overlayEl.id = "ssdc-idle-warning-overlay";
+	      const box = document.createElement("div");
+	      box.className = "ssdc-idle-box";
+	      box.setAttribute("role", "alertdialog");
+	      box.setAttribute("aria-live", "assertive");
+
+	      const title = document.createElement("div");
+	      title.className = "ssdc-idle-title";
+	      title.textContent = "Logged out due to inactivity";
+
+	      const countdown = document.createElement("p");
+	      countdown.className = "ssdc-idle-countdown";
+	      countdown.id = "ssdc-idle-countdown";
+	      countdown.textContent = "Time left: 120 seconds";
+
+	      const hint = document.createElement("p");
+	      hint.className = "ssdc-idle-hint";
+	      hint.textContent = "Move mouse / press any key to stay logged in.";
+
+	      box.appendChild(title);
+	      box.appendChild(countdown);
+	      box.appendChild(hint);
+	      overlayEl.appendChild(box);
+	      document.body.appendChild(overlayEl);
+	      countdownEl = document.getElementById("ssdc-idle-countdown");
+	    }
 
     function hideWarning() {
       ensureWarningUi();

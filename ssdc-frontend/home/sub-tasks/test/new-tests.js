@@ -18,6 +18,13 @@ let paramIdCounter = 0;
 let normalIdCounter = 0;
 let defaultIdCounter = 0;
 
+function clearNode(node) {
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
 addParamBtn.addEventListener("click", () => addParameter());
 hasParametersInput.addEventListener("change", () => toggleParameters());
 saveBtn.addEventListener("click", () => saveTest());
@@ -99,72 +106,154 @@ function addParameter(prefill = null) {
   const typeId = `${paramId}-type`;
   const defaultToggleId = `${paramId}-default-toggle`;
   const addLineToggleId = `${paramId}-add-line-toggle`;
-  card.innerHTML = `
-    <div class="param-header">
-      <h4 class="param-title">Parameter</h4>
-      <button class="btn link remove-param" type="button">Remove</button>
-    </div>
-    <div class="grid-3">
-      <div>
-        <label for="${nameId}">Parameter Name</label>
-        <input id="${nameId}" type="text" class="param-name" placeholder="Parameter Name">
-      </div>
-      <div>
-        <label for="${unitId}">Unit</label>
-        <input id="${unitId}" type="text" class="param-unit" placeholder="Unit">
-      </div>
-      <div>
-        <label for="${typeId}">Value Type</label>
-        <select id="${typeId}" class="param-type">
-          <option value="">Select value type</option>
-          <option value="NUMBER">NUMBER</option>
-          <option value="TEXT">TEXT</option>
-        </select>
-      </div>
-    </div>
-    <div class="param-default">
-      <div class="param-default-toggle">
-        <input id="${defaultToggleId}" type="checkbox" class="param-default-toggle-input">
-        <label for="${defaultToggleId}">Default Results</label>
-        <input id="${addLineToggleId}" type="checkbox" class="param-add-line-toggle">
-        <label for="${addLineToggleId}">Add new line</label>
-      </div>
-      <div class="param-default-controls hidden">
-        <div class="section-row">
-          <h4>Default Results</h4>
-          <button class="btn small add-default" type="button">Add Result</button>
-        </div>
-        <div class="default-results"></div>
-      </div>
-    </div>
-    <div class="section-row normal-section">
-      <h4>Normal Ranges</h4>
-      <button class="btn small add-normal" type="button">Add Normal</button>
-    </div>
-    <div class="normals"></div>
-  `;
+
+  const header = document.createElement("div");
+  header.className = "param-header";
+  const title = document.createElement("h4");
+  title.className = "param-title";
+  title.textContent = "Parameter";
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "btn link remove-param";
+  removeBtn.type = "button";
+  removeBtn.textContent = "Remove";
+  header.appendChild(title);
+  header.appendChild(removeBtn);
+
+  const grid = document.createElement("div");
+  grid.className = "grid-3";
+
+  const nameWrap = document.createElement("div");
+  const nameLabel = document.createElement("label");
+  nameLabel.htmlFor = nameId;
+  nameLabel.textContent = "Parameter Name";
+  const nameInput = document.createElement("input");
+  nameInput.id = nameId;
+  nameInput.type = "text";
+  nameInput.className = "param-name";
+  nameInput.placeholder = "Parameter Name";
+  nameWrap.appendChild(nameLabel);
+  nameWrap.appendChild(nameInput);
+
+  const unitWrap = document.createElement("div");
+  const unitLabel = document.createElement("label");
+  unitLabel.htmlFor = unitId;
+  unitLabel.textContent = "Unit";
+  const unitInput = document.createElement("input");
+  unitInput.id = unitId;
+  unitInput.type = "text";
+  unitInput.className = "param-unit";
+  unitInput.placeholder = "Unit";
+  unitWrap.appendChild(unitLabel);
+  unitWrap.appendChild(unitInput);
+
+  const typeWrap = document.createElement("div");
+  const typeLabel = document.createElement("label");
+  typeLabel.htmlFor = typeId;
+  typeLabel.textContent = "Value Type";
+  const typeSelect = document.createElement("select");
+  typeSelect.id = typeId;
+  typeSelect.className = "param-type";
+  [
+    { value: "", label: "Select value type" },
+    { value: "NUMBER", label: "NUMBER" },
+    { value: "TEXT", label: "TEXT" }
+  ].forEach((opt) => {
+    const o = document.createElement("option");
+    o.value = opt.value;
+    o.textContent = opt.label;
+    typeSelect.appendChild(o);
+  });
+  typeWrap.appendChild(typeLabel);
+  typeWrap.appendChild(typeSelect);
+
+  grid.appendChild(nameWrap);
+  grid.appendChild(unitWrap);
+  grid.appendChild(typeWrap);
+
+  const paramDefault = document.createElement("div");
+  paramDefault.className = "param-default";
+
+  const defaultToggleRow = document.createElement("div");
+  defaultToggleRow.className = "param-default-toggle";
+
+  const defaultToggle = document.createElement("input");
+  defaultToggle.id = defaultToggleId;
+  defaultToggle.type = "checkbox";
+  defaultToggle.className = "param-default-toggle-input";
+  const defaultToggleLabel = document.createElement("label");
+  defaultToggleLabel.htmlFor = defaultToggleId;
+  defaultToggleLabel.textContent = "Default Results";
+
+  const addLineToggle = document.createElement("input");
+  addLineToggle.id = addLineToggleId;
+  addLineToggle.type = "checkbox";
+  addLineToggle.className = "param-add-line-toggle";
+  const addLineToggleLabel = document.createElement("label");
+  addLineToggleLabel.htmlFor = addLineToggleId;
+  addLineToggleLabel.textContent = "Add new line";
+
+  defaultToggleRow.appendChild(defaultToggle);
+  defaultToggleRow.appendChild(defaultToggleLabel);
+  defaultToggleRow.appendChild(addLineToggle);
+  defaultToggleRow.appendChild(addLineToggleLabel);
+
+  const defaultControls = document.createElement("div");
+  defaultControls.className = "param-default-controls hidden";
+  const defaultHeader = document.createElement("div");
+  defaultHeader.className = "section-row";
+  const defaultTitle = document.createElement("h4");
+  defaultTitle.textContent = "Default Results";
+  const addDefaultBtn = document.createElement("button");
+  addDefaultBtn.className = "btn small add-default";
+  addDefaultBtn.type = "button";
+  addDefaultBtn.textContent = "Add Result";
+  defaultHeader.appendChild(defaultTitle);
+  defaultHeader.appendChild(addDefaultBtn);
+  const defaultResults = document.createElement("div");
+  defaultResults.className = "default-results";
+  defaultControls.appendChild(defaultHeader);
+  defaultControls.appendChild(defaultResults);
+
+  paramDefault.appendChild(defaultToggleRow);
+  paramDefault.appendChild(defaultControls);
+
+  const normalHeader = document.createElement("div");
+  normalHeader.className = "section-row normal-section";
+  const normalTitle = document.createElement("h4");
+  normalTitle.textContent = "Normal Ranges";
+  const addNormalBtn = document.createElement("button");
+  addNormalBtn.className = "btn small add-normal";
+  addNormalBtn.type = "button";
+  addNormalBtn.textContent = "Add Normal";
+  normalHeader.appendChild(normalTitle);
+  normalHeader.appendChild(addNormalBtn);
+
+  const normalsContainer = document.createElement("div");
+  normalsContainer.className = "normals";
+
+  card.appendChild(header);
+  card.appendChild(grid);
+  card.appendChild(paramDefault);
+  card.appendChild(normalHeader);
+  card.appendChild(normalsContainer);
 
   paramList.appendChild(card);
-  card.querySelector(".remove-param").addEventListener("click", () => {
+  removeBtn.addEventListener("click", () => {
     card.remove();
     refreshParameterLabels();
     ensureAtLeastOneParameter();
     updateRemoveButtons();
   });
-  card.querySelector(".add-normal").addEventListener("click", () => {
-    addNormalRow(card.querySelector(".normals"));
+  addNormalBtn.addEventListener("click", () => {
+    addNormalRow(normalsContainer);
   });
-
-  const defaultToggle = card.querySelector(".param-default-toggle-input");
-  const defaultControls = card.querySelector(".param-default-controls");
-  const defaultResults = card.querySelector(".default-results");
-  card.querySelector(".add-default").addEventListener("click", () => {
+  addDefaultBtn.addEventListener("click", () => {
     addDefaultResultRow(defaultResults);
   });
   defaultToggle.addEventListener("change", () => {
     defaultControls.classList.toggle("hidden", !defaultToggle.checked);
     if (!defaultToggle.checked) {
-      defaultResults.innerHTML = "";
+      clearNode(defaultResults);
       return;
     }
     if (!defaultResults.children.length) {
@@ -172,18 +261,12 @@ function addParameter(prefill = null) {
     }
   });
 
-  const nameInput = card.querySelector(".param-name");
-  const unitInput = card.querySelector(".param-unit");
-  const typeSelect = card.querySelector(".param-type");
-  const addLineToggle = card.querySelector(".param-add-line-toggle");
-  const normalsContainer = card.querySelector(".normals");
-
   const defaultResultsList =
     Array.isArray(prefill?.defaultResults) ? prefill.defaultResults : [];
   if (defaultResultsList.length) {
     defaultToggle.checked = true;
     defaultControls.classList.remove("hidden");
-    defaultResults.innerHTML = "";
+    clearNode(defaultResults);
     defaultResultsList.forEach(value => addDefaultResultRow(defaultResults, value));
   }
 
@@ -198,7 +281,7 @@ function addParameter(prefill = null) {
 
   const normalsList =
     Array.isArray(prefill?.normalLines) ? prefill.normalLines : [];
-  normalsContainer.innerHTML = "";
+  clearNode(normalsContainer);
   if (normalsList.length) {
     normalsList.forEach(value => addNormalRow(normalsContainer, value));
   } else {
@@ -213,27 +296,45 @@ function addNormalRow(container, value = "") {
   const row = document.createElement("div");
   row.className = "normal-row";
   const normalId = `normal-${normalIdCounter++}`;
-  row.innerHTML = `
-    <input id="${normalId}" name="${normalId}" type="text" class="normal-text" placeholder="Normal value (e.g. [Male : 14.0 - 16.0 gms])">
-    <button class="btn link remove-normal" type="button">Remove</button>
-    <div class="row-error"></div>
-  `;
+  const input = document.createElement("input");
+  input.id = normalId;
+  input.name = normalId;
+  input.type = "text";
+  input.className = "normal-text";
+  input.placeholder = "Normal value (e.g. [Male : 14.0 - 16.0 gms])";
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "btn link remove-normal";
+  removeBtn.type = "button";
+  removeBtn.textContent = "Remove";
+  const err = document.createElement("div");
+  err.className = "row-error";
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  row.appendChild(err);
   container.appendChild(row);
-  row.querySelector(".normal-text").value = value == null ? "" : String(value);
-  row.querySelector(".remove-normal").addEventListener("click", () => row.remove());
+  input.value = value == null ? "" : String(value);
+  removeBtn.addEventListener("click", () => row.remove());
 }
 
 function addDefaultResultRow(container, value = "") {
   const row = document.createElement("div");
   row.className = "default-row";
   const defaultId = `default-${defaultIdCounter++}`;
-  row.innerHTML = `
-    <input id="${defaultId}" name="${defaultId}" type="text" class="default-result-input" placeholder="Result">
-    <button class="btn link remove-default" type="button">Remove</button>
-  `;
+  const input = document.createElement("input");
+  input.id = defaultId;
+  input.name = defaultId;
+  input.type = "text";
+  input.className = "default-result-input";
+  input.placeholder = "Result";
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "btn link remove-default";
+  removeBtn.type = "button";
+  removeBtn.textContent = "Remove";
+  row.appendChild(input);
+  row.appendChild(removeBtn);
   container.appendChild(row);
-  row.querySelector(".default-result-input").value = value == null ? "" : String(value);
-  row.querySelector(".remove-default").addEventListener("click", () => row.remove());
+  input.value = value == null ? "" : String(value);
+  removeBtn.addEventListener("click", () => row.remove());
 }
 
 function refreshParameterLabels() {
@@ -315,7 +416,7 @@ function splitNormalLines(text) {
 }
 
 function clearParamCards() {
-  paramList.innerHTML = "";
+  clearNode(paramList);
   paramIdCounter = 0;
   normalIdCounter = 0;
   defaultIdCounter = 0;

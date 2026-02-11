@@ -42,20 +42,6 @@ function appendIndentText(node, level){
   node.appendChild(document.createTextNode("\u00A0".repeat(4 * count)));
 }
 
-function setTbodyFromHtml(tbody, html){
-  if (!tbody) {
-    return;
-  }
-  const safeHtml = String(html == null ? "" : html);
-  clearNode(tbody);
-  if (!safeHtml) {
-    return;
-  }
-  const range = document.createRange();
-  range.selectNodeContents(tbody);
-  tbody.appendChild(range.createContextualFragment(safeHtml));
-}
-
 function isCompletedStatus(status){
   return String(status || "").trim().toUpperCase() === "COMPLETED";
 }
@@ -429,57 +415,11 @@ function normalizeNormalForDisplay(value){
   return text.replace(/\s+\/\s+/g, "\n");
 }
 
-function escapeHtml(value){
-  return String(value == null ? "" : value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function formatHtmlLines(text){
-  return escapeHtml(text).replace(/\r?\n/g, "<br>");
-}
-
 function splitLinesForTable(text){
   const raw = String(text == null ? "" : text);
   const parts = raw.split(/\r?\n/).map(p => p.trimEnd());
   const lines = parts.filter(p => p !== "");
   return lines.length ? lines : [""];
-}
-
-function pushRowsWithNormalLines(out, opts){
-  const testId = opts?.testId;
-  const testIdAttr = testId != null ? ` data-testid="${escapeHtml(testId)}"` : "";
-  const col1Html = opts?.col1Html ?? "";
-  const col2Html = opts?.col2Html ?? "";
-  const col3Html = opts?.col3Html ?? "";
-  const col1Class = opts?.col1Class ?? "";
-  const col2Class = opts?.col2Class ?? "";
-  const col3Class = opts?.col3Class ?? "";
-  const normalText = opts?.normalText ?? "";
-
-  const normalLines = splitLinesForTable(normalText);
-  out.push(`
-    <tr${testIdAttr}>
-      <td${col1Class ? ` class="${col1Class}"` : ""}>${col1Html}</td>
-      <td${col2Class ? ` class="${col2Class}"` : ""}>${col2Html}</td>
-      <td${col3Class ? ` class="${col3Class}"` : ""}>${col3Html}</td>
-      <td>${escapeHtml(normalLines[0] || "")}</td>
-    </tr>
-  `);
-
-  for (let i = 1; i < normalLines.length; i++) {
-    out.push(`
-      <tr${testIdAttr}>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td>${escapeHtml(normalLines[i] || "")}</td>
-      </tr>
-    `);
-  }
 }
 
 function pushRowsWithNormalLinesDom(frag, opts){
@@ -488,7 +428,9 @@ function pushRowsWithNormalLinesDom(frag, opts){
   const col1Text = opts?.col1Text ?? "";
   const col2Text = opts?.col2Text ?? "";
   const col3Text = opts?.col3Text ?? "";
+  const col1Class = opts?.col1Class ?? "";
   const col2Class = opts?.col2Class ?? "";
+  const col3Class = opts?.col3Class ?? "";
   const normalText = opts?.normalText ?? "";
 
   const normalLines = splitLinesForTable(normalText);
@@ -512,9 +454,9 @@ function pushRowsWithNormalLinesDom(frag, opts){
       }
       td2.textContent = col2Text == null ? "" : String(col2Text);
       td3.textContent = col3Text == null ? "" : String(col3Text);
-      if (col2Class) {
-        td2.className = col2Class;
-      }
+      if (col1Class) td1.className = col1Class;
+      if (col2Class) td2.className = col2Class;
+      if (col3Class) td3.className = col3Class;
     }
 
     td4.textContent = normalLine == null ? "" : String(normalLine);
@@ -949,10 +891,7 @@ function renderReport(tests, resultList, selectedIds, groupList){
     grouped[tid][key] = r;
   });
 
-  const out = [];
-
-  const INDENT_1 = "&nbsp;&nbsp;&nbsp;&nbsp;";
-  const INDENT_2 = INDENT_1 + INDENT_1;
+  const frag = document.createDocumentFragment();
 
   const selectedIdSet = new Set(
     ids.map(id => Number(id)).filter(id => Number.isFinite(id))
@@ -996,12 +935,37 @@ function renderReport(tests, resultList, selectedIds, groupList){
     return { directTestIds, subGroups };
   }
 
-  function renderOneTest(test, prefixHtml){
+  function buildIndentedTextNode(text, indentLevel){
+    const span = document.createElement("span");
+    appendIndentText(span, indentLevel);
+    span.appendChild(document.createTextNode(text == null ? "" : String(text)));
+    return span;
+  }
+
+  function appendHeaderRow(testId, className, indentLevel, contentBuilder){
+    const tr = document.createElement("tr");
+    if (className) {
+      tr.className = className;
+    }
+    if (testId != null) {
+      tr.dataset.testid = String(testId);
+    }
+    const td = document.createElement("td");
+    td.colSpan = 4;
+    appendIndentText(td, indentLevel);
+    if (typeof contentBuilder === "function") {
+      contentBuilder(td);
+    }
+    tr.appendChild(td);
+    frag.appendChild(tr);
+  }
+
+  function renderOneTest(test, indentLevel){
     const testId = Number(test?.id);
     if (!Number.isFinite(testId)) {
       return;
     }
-    const prefix = prefixHtml || "";
+    const indent = Math.max(0, Number(indentLevel) || 0);
     const showTestNameInReport = test?.showTestNameInReport !== false;
 
     const params = Array.isArray(test.parameters) ? test.parameters : [];
@@ -1033,25 +997,33 @@ function renderReport(tests, resultList, selectedIds, groupList){
         // For multi-line single tests: show normal values only once (first row),
         // and split normal values into separate bordered rows.
         if (index === 0) {
-          pushRowsWithNormalLines(out, {
+          pushRowsWithNormalLinesDom(frag, {
             testId: testId,
-            col1Html: `${prefix}${escapeHtml(test.testName)}`,
-            col2Html: escapeHtml(value),
-            col3Html: escapeHtml(unitText),
+            col1Node: buildIndentedTextNode(test.testName || "", indent),
+            col2Text: value,
+            col3Text: unitText,
             col2Class: abnormal ? "is-abnormal" : "",
             normalText
           });
           return;
         }
 
-        out.push(`
-          <tr data-testid="${escapeHtml(testId)}">
-            <td></td>
-            <td class="${abnormal ? "is-abnormal" : ""}">${escapeHtml(value)}</td>
-            <td>${escapeHtml(unitText)}</td>
-            <td></td>
-          </tr>
-        `);
+        const tr = document.createElement("tr");
+        tr.dataset.testid = String(testId);
+        const td1 = document.createElement("td");
+        const td2 = document.createElement("td");
+        const td3 = document.createElement("td");
+        const td4 = document.createElement("td");
+        td2.textContent = value;
+        if (abnormal) {
+          td2.className = "is-abnormal";
+        }
+        td3.textContent = unitText;
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tr.appendChild(td4);
+        frag.appendChild(tr);
       });
       return;
     }
@@ -1059,11 +1031,9 @@ function renderReport(tests, resultList, selectedIds, groupList){
     if (isMultiParam || isMultiUnits) {
       const hideHeaderRow = isMultiParam && !showTestNameInReport;
       if (!hideHeaderRow) {
-        out.push(`
-          <tr class="test-header-row" data-testid="${escapeHtml(testId)}">
-            <td colspan="4">${prefix}${escapeHtml(test.testName)}</td>
-          </tr>
-        `);
+        appendHeaderRow(testId, "test-header-row", indent, (td) => {
+          td.appendChild(document.createTextNode(test.testName || ""));
+        });
       }
 
       const normalizedItems = {};
@@ -1095,11 +1065,9 @@ function renderReport(tests, resultList, selectedIds, groupList){
 
         if (sectionName) {
           if (sectionName !== currentSection) {
-            out.push(`
-              <tr class="section-header" data-testid="${escapeHtml(testId)}">
-                <td colspan="4">${prefix}${escapeHtml(sectionName)}</td>
-              </tr>
-            `);
+            appendHeaderRow(testId, "section-header", indent, (td) => {
+              td.appendChild(document.createTextNode(sectionName));
+            });
             currentSection = sectionName;
           }
         } else {
@@ -1126,13 +1094,14 @@ function renderReport(tests, resultList, selectedIds, groupList){
             patient.gender
           );
 
-          pushRowsWithNormalLines(out, {
+          const labelNode = buildIndentedTextNode(slot.label || "", indent);
+          pushRowsWithNormalLinesDom(frag, {
             testId: testId,
-            col1Html: `${prefix}${escapeHtml(slot.label)}`,
+            col1Node: labelNode,
             col1Class: "param-indent",
-            col2Html: escapeHtml(displayValue),
+            col2Text: displayValue,
             col2Class: abnormal ? "is-abnormal" : "",
-            col3Html: escapeHtml(unitText),
+            col3Text: unitText,
             normalText
           });
         });
@@ -1157,12 +1126,12 @@ function renderReport(tests, resultList, selectedIds, groupList){
 
     const unit = resolveUnitText(test, params[0] || {}, 0);
 
-    pushRowsWithNormalLines(out, {
+    pushRowsWithNormalLinesDom(frag, {
       testId: testId,
-      col1Html: `${prefix}${escapeHtml(test.testName)}`,
-      col2Html: escapeHtml(resultValue),
+      col1Node: buildIndentedTextNode(test.testName || "", indent),
+      col2Text: resultValue,
       col2Class: abnormal ? "is-abnormal" : "",
-      col3Html: escapeHtml(unit),
+      col3Text: unit,
       normalText
     });
   }
@@ -1303,38 +1272,39 @@ function renderReport(tests, resultList, selectedIds, groupList){
     }
 
     if (groupShowName) {
-      out.push(`
-        <tr class="group-header-row" data-testid="${escapeHtml(firstTestId)}">
-          <td colspan="4"><h4 class="group-heading">${escapeHtml(group.groupName || "Group")}</h4></td>
-        </tr>
-      `);
+      appendHeaderRow(firstTestId, "group-header-row", 0, (td) => {
+        const h4 = document.createElement("h4");
+        h4.className = "group-heading";
+        h4.textContent = group.groupName || "Group";
+        td.appendChild(h4);
+      });
     }
 
     directIds.forEach(id => {
-      renderOneTest(testById.get(id), "");
+      renderOneTest(testById.get(id), 0);
     });
 
     subGroups.forEach(sub => {
       const attachId = sub.testIds[0];
       if (sub.showName) {
-        const prefix = groupShowName ? INDENT_1 : "";
-        out.push(`
-          <tr class="section-header" data-testid="${escapeHtml(attachId)}">
-            <td colspan="4">${prefix}<b>${escapeHtml(sub.name)}</b></td>
-          </tr>
-        `);
+        const sectionIndent = groupShowName ? 1 : 0;
+        appendHeaderRow(attachId, "section-header", sectionIndent, (td) => {
+          const b = document.createElement("b");
+          b.textContent = sub.name;
+          td.appendChild(b);
+        });
       }
 
-      const prefix = sub.showName
-        ? (groupShowName ? INDENT_2 : INDENT_1)
-        : "";
+      const subIndent = sub.showName
+        ? (groupShowName ? 2 : 1)
+        : 0;
       sub.testIds.forEach(id => {
-        renderOneTest(testById.get(id), prefix);
+        renderOneTest(testById.get(id), subIndent);
       });
     });
 
     remainingIds.forEach(id => {
-      renderOneTest(testById.get(id), "");
+      renderOneTest(testById.get(id), 0);
     });
   }
 
@@ -1347,10 +1317,11 @@ function renderReport(tests, resultList, selectedIds, groupList){
     });
 
   remainingTests.forEach(test => {
-    renderOneTest(test, "");
+    renderOneTest(test, 0);
   });
 
-  setTbodyFromHtml(body, out.join(""));
+  clearNode(body);
+  body.appendChild(frag);
   renderScreenPages();
 }
 

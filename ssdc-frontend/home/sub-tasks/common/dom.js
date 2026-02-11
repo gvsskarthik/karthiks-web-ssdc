@@ -22,8 +22,7 @@
           return;
         }
         if (key === "html") {
-          node.innerHTML = String(value);
-          return;
+          throw new Error("ssdcDom.el does not support 'html' for security. Use DOM nodes + textContent.");
         }
         if (key === "dataset" && value && typeof value === "object") {
           Object.keys(value).forEach((dkey) => {
@@ -80,4 +79,3 @@
     setVisible
   };
 })();
-

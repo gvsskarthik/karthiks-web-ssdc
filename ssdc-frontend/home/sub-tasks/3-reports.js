@@ -8,6 +8,13 @@ let allPatients = [];
 
 const REPORT_DATE_KEY = "SSDC_REPORTS_SELECTED_DATE";
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
 function isBackForwardNav(){
   try {
     const nav = performance.getEntriesByType?.("navigation")?.[0];
@@ -116,9 +123,19 @@ function loadByDate(date){
     })
     .catch(()=>{
       allPatients = [];
-      table.innerHTML =
-        `<tr><td colspan="5" class="no-data">No data</td></tr>`;
+      renderEmpty("No data");
     });
+}
+
+function renderEmpty(message){
+  clearNode(table);
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 5;
+  td.className = "no-data";
+  td.textContent = message || "No data";
+  tr.appendChild(td);
+  table.appendChild(tr);
 }
 
 function matchesPatient(patient, query){
@@ -143,14 +160,14 @@ function refreshTable(){
 }
 
 function renderTable(data){
-  table.innerHTML = "";
+  clearNode(table);
 
   if(!data || data.length===0){
-    table.innerHTML =
-      `<tr><td colspan="5" class="no-data">No patients found</td></tr>`;
+    renderEmpty("No patients found");
     return;
   }
 
+  const frag = document.createDocumentFragment();
   data.forEach((p,i)=>{
     const isCompleted =
       String(p?.status || "").trim().toUpperCase() === "COMPLETED";
@@ -158,31 +175,53 @@ function renderTable(data){
       isCompleted ? "status is-completed" : "status is-not-completed";
     const statusText =
       String(p?.status || "").trim() || "NOT COMPLETE";
-    table.innerHTML += `
-      <tr>
-        <td class="sno">${i+1}</td>
 
-        <!-- ENTER VALUES -->
-        <td class="name">
-          <a class="patient-link" href="#"
-             onclick='openPatient(${JSON.stringify(p)})'>
-            ${p.name || "-"}
-          </a>
-        </td>
+    const tr = document.createElement("tr");
 
-        <td class="doctor">${p.doctor || "SELF"}</td>
-        <td class="status-col"><span class="${statusClass}">${statusText}</span></td>
+    const tdSno = document.createElement("td");
+    tdSno.className = "sno";
+    tdSno.textContent = String(i + 1);
 
-        <!-- VIEW FINAL REPORT -->
-        <td class="action-col">
-          <span class="action-btn"
-            onclick='openReport(${JSON.stringify(p)})'>
-            View
-          </span>
-        </td>
-      </tr>
-    `;
+    const tdName = document.createElement("td");
+    tdName.className = "name";
+    const link = document.createElement("a");
+    link.className = "patient-link";
+    link.href = "#";
+    link.textContent = p?.name ? String(p.name) : "-";
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      openPatient(p);
+    });
+    tdName.appendChild(link);
+
+    const tdDoctor = document.createElement("td");
+    tdDoctor.className = "doctor";
+    tdDoctor.textContent = p?.doctor ? String(p.doctor) : "SELF";
+
+    const tdStatus = document.createElement("td");
+    tdStatus.className = "status-col";
+    const span = document.createElement("span");
+    span.className = statusClass;
+    span.textContent = statusText;
+    tdStatus.appendChild(span);
+
+    const tdAction = document.createElement("td");
+    tdAction.className = "action-col";
+    const btn = document.createElement("span");
+    btn.className = "action-btn";
+    btn.textContent = "View";
+    btn.addEventListener("click", () => openReport(p));
+    tdAction.appendChild(btn);
+
+    tr.appendChild(tdSno);
+    tr.appendChild(tdName);
+    tr.appendChild(tdDoctor);
+    tr.appendChild(tdStatus);
+    tr.appendChild(tdAction);
+    frag.appendChild(tr);
   });
+
+  table.appendChild(frag);
 }
 
 /* ✅ ENTER VALUES PAGE */

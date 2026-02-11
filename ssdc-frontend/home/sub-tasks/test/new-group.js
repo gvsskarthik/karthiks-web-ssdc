@@ -33,6 +33,13 @@ if (cancelBtn) {
   });
 }
 
+function clearNode(node) {
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
 function setStatus(message, type){
   status.textContent = message || "";
   status.className = "message" + (type ? " " + type : "");
@@ -109,48 +116,73 @@ function getParamNormals(param){
   return "";
 }
 
-function renderParamList(test){
-  const params = Array.isArray(test.parameters) ? test.parameters : [];
+function createDiv(className, text){
+  const node = document.createElement("div");
+  if (className) node.className = String(className);
+  if (text != null) node.textContent = String(text);
+  return node;
+}
+
+function createDetailItem(label, value){
+  const wrap = document.createElement("div");
+  wrap.appendChild(createDiv("detail-label", label));
+  wrap.appendChild(createDiv("detail-value", value));
+  return wrap;
+}
+
+function buildParamItem(title, meta, normalText){
+  const item = document.createElement("div");
+  item.className = "param-item";
+  item.appendChild(createDiv("param-title", title));
+  if (meta) {
+    item.appendChild(createDiv("param-meta", meta));
+  }
+  if (normalText) {
+    item.appendChild(createDiv("param-normal", normalText));
+  }
+  return item;
+}
+
+function buildParamList(test){
+  const list = document.createElement("div");
+  list.className = "param-list";
+
+  const params = Array.isArray(test?.parameters) ? test.parameters : [];
   if (params.length) {
-    return params.map((param, index) => {
-      const name = param.name || `Parameter ${index + 1}`;
-      const unit = param.unit || "—";
-      const type = param.valueType || "—";
+    params.forEach((param, index) => {
+      const name = param?.name || `Parameter ${index + 1}`;
+      const unit = param?.unit || "—";
+      const type = param?.valueType || "—";
       const normals = getParamNormals(param);
-      const normalText = normals ? `<div class="param-normal">Normal: ${normals}</div>` : "";
-      return `
-        <div class="param-item">
-          <div class="param-title">${name}</div>
-          <div class="param-meta">Unit: ${unit} · Type: ${type}</div>
-          ${normalText}
-        </div>
-      `;
-    }).join("");
+      const normalText = normals ? `Normal: ${normals}` : "";
+      list.appendChild(
+        buildParamItem(name, `Unit: ${unit} · Type: ${type}`, normalText)
+      );
+    });
+    return list;
   }
 
-  const normalValues = Array.isArray(test.normalValues) ? test.normalValues : [];
+  const normalValues = Array.isArray(test?.normalValues) ? test.normalValues : [];
   const normals = normalValues
     .map(n => (n && n.normalValue ? String(n.normalValue) : ""))
     .filter(Boolean)
     .join(" | ");
 
   if (!normals) {
-    return '<div class="param-item"><div class="param-title">No parameters</div></div>';
+    list.appendChild(buildParamItem("No parameters", "", ""));
+    return list;
   }
 
-  return `
-    <div class="param-item">
-      <div class="param-title">Normal Values</div>
-      <div class="param-normal">${normals}</div>
-    </div>
-  `;
+  list.appendChild(buildParamItem("Normal Values", "", normals));
+  return list;
 }
 
 function renderDetails(slot){
   const detail = slot.detail;
   const test = testMap.get(slot.testId);
+  clearNode(detail);
   if (!test) {
-    detail.innerHTML = '<div class="muted">Select a test to see details.</div>';
+    detail.appendChild(createDiv("muted", "Select a test to see details."));
     return;
   }
 
@@ -158,33 +190,15 @@ function renderDetails(slot){
   const categoryText = test.category || "—";
   const activeText = test.active ? "Active" : "Inactive";
 
-  detail.innerHTML = `
-    <div class="detail-grid">
-      <div>
-        <div class="detail-label">Test Name</div>
-        <div class="detail-value">${formatValue(test.testName, "—")}</div>
-      </div>
-      <div>
-        <div class="detail-label">Shortcut</div>
-        <div class="detail-value">${shortcutText}</div>
-      </div>
-      <div>
-        <div class="detail-label">Category</div>
-        <div class="detail-value">${categoryText}</div>
-      </div>
-      <div>
-        <div class="detail-label">Cost</div>
-        <div class="detail-value">${formatCost(test.cost)}</div>
-      </div>
-      <div>
-        <div class="detail-label">Status</div>
-        <div class="detail-value">${activeText}</div>
-      </div>
-    </div>
-    <div class="param-list">
-      ${renderParamList(test)}
-    </div>
-  `;
+  const grid = document.createElement("div");
+  grid.className = "detail-grid";
+  grid.appendChild(createDetailItem("Test Name", formatValue(test.testName, "—")));
+  grid.appendChild(createDetailItem("Shortcut", shortcutText));
+  grid.appendChild(createDetailItem("Category", categoryText));
+  grid.appendChild(createDetailItem("Cost", formatCost(test.cost)));
+  grid.appendChild(createDetailItem("Status", activeText));
+  detail.appendChild(grid);
+  detail.appendChild(buildParamList(test));
 }
 
 function setSlotInputFromSelection(slot){
@@ -238,7 +252,7 @@ function updateSlotSuggestions(slot){
   if (!query) {
     slot.suggestionItems = [];
     slot.activeSuggestionIndex = -1;
-    slot.suggestions.innerHTML = "";
+    clearNode(slot.suggestions);
     slot.suggestions.classList.add("hidden");
     slot.noResult.classList.add("hidden");
     return;
@@ -277,21 +291,24 @@ function updateSlotSuggestions(slot){
 
   slot.suggestionItems = matches;
   slot.activeSuggestionIndex = matches.length ? 0 : -1;
-  slot.suggestions.innerHTML = "";
+  clearNode(slot.suggestions);
 
   matches.forEach((item, index) => {
-    const shortcut = item.shortcut ? item.shortcut : "";
-    const activeClass = index === slot.activeSuggestionIndex ? " active" : "";
-    const meta = shortcut ? shortcut : " ";
-    slot.suggestions.innerHTML += `
-      <div class="suggestion${activeClass}" data-id="${item.id}">
-        <div class="suggestion-main">
-          <div class="suggestion-name">${item.name || ""}</div>
-          <div class="suggestion-meta">${meta}</div>
-        </div>
-        <div class="suggestion-cost">₹${item.cost}</div>
-      </div>
-    `;
+    const shortcut = item.shortcut ? String(item.shortcut) : "";
+    const meta = shortcut || "\u00A0";
+
+    const row = document.createElement("div");
+    row.className = "suggestion" + (index === slot.activeSuggestionIndex ? " active" : "");
+    row.dataset.id = String(item.id);
+
+    const main = document.createElement("div");
+    main.className = "suggestion-main";
+    main.appendChild(createDiv("suggestion-name", item.name || ""));
+    main.appendChild(createDiv("suggestion-meta", meta));
+
+    row.appendChild(main);
+    row.appendChild(createDiv("suggestion-cost", `₹${item.cost}`));
+    slot.suggestions.appendChild(row);
   });
 
   slot.suggestions.classList.toggle("hidden", !matches.length);
@@ -371,34 +388,60 @@ function addSlot(testId){
   const wrapper = document.createElement("div");
   wrapper.className = "slot-card";
 
-  wrapper.innerHTML = `
-    <div class="slot-header">
-      <h4 class="slot-title"></h4>
-      <button class="btn link" type="button">Remove</button>
-    </div>
-    <div class="grid-2">
-      <div>
-        <label>Select Test</label>
-        <div class="search-wrap">
-          <input class="test-search" placeholder="Search test..." autocomplete="off">
-          <div class="suggestions hidden"></div>
-        </div>
-        <div class="no-result hidden">❌ No test available</div>
-      </div>
-      <div class="inline">
-        <input type="checkbox" disabled>
-        <label class="label-inline">Details (read-only)</label>
-      </div>
-    </div>
-    <div class="detail-card"></div>
-  `;
+  const header = document.createElement("div");
+  header.className = "slot-header";
+  const titleEl = document.createElement("h4");
+  titleEl.className = "slot-title";
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "btn link";
+  removeBtn.textContent = "Remove";
+  header.appendChild(titleEl);
+  header.appendChild(removeBtn);
 
-  const searchInput = wrapper.querySelector(".test-search");
-  const suggestions = wrapper.querySelector(".suggestions");
-  const noResult = wrapper.querySelector(".no-result");
-  const removeBtn = wrapper.querySelector(".btn.link");
-  const titleEl = wrapper.querySelector(".slot-title");
-  const detail = wrapper.querySelector(".detail-card");
+  const grid = document.createElement("div");
+  grid.className = "grid-2";
+
+  const left = document.createElement("div");
+  const label = document.createElement("label");
+  label.textContent = "Select Test";
+  const searchWrap = document.createElement("div");
+  searchWrap.className = "search-wrap";
+  const searchInput = document.createElement("input");
+  searchInput.className = "test-search";
+  searchInput.placeholder = "Search test...";
+  searchInput.autocomplete = "off";
+  const suggestions = document.createElement("div");
+  suggestions.className = "suggestions hidden";
+  searchWrap.appendChild(searchInput);
+  searchWrap.appendChild(suggestions);
+  const noResult = document.createElement("div");
+  noResult.className = "no-result hidden";
+  noResult.textContent = "❌ No test available";
+  left.appendChild(label);
+  left.appendChild(searchWrap);
+  left.appendChild(noResult);
+
+  const right = document.createElement("div");
+  right.className = "inline";
+  const dummyCheck = document.createElement("input");
+  dummyCheck.type = "checkbox";
+  dummyCheck.disabled = true;
+  const dummyLabel = document.createElement("label");
+  dummyLabel.className = "label-inline";
+  dummyLabel.textContent = "Details (read-only)";
+  right.appendChild(dummyCheck);
+  right.appendChild(dummyLabel);
+
+  grid.appendChild(left);
+  grid.appendChild(right);
+
+  const detail = document.createElement("div");
+  detail.className = "detail-card";
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(grid);
+  wrapper.appendChild(detail);
 
   const slot = {
     id: slotId,
@@ -472,30 +515,21 @@ function setGroupSlotInputFromSelection(slot){
 function renderGroupDetails(slot){
   const detail = slot.detail;
   const group = groupMap.get(slot.groupId);
+  clearNode(detail);
   if (!group) {
     const fallbackName = String(slot.fallbackGroupName || "").trim();
     const fallbackShortcut = String(slot.fallbackShortcut || "").trim();
     if (!fallbackName) {
-      detail.innerHTML = '<div class="muted">Select a group to see details.</div>';
+      detail.appendChild(createDiv("muted", "Select a group to see details."));
       return;
     }
     const shortcutText = fallbackShortcut || "—";
-    detail.innerHTML = `
-      <div class="detail-grid">
-        <div>
-          <div class="detail-label">Group Name</div>
-          <div class="detail-value">${formatValue(fallbackName, "—")}</div>
-        </div>
-        <div>
-          <div class="detail-label">Shortcut</div>
-          <div class="detail-value">${shortcutText}</div>
-        </div>
-        <div>
-          <div class="detail-label">Status</div>
-          <div class="detail-value">Unavailable</div>
-        </div>
-      </div>
-    `;
+    const grid = document.createElement("div");
+    grid.className = "detail-grid";
+    grid.appendChild(createDetailItem("Group Name", formatValue(fallbackName, "—")));
+    grid.appendChild(createDetailItem("Shortcut", shortcutText));
+    grid.appendChild(createDetailItem("Status", "Unavailable"));
+    detail.appendChild(grid);
     return;
   }
 
@@ -521,40 +555,20 @@ function renderGroupDetails(slot){
     ? preview + (remaining > 0 ? ` and ${remaining} more` : "")
     : "—";
 
-  detail.innerHTML = `
-    <div class="detail-grid">
-      <div>
-        <div class="detail-label">Group Name</div>
-        <div class="detail-value">${formatValue(group.groupName, "—")}</div>
-      </div>
-      <div>
-        <div class="detail-label">Shortcut</div>
-        <div class="detail-value">${shortcutText}</div>
-      </div>
-      <div>
-        <div class="detail-label">Category</div>
-        <div class="detail-value">${categoryText}</div>
-      </div>
-      <div>
-        <div class="detail-label">Cost</div>
-        <div class="detail-value">${formatCost(resolveGroupCost(group))}</div>
-      </div>
-      <div>
-        <div class="detail-label">Status</div>
-        <div class="detail-value">${activeText}</div>
-      </div>
-      <div>
-        <div class="detail-label">Tests</div>
-        <div class="detail-value">${testIds.length}</div>
-      </div>
-    </div>
-    <div class="param-list">
-      <div class="param-item">
-        <div class="param-title">Includes</div>
-        <div class="param-normal">${previewText}</div>
-      </div>
-    </div>
-  `;
+  const grid = document.createElement("div");
+  grid.className = "detail-grid";
+  grid.appendChild(createDetailItem("Group Name", formatValue(group.groupName, "—")));
+  grid.appendChild(createDetailItem("Shortcut", shortcutText));
+  grid.appendChild(createDetailItem("Category", categoryText));
+  grid.appendChild(createDetailItem("Cost", formatCost(resolveGroupCost(group))));
+  grid.appendChild(createDetailItem("Status", activeText));
+  grid.appendChild(createDetailItem("Tests", String(testIds.length)));
+  detail.appendChild(grid);
+
+  const paramList = document.createElement("div");
+  paramList.className = "param-list";
+  paramList.appendChild(buildParamItem("Includes", "", previewText));
+  detail.appendChild(paramList);
 }
 
 function rankGroupSuggestion(group, query){
@@ -578,7 +592,7 @@ function updateGroupSlotSuggestions(slot){
   if (!query) {
     slot.suggestionItems = [];
     slot.activeSuggestionIndex = -1;
-    slot.suggestions.innerHTML = "";
+    clearNode(slot.suggestions);
     slot.suggestions.classList.add("hidden");
     slot.noResult.classList.add("hidden");
     return;
@@ -617,21 +631,24 @@ function updateGroupSlotSuggestions(slot){
 
   slot.suggestionItems = matches;
   slot.activeSuggestionIndex = matches.length ? 0 : -1;
-  slot.suggestions.innerHTML = "";
+  clearNode(slot.suggestions);
 
   matches.forEach((item, index) => {
-    const shortcut = item.shortcut ? item.shortcut : "";
-    const activeClass = index === slot.activeSuggestionIndex ? " active" : "";
-    const meta = shortcut ? shortcut : " ";
-    slot.suggestions.innerHTML += `
-      <div class="suggestion${activeClass}" data-id="${item.id}">
-        <div class="suggestion-main">
-          <div class="suggestion-name">${item.name || ""}</div>
-          <div class="suggestion-meta">${meta}</div>
-        </div>
-        <div class="suggestion-cost">₹${Number(item.cost) || 0}</div>
-      </div>
-    `;
+    const shortcut = item.shortcut ? String(item.shortcut) : "";
+    const meta = shortcut || "\u00A0";
+
+    const row = document.createElement("div");
+    row.className = "suggestion" + (index === slot.activeSuggestionIndex ? " active" : "");
+    row.dataset.id = String(item.id);
+
+    const main = document.createElement("div");
+    main.className = "suggestion-main";
+    main.appendChild(createDiv("suggestion-name", item.name || ""));
+    main.appendChild(createDiv("suggestion-meta", meta));
+
+    row.appendChild(main);
+    row.appendChild(createDiv("suggestion-cost", `₹${Number(item.cost) || 0}`));
+    slot.suggestions.appendChild(row);
   });
 
   slot.suggestions.classList.toggle("hidden", !matches.length);
@@ -711,37 +728,69 @@ function addGroupSlot(groupId, showNameChecked = true, fallback){
   const wrapper = document.createElement("div");
   wrapper.className = "slot-card";
 
-  wrapper.innerHTML = `
-    <div class="slot-header">
-      <h4 class="slot-title"></h4>
-      <button class="btn link" type="button">Remove</button>
-    </div>
-    <div class="grid-2">
-      <div>
-        <label>Select Group</label>
-        <div class="search-wrap">
-          <input class="group-search" placeholder="Search group..." autocomplete="off">
-          <div class="suggestions hidden"></div>
-        </div>
-        <div class="no-result hidden">❌ No group available</div>
-      </div>
-      <div class="inline">
-        <input class="show-name" type="checkbox" checked>
-        <label class="label-inline">Show Name</label>
-        <input type="checkbox" disabled>
-        <label class="label-inline">Details (read-only)</label>
-      </div>
-    </div>
-    <div class="detail-card"></div>
-  `;
+  const header = document.createElement("div");
+  header.className = "slot-header";
+  const titleEl = document.createElement("h4");
+  titleEl.className = "slot-title";
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "btn link";
+  removeBtn.textContent = "Remove";
+  header.appendChild(titleEl);
+  header.appendChild(removeBtn);
 
-  const searchInput = wrapper.querySelector(".group-search");
-  const suggestions = wrapper.querySelector(".suggestions");
-  const noResult = wrapper.querySelector(".no-result");
-  const removeBtn = wrapper.querySelector(".btn.link");
-  const titleEl = wrapper.querySelector(".slot-title");
-  const detail = wrapper.querySelector(".detail-card");
-  const showNameInput = wrapper.querySelector(".show-name");
+  const grid = document.createElement("div");
+  grid.className = "grid-2";
+
+  const left = document.createElement("div");
+  const label = document.createElement("label");
+  label.textContent = "Select Group";
+  const searchWrap = document.createElement("div");
+  searchWrap.className = "search-wrap";
+  const searchInput = document.createElement("input");
+  searchInput.className = "group-search";
+  searchInput.placeholder = "Search group...";
+  searchInput.autocomplete = "off";
+  const suggestions = document.createElement("div");
+  suggestions.className = "suggestions hidden";
+  searchWrap.appendChild(searchInput);
+  searchWrap.appendChild(suggestions);
+  const noResult = document.createElement("div");
+  noResult.className = "no-result hidden";
+  noResult.textContent = "❌ No group available";
+  left.appendChild(label);
+  left.appendChild(searchWrap);
+  left.appendChild(noResult);
+
+  const right = document.createElement("div");
+  right.className = "inline";
+  const showNameInput = document.createElement("input");
+  showNameInput.className = "show-name";
+  showNameInput.type = "checkbox";
+  showNameInput.checked = true;
+  const showNameLabel = document.createElement("label");
+  showNameLabel.className = "label-inline";
+  showNameLabel.textContent = "Show Name";
+  const dummyCheck = document.createElement("input");
+  dummyCheck.type = "checkbox";
+  dummyCheck.disabled = true;
+  const dummyLabel = document.createElement("label");
+  dummyLabel.className = "label-inline";
+  dummyLabel.textContent = "Details (read-only)";
+  right.appendChild(showNameInput);
+  right.appendChild(showNameLabel);
+  right.appendChild(dummyCheck);
+  right.appendChild(dummyLabel);
+
+  grid.appendChild(left);
+  grid.appendChild(right);
+
+  const detail = document.createElement("div");
+  detail.className = "detail-card";
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(grid);
+  wrapper.appendChild(detail);
 
   const slot = {
     id: slotId,
