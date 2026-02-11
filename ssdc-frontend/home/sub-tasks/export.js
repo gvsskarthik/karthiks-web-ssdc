@@ -19,6 +19,13 @@ generatedAtEl.textContent = window.formatIstDateTimeDisplay
 
 let exportRows = [];
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");
   const num = Number(cleaned);
@@ -34,8 +41,13 @@ function formatCurrency(value){
 }
 
 function setBodyMessage(message){
-  exportBody.innerHTML =
-    `<tr><td colspan="7">${message}</td></tr>`;
+  clearNode(exportBody);
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 7;
+  td.textContent = message == null ? "" : String(message);
+  tr.appendChild(td);
+  exportBody.appendChild(tr);
 }
 
 function renderRows(rows){
@@ -44,23 +56,39 @@ function renderRows(rows){
     return;
   }
 
-  exportBody.innerHTML = "";
+  clearNode(exportBody);
+  const frag = document.createDocumentFragment();
   rows.forEach(row => {
     const doctorLabel = row.doctorName
       || (exportDoctorId ? exportDoctorName : "-");
     const due = parseNumber(row.dueAmount ?? row.due ?? 0);
-    exportBody.innerHTML += `
-      <tr>
-        <td>${row.date || "-"}</td>
-        <td>${row.reportId || "-"}</td>
-        <td>${row.patientName || "-"}</td>
-        <td>${doctorLabel}</td>
-        <td>${formatCurrency(row.billAmount)}</td>
-        <td>${formatCurrency(due)}</td>
-        <td>${formatCurrency(row.commissionAmount)}</td>
-      </tr>
-    `;
+
+    const tr = document.createElement("tr");
+    const tdDate = document.createElement("td");
+    tdDate.textContent = row.date || "-";
+    const tdReport = document.createElement("td");
+    tdReport.textContent = row.reportId || "-";
+    const tdPatient = document.createElement("td");
+    tdPatient.textContent = row.patientName || "-";
+    const tdDoctor = document.createElement("td");
+    tdDoctor.textContent = doctorLabel;
+    const tdBill = document.createElement("td");
+    tdBill.textContent = formatCurrency(row.billAmount);
+    const tdDue = document.createElement("td");
+    tdDue.textContent = formatCurrency(due);
+    const tdComm = document.createElement("td");
+    tdComm.textContent = formatCurrency(row.commissionAmount);
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdReport);
+    tr.appendChild(tdPatient);
+    tr.appendChild(tdDoctor);
+    tr.appendChild(tdBill);
+    tr.appendChild(tdDue);
+    tr.appendChild(tdComm);
+    frag.appendChild(tr);
   });
+  exportBody.appendChild(frag);
 }
 
 async function fetchJson(url){
