@@ -855,7 +855,7 @@ public class TestService {
         return ranges.stream()
             .map(this::formatNormalRange)
             .filter(v -> !v.isEmpty())
-            .collect(Collectors.joining(" / "));
+            .collect(Collectors.joining("\n"));
     }
 
     private String formatNormalRange(NormalRange range) {

@@ -411,8 +411,7 @@ function normalizeNormalForDisplay(value){
   if (!text) {
     return "";
   }
-  // Backend joins multiple normal values with " / ". Show them on new lines.
-  return text.replace(/\s+\/\s+/g, "\n");
+  return text.replace(/\r\n/g, "\n");
 }
 
 function splitLinesForTable(text){

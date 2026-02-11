@@ -409,7 +409,6 @@ function normalizeNormalText(value) {
 
 function splitNormalLines(text) {
   return String(text == null ? "" : text)
-    .replace(/\s+\/\s+/g, "\n")
     .split(/\r?\n/)
     .map(line => line.trim())
     .filter(Boolean);

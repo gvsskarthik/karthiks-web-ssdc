@@ -119,6 +119,10 @@ html {
 	color: var(--red);
  }
 
+ main .box-info li .text h3.metric-completed {
+	color: #1b7a3f;
+ }
+
  main .box-info li .text p {
 	color: var(--dark);
 }
@@ -166,6 +170,17 @@ html {
  main .table-data .order {
 	display: flex;
 	flex-direction: column;
+	flex: 1 1 720px;
+ }
+
+ main .table-data .daily {
+	flex: 0 0 360px;
+ }
+
+ main .table-data .daily .box-info.box-info--daily {
+	margin-top: 0;
+	grid-template-columns: 1fr;
+	grid-gap: 16px;
  }
 
  main .table-data .order .recent-scroll {
@@ -345,10 +360,10 @@ html {
 		background: var(--grey);
 	}
 
- main .table-data .box-info {
-	flex-grow: 1;
-	flex-basis: 0;
-}
+ /* Ensure the daily cards are full-width like the top cards */
+ main .box-info.box-info--daily {
+	margin-top: 20px;
+ }
 
 /* MAIN */
 /* CONTENT */
