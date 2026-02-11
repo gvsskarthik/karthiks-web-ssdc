@@ -1,5 +1,6 @@
 package com.ssdc.ssdclabs.repository;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -154,9 +155,23 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     )
     Object[] findHomeSummaryCounts(
             @Param("labId") String labId,
-            @Param("today") LocalDate today,
-            @Param("weekStart") LocalDate weekStart,
-            @Param("monthStart") LocalDate monthStart,
-            @Param("yearStart") LocalDate yearStart
+            @Param("today") Date today,
+            @Param("weekStart") Date weekStart,
+            @Param("monthStart") Date monthStart,
+            @Param("yearStart") Date yearStart
+    );
+
+    long countByLabIdAndVisitDate(String labId, LocalDate visitDate);
+
+    @Query("""
+        SELECT COUNT(p)
+        FROM Patient p
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :start AND :end
+    """)
+    long countByLabIdAndVisitDateBetween(
+            @Param("labId") String labId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
     );
 }

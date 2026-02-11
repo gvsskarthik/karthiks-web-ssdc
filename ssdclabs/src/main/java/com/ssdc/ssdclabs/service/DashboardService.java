@@ -36,18 +36,10 @@ public class DashboardService {
         final LocalDate monthStart = today.withDayOfMonth(1);
         final LocalDate yearStart = today.withDayOfYear(1);
 
-        final Object[] counts = patientRepo.findHomeSummaryCounts(
-            safeLabId,
-            today,
-            weekStart,
-            monthStart,
-            yearStart
-        );
-
-        final long todayCount = toLong(counts, 0);
-        final long weekCount = toLong(counts, 1);
-        final long monthCount = toLong(counts, 2);
-        final long yearCount = toLong(counts, 3);
+        final long todayCount = patientRepo.countByLabIdAndVisitDate(safeLabId, today);
+        final long weekCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, weekStart, today);
+        final long monthCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, monthStart, today);
+        final long yearCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, yearStart, today);
 
         final List<RecentTaskDTO> recent = patientService.getRecentTasks(safeLabId, safeLimit);
 
@@ -59,20 +51,4 @@ public class DashboardService {
             recent
         );
     }
-
-    private static long toLong(Object[] arr, int idx) {
-        if (arr == null || idx < 0 || idx >= arr.length) {
-            return 0L;
-        }
-        Object v = arr[idx];
-        if (v instanceof Number n) {
-            return n.longValue();
-        }
-        try {
-            return v == null ? 0L : Long.parseLong(String.valueOf(v));
-        } catch (Exception ex) {
-            return 0L;
-        }
-    }
 }
-
