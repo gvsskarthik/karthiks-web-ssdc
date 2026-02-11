@@ -2,18 +2,18 @@
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
 const pageFrame = document.getElementById('page-frame');
 
-function getAuthToken() {
+function readAuthToken() {
     return typeof window.getAuthToken === "function" ? window.getAuthToken() : null;
 }
 
-function clearAuthToken() {
+function clearStoredAuthToken() {
     if (typeof window.clearAuthToken === "function") {
         window.clearAuthToken();
     }
 }
 
 // Guard: block direct access to dashboard without login token.
-if (!getAuthToken()) {
+if (!readAuthToken()) {
     window.location.href = "index.html";
 }
 
@@ -185,7 +185,7 @@ if (logoutLink) {
             window.forceLogout("manual");
             return;
         }
-        clearAuthToken();
+        clearStoredAuthToken();
         window.location.href = "index.html";
     });
 }
