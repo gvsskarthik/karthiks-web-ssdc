@@ -1,5 +1,5 @@
-@import url("../../vendor/fonts/fonts.css");
-@import url("../../shared.css");
+@import url("/vendor/fonts/fonts.css");
+@import url("/shared.css");
 
 html {
 	overflow-x: hidden;
