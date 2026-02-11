@@ -10,6 +10,7 @@ const addTestBtn = document.getElementById("addTestBtn");
 const addGroupBtn = document.getElementById("addGroupBtn");
 const status = document.getElementById("status");
 const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
 
 const params = new URLSearchParams(location.search);
 const editId = params.get("edit");
@@ -26,6 +27,11 @@ let groupSlotCounter = 0;
 addTestBtn.addEventListener("click", () => addSlot());
 addGroupBtn.addEventListener("click", () => addGroupSlot());
 saveBtn.addEventListener("click", () => saveGroup());
+if (cancelBtn) {
+  cancelBtn.addEventListener("click", () => {
+    location.href = "../5-tests.html";
+  });
+}
 
 function setStatus(message, type){
   status.textContent = message || "";

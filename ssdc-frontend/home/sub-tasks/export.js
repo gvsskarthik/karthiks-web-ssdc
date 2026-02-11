@@ -5,6 +5,8 @@ const apiPath = window.apiUrl || function (path) {
 const exportBody = document.getElementById("exportBody");
 const doctorNameEl = document.getElementById("doctorName");
 const generatedAtEl = document.getElementById("generatedAt");
+const exportDownloadBtn = document.getElementById("btnExportDownload");
+const exportPrintBtn = document.getElementById("btnExportPrint");
 
 const exportState = JSON.parse(
   localStorage.getItem("accountsExportFilter") || "{}"
@@ -178,6 +180,14 @@ function downloadExcel(){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// Inline handler replacements (CSP-safe)
+if (exportDownloadBtn) {
+  exportDownloadBtn.addEventListener("click", downloadExcel);
+}
+if (exportPrintBtn) {
+  exportPrintBtn.addEventListener("click", () => window.print());
 }
 
 loadRows();

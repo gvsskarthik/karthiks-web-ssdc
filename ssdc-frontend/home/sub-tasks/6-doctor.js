@@ -8,6 +8,7 @@ const editPhone = document.getElementById("editPhone");
 const editHospital = document.getElementById("editHospital");
 const editCommissionRate = document.getElementById("editCommissionRate");
 const cancelEdit = document.getElementById("cancelEdit");
+const newDoctorBtn = document.getElementById("btnNewDoctor");
 
 let doctors = [];
 let editDoctorId = null;
@@ -333,5 +334,12 @@ document.addEventListener("click", function (e) {
   if (!e.target.closest(".menu")) closeAllMenus();
 });
 searchInput.addEventListener("keyup", applySearch);
+
+// Inline handler replacements (CSP-safe)
+if (newDoctorBtn) {
+  newDoctorBtn.addEventListener("click", () => {
+    location.href = "dr/new-doctor.html";
+  });
+}
 
 loadDoctors();

@@ -7,6 +7,9 @@ const searchToggle = document.getElementById("searchToggle");
 const tableBody  = document.getElementById("patientTable");
 const bulkBar    = document.getElementById("bulkBar");
 const selectedCount = document.getElementById("selectedCount");
+const newPatientBtn = document.getElementById("newPatientBtn");
+const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+const bulkCancelBtn = document.getElementById("bulkCancelBtn");
 
 let allPatients = [];
 let selectMode = false;
@@ -137,6 +140,22 @@ function focusSearch(){
 
 dateToggle.addEventListener("click", openDatePicker);
 searchToggle.addEventListener("click", focusSearch);
+
+// Inline handler replacements (CSP-safe)
+if (searchBox) {
+  searchBox.addEventListener("input", searchPatient);
+}
+if (newPatientBtn) {
+  newPatientBtn.addEventListener("click", () => {
+    location.href = "pt/new.html";
+  });
+}
+if (bulkDeleteBtn) {
+  bulkDeleteBtn.addEventListener("click", deleteSelected);
+}
+if (bulkCancelBtn) {
+  bulkCancelBtn.addEventListener("click", exitSelectMode);
+}
 
 function renderTable(data){
   const D = window.ssdcDom;

@@ -229,5 +229,16 @@ function goPatients(){
   }
 }
 
+{
+  const backBtn = document.getElementById("btnBillBack");
+  if (backBtn) {
+    backBtn.addEventListener("click", goPatients);
+  }
+  const printBtn = document.getElementById("btnBillPrint");
+  if (printBtn) {
+    printBtn.addEventListener("click", () => window.print());
+  }
+}
+
 hydratePatient();
 renderBill();

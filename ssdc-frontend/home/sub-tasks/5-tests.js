@@ -6,6 +6,25 @@ function clearNode(node){
  while(node.firstChild){ node.removeChild(node.firstChild); }
 }
 
+// Inline handler replacements (CSP-safe)
+{
+ const btnNewGroup = document.getElementById("btnNewGroup");
+ if (btnNewGroup) {
+  btnNewGroup.addEventListener("click", () => {
+   location.href = "test/new-group.html";
+  });
+ }
+ const btnNewTest = document.getElementById("btnNewTest");
+ if (btnNewTest) {
+  btnNewTest.addEventListener("click", () => {
+   location.href = "test/new-tests.html";
+  });
+ }
+ document.querySelectorAll(".tabs button[data-mode]").forEach((btn) => {
+  btn.addEventListener("click", () => setMode(String(btn.dataset.mode || "all"), btn));
+ });
+}
+
 /* LOAD */
 Promise.all([
 fetch(API_BASE_URL + "/tests").then(r=>r.json()),

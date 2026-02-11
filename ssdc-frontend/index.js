@@ -339,6 +339,20 @@ window.forgotPassword = async function () {
   }
 };
 
+// Inline handler replacements (CSP-safe)
+try {
+  const btnForgot = document.getElementById("btnForgotPassword");
+  if (btnForgot) btnForgot.addEventListener("click", () => window.forgotPassword());
+  const btnResend = document.getElementById("btnResendVerification");
+  if (btnResend) btnResend.addEventListener("click", () => window.resendVerification());
+  const btnSignup = document.getElementById("btnShowSignup");
+  if (btnSignup) btnSignup.addEventListener("click", () => showSignup());
+  const btnLogin = document.getElementById("btnShowLogin");
+  if (btnLogin) btnLogin.addEventListener("click", () => showLogin());
+} catch (e) {
+  // ignore
+}
+
 // Password reset (from email link)
 (async () => {
   try {

@@ -22,19 +22,19 @@
       <div class="subtitle">Create tests, groups, and manage availability</div>
     </div>
     <div class="header-actions">
-      <button class="neo-btn secondary" onclick="location.href='test/new-group.html'">
+      <button class="neo-btn secondary" id="btnNewGroup" type="button">
         <i class="bx bx-layer-plus"></i> New Group
       </button>
-      <button class="neo-btn" onclick="location.href='test/new-tests.html'">
+      <button class="neo-btn" id="btnNewTest" type="button">
         <i class="bx bx-plus"></i> New Test
       </button>
     </div>
   </div>
 
   <div class="tabs">
-    <button class="active" onclick="setMode('all',this)">All</button>
-    <button onclick="setMode('single',this)">Single</button>
-    <button onclick="setMode('group',this)">Group</button>
+    <button class="active" type="button" data-mode="all">All</button>
+    <button type="button" data-mode="single">Single</button>
+    <button type="button" data-mode="group">Group</button>
   </div>
 
   <div class="table-box">

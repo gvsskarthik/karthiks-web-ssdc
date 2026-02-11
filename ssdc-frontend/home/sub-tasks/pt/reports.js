@@ -1381,6 +1381,30 @@ function goPatients(){
   parent.loadPage("home/sub-tasks/2-patient.html");
 }
 
+// Inline handler replacements (CSP-safe)
+{
+  const btnBack = document.getElementById("btnBack");
+  if (btnBack) {
+    btnBack.addEventListener("click", goPatients);
+  }
+  const btnComplete = document.getElementById("btnComplete");
+  if (btnComplete) {
+    btnComplete.addEventListener("click", markCompleted);
+  }
+  const btnPrint = document.getElementById("btnPrint");
+  if (btnPrint) {
+    btnPrint.addEventListener("click", printLetterhead);
+  }
+  const btnDownload = document.getElementById("btnDownload");
+  if (btnDownload) {
+    btnDownload.addEventListener("click", downloadPDF);
+  }
+  const btnWhatsapp = document.getElementById("btnWhatsapp");
+  if (btnWhatsapp) {
+    btnWhatsapp.addEventListener("click", shareWhatsApp);
+  }
+}
+
 function downloadPDF(){
   setReportMode("pdf").then(() => nextPaint()).then(() => {
     window.print(); // browser save as PDF

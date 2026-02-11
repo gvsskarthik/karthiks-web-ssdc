@@ -124,6 +124,18 @@ function savePrintSettings() {
 
 loadPrintSettings();
 
+// Inline handler replacements (CSP-safe)
+{
+  const saveSpacingBtn = document.getElementById("btnSaveSpacing");
+  if (saveSpacingBtn) {
+    saveSpacingBtn.addEventListener("click", savePrintSettings);
+  }
+  const saveResultsBtn = document.getElementById("btnSaveResults");
+  if (saveResultsBtn) {
+    saveResultsBtn.addEventListener("click", saveOnly);
+  }
+}
+
 /* ================= LOAD SELECTED TEST IDS ================= */
 function loadSelectedIds(){
   const local =

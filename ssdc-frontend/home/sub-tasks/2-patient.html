@@ -21,7 +21,7 @@
       <h1>Patients</h1>
       <div class="subtitle">Daily registrations and billing</div>
     </div>
-    <button class="neo-btn" onclick="location.href='pt/new.html'">
+    <button class="neo-btn" id="newPatientBtn" type="button">
       <i class="bx bx-plus"></i> New Patient
     </button>
   </div>
@@ -44,7 +44,7 @@
         </button>
         <input type="text" id="searchBox" class="neo-input"
                placeholder="Search patient..."
-               onkeyup="searchPatient()">
+               >
       </div>
     </div>
   </div>
@@ -52,8 +52,8 @@
   <div class="bulk-bar" id="bulkBar">
     <div id="selectedCount">0 items selected</div>
     <div class="bulk-actions">
-      <button class="neo-btn" onclick="deleteSelected()">Delete Selected</button>
-      <button class="neo-btn secondary" onclick="exitSelectMode()">Cancel</button>
+      <button class="neo-btn" id="bulkDeleteBtn" type="button">Delete Selected</button>
+      <button class="neo-btn secondary" id="bulkCancelBtn" type="button">Cancel</button>
     </div>
   </div>
 

@@ -95,6 +95,10 @@ allSideMenu.forEach(li => {
         if (key) {
             setActiveMenu(key);
         }
+        const page = link.getAttribute("data-page");
+        if (page) {
+            loadPage(page, key || null);
+        }
         if (window.innerWidth < 768) {
             sidebar.classList.add('hide');
         }
