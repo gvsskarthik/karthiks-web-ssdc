@@ -25,6 +25,25 @@ let currentRows = [];
 let currentDoctorFallback = "";
 let dateRange = { from: null, to: null };
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function setCard(cardEl, title, valueText, valueClass){
+  if (!cardEl) return;
+  clearNode(cardEl);
+  const h4 = document.createElement("h4");
+  h4.textContent = title;
+  const p = document.createElement("p");
+  p.className = `summary-value ${valueClass || ""}`.trim();
+  p.textContent = valueText;
+  cardEl.appendChild(h4);
+  cardEl.appendChild(p);
+}
+
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");
   const num = Number(cleaned);
@@ -36,34 +55,31 @@ function formatNumber(value){
 }
 
 function setSummaryMessage(message){
-  sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p class="summary-value summary-revenue">${message}</p>`;
-  sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p class="summary-value summary-discount">${message}</p>`;
-  sumDue.innerHTML =
-    `<h4>Total Due</h4><p class="summary-value summary-due">${message}</p>`;
-  sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p class="summary-value summary-commission">${message}</p>`;
-  sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p class="summary-value summary-profit">${message}</p>`;
+  const text = message == null ? "" : String(message);
+  setCard(sumRevenue, "Total Revenue", text, "summary-revenue");
+  setCard(sumDiscount, "Discounts Given", text, "summary-discount");
+  setCard(sumDue, "Total Due", text, "summary-due");
+  setCard(sumCommission, "Total Commission", text, "summary-commission");
+  setCard(sumProfit, "Net Profit", text, "summary-profit");
 }
 
 function setSummaryValues(data){
-  sumRevenue.innerHTML =
-    `<h4>Total Revenue</h4><p class="summary-value summary-revenue">₹${formatNumber(data?.totalRevenue)}</p>`;
-  sumDiscount.innerHTML =
-    `<h4>Discounts Given</h4><p class="summary-value summary-discount">₹${formatNumber(data?.totalDiscount)}</p>`;
-  sumDue.innerHTML =
-    `<h4>Total Due</h4><p class="summary-value summary-due">₹${formatNumber(data?.totalDue)}</p>`;
-  sumCommission.innerHTML =
-    `<h4>Total Commission</h4><p class="summary-value summary-commission">₹${formatNumber(data?.totalCommission)}</p>`;
-  sumProfit.innerHTML =
-    `<h4>Net Profit</h4><p class="summary-value summary-profit">₹${formatNumber(data?.netProfit)}</p>`;
+  setCard(sumRevenue, "Total Revenue", `₹${formatNumber(data?.totalRevenue)}`, "summary-revenue");
+  setCard(sumDiscount, "Discounts Given", `₹${formatNumber(data?.totalDiscount)}`, "summary-discount");
+  setCard(sumDue, "Total Due", `₹${formatNumber(data?.totalDue)}`, "summary-due");
+  setCard(sumCommission, "Total Commission", `₹${formatNumber(data?.totalCommission)}`, "summary-commission");
+  setCard(sumProfit, "Net Profit", `₹${formatNumber(data?.netProfit)}`, "summary-profit");
 }
 
 function setDetailsMessage(message){
-  detailsBody.innerHTML =
-    `<tr><td colspan="7" class="muted text-center">${message}</td></tr>`;
+  clearNode(detailsBody);
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 7;
+  td.className = "muted text-center";
+  td.textContent = message == null ? "" : String(message);
+  tr.appendChild(td);
+  detailsBody.appendChild(tr);
 }
 
 function renderDetails(rows, doctorNameFallback){
@@ -75,7 +91,8 @@ function renderDetails(rows, doctorNameFallback){
   let totalBill = 0;
   let totalDue = 0;
   let totalCommission = 0;
-  let html = "";
+  clearNode(detailsBody);
+  const frag = document.createDocumentFragment();
 
   rows.forEach(r => {
     const doctorName = r.doctorName || doctorNameFallback || "-";
@@ -85,29 +102,57 @@ function renderDetails(rows, doctorNameFallback){
     totalBill += bill;
     totalDue += due;
     totalCommission += commission;
-    html += `
-      <tr>
-        <td>${r.date || "-"}</td>
-        <td>${r.reportId || "-"}</td>
-        <td>${r.patientName || "-"}</td>
-        <td>${doctorName}</td>
-        <td class="num">₹${formatNumber(bill)}</td>
-        <td class="num">₹${formatNumber(due)}</td>
-        <td class="num commission">₹${formatNumber(commission)}</td>
-      </tr>
-    `;
+
+    const tr = document.createElement("tr");
+    const tdDate = document.createElement("td");
+    tdDate.textContent = r.date || "-";
+    const tdReport = document.createElement("td");
+    tdReport.textContent = r.reportId || "-";
+    const tdPatient = document.createElement("td");
+    tdPatient.textContent = r.patientName || "-";
+    const tdDoctor = document.createElement("td");
+    tdDoctor.textContent = doctorName;
+    const tdBill = document.createElement("td");
+    tdBill.className = "num";
+    tdBill.textContent = `₹${formatNumber(bill)}`;
+    const tdDue = document.createElement("td");
+    tdDue.className = "num";
+    tdDue.textContent = `₹${formatNumber(due)}`;
+    const tdComm = document.createElement("td");
+    tdComm.className = "num commission";
+    tdComm.textContent = `₹${formatNumber(commission)}`;
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdReport);
+    tr.appendChild(tdPatient);
+    tr.appendChild(tdDoctor);
+    tr.appendChild(tdBill);
+    tr.appendChild(tdDue);
+    tr.appendChild(tdComm);
+    frag.appendChild(tr);
   });
 
-  html += `
-    <tr class="total-row">
-      <td colspan="4">Total</td>
-      <td class="num">₹${formatNumber(totalBill)}</td>
-      <td class="num">₹${formatNumber(totalDue)}</td>
-      <td class="num commission">₹${formatNumber(totalCommission)}</td>
-    </tr>
-  `;
+  const totalTr = document.createElement("tr");
+  totalTr.className = "total-row";
+  const totalTd = document.createElement("td");
+  totalTd.colSpan = 4;
+  totalTd.textContent = "Total";
+  const totalBillTd = document.createElement("td");
+  totalBillTd.className = "num";
+  totalBillTd.textContent = `₹${formatNumber(totalBill)}`;
+  const totalDueTd = document.createElement("td");
+  totalDueTd.className = "num";
+  totalDueTd.textContent = `₹${formatNumber(totalDue)}`;
+  const totalCommTd = document.createElement("td");
+  totalCommTd.className = "num commission";
+  totalCommTd.textContent = `₹${formatNumber(totalCommission)}`;
+  totalTr.appendChild(totalTd);
+  totalTr.appendChild(totalBillTd);
+  totalTr.appendChild(totalDueTd);
+  totalTr.appendChild(totalCommTd);
+  frag.appendChild(totalTr);
 
-  detailsBody.innerHTML = html;
+  detailsBody.appendChild(frag);
 }
 
 function parseDateValue(value){
@@ -237,7 +282,11 @@ async function loadAllDetails(){
 }
 
 async function loadDoctors(){
-  doctorSelect.innerHTML = `<option value="">All</option>`;
+  clearNode(doctorSelect);
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = "All";
+  doctorSelect.appendChild(opt);
   try{
     const data = await fetchJson(apiPath("/accounts/doctors"));
     if (!Array.isArray(data) || data.length === 0) {

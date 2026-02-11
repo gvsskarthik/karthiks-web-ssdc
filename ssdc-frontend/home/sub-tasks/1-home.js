@@ -358,37 +358,74 @@ function compareTasks(a, b) {
   return (Number(b.key.tiebreak) || 0) - (Number(a.key.tiebreak) || 0);
 }
 
+function clearNode(node) {
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
 function renderRecentTasksTable(tasks) {
   const tbody = document.getElementById("recentTasksBody");
   if (!tbody) {
     return;
   }
 
-  tbody.innerHTML = "";
+  clearNode(tbody);
   if (!tasks.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" class="no-data">No pending / due tasks</td>
-      </tr>`;
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.className = "no-data";
+    td.textContent = "No pending / due tasks";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
     return;
   }
 
+  const frag = document.createDocumentFragment();
   tasks.forEach((t, idx) => {
-    const statusHtml = t.pending
-      ? `<span class="status pending">Pending</span>`
-      : `<span class="status completed">Completed</span>`;
-
     const dueClass = t.dueAmount > 0 ? "due is-due" : "due is-no-due";
 
-    tbody.innerHTML += `
-      <tr>
-        <td class="sno">${idx + 1}</td>
-        <td class="name">${t.name || "-"}</td>
-        <td class="date">${formatYmdToDdMmYy(t.dateYmd)}</td>
-        <td class="amount ${dueClass}">${formatInr(t.dueAmount)}</td>
-        <td class="status-col">${statusHtml}</td>
-      </tr>`;
+    const tr = document.createElement("tr");
+
+    const tdSno = document.createElement("td");
+    tdSno.className = "sno";
+    tdSno.textContent = String(idx + 1);
+
+    const tdName = document.createElement("td");
+    tdName.className = "name";
+    tdName.textContent = t?.name ? String(t.name) : "-";
+
+    const tdDate = document.createElement("td");
+    tdDate.className = "date";
+    tdDate.textContent = formatYmdToDdMmYy(t.dateYmd);
+
+    const tdDue = document.createElement("td");
+    tdDue.className = `amount ${dueClass}`;
+    tdDue.textContent = formatInr(t.dueAmount);
+
+    const tdStatus = document.createElement("td");
+    tdStatus.className = "status-col";
+    const status = document.createElement("span");
+    if (t.pending) {
+      status.className = "status pending";
+      status.textContent = "Pending";
+    } else {
+      status.className = "status completed";
+      status.textContent = "Completed";
+    }
+    tdStatus.appendChild(status);
+
+    tr.appendChild(tdSno);
+    tr.appendChild(tdName);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdDue);
+    tr.appendChild(tdStatus);
+    frag.appendChild(tr);
   });
+
+  tbody.appendChild(frag);
 }
 
 function loadRecentTasks() {

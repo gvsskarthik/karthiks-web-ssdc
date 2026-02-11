@@ -1,4 +1,10 @@
 let tests=[], groups=[], mode="all";
+const tbody = document.getElementById("tbody");
+
+function clearNode(node){
+ if(!node) return;
+ while(node.firstChild){ node.removeChild(node.firstChild); }
+}
 
 /* LOAD */
 Promise.all([
@@ -190,89 +196,188 @@ function renderNormalValues(test){
   .filter(Boolean);
 
  if (paramLines.length) {
-  return escapeHtml(paramLines.join("\n"));
+  return paramLines.join("\n");
  }
 
  const fallback = asArray(test.normalValues || test.normal_values)
   .map(readNormalEntry)
+  .map(normalizeNormalForDisplay)
   .filter(Boolean)
   .join("\n");
 
- return escapeHtml(fallback);
+ return fallback;
+}
+
+function appendTextWithLineBreaks(parent, text){
+ if (!parent) return;
+ const value = text == null ? "" : String(text);
+ if (!value) return;
+ const parts = value.split(/\r?\n/);
+ parts.forEach((part, idx) => {
+  if (idx > 0) parent.appendChild(document.createElement("br"));
+  parent.appendChild(document.createTextNode(part));
+ });
+}
+
+function makeSwitch(checked, onChange){
+ const label = document.createElement("label");
+ label.className = "switch";
+ const input = document.createElement("input");
+ input.type = "checkbox";
+ input.checked = Boolean(checked);
+ input.addEventListener("change", () => onChange(Boolean(input.checked)));
+ const slider = document.createElement("span");
+ slider.className = "slider";
+ label.appendChild(input);
+ label.appendChild(slider);
+ return label;
+}
+
+function makeMenu(items){
+ const wrap = document.createElement("div");
+ wrap.className = "menu";
+ const btn = document.createElement("button");
+ btn.className = "menu-btn";
+ btn.type = "button";
+ btn.textContent = "⋮";
+ btn.addEventListener("click", () => toggleMenu(btn));
+ const list = document.createElement("div");
+ list.className = "menu-list";
+ items.forEach(item => {
+  if (!item) return;
+  const div = document.createElement("div");
+  if (item.className) div.className = item.className;
+  div.textContent = item.label;
+  div.addEventListener("click", item.onClick);
+  list.appendChild(div);
+ });
+ wrap.appendChild(btn);
+ wrap.appendChild(list);
+ return wrap;
 }
 
 /* RENDER */
 function render(){
- tbody.innerHTML="";
+ clearNode(tbody);
  let i=1;
+ const frag = document.createDocumentFragment();
 
  if(mode!=="group"){
   tests.forEach(t=>{
-   tbody.innerHTML+=`
-   <tr>
-    <td class="sno">${i++}</td>
-    <td class="name">${escapeHtml(t.testName || "-")}</td>
-    <td class="category">${escapeHtml(t.category || "—")}</td>
-    <td class="shortcut">${escapeHtml(t.shortcut || "—")}</td>
-    <td class="normal">${renderNormalValues(t) || "—"}</td>
-    <td class="cost">${formatCost(t.cost)}</td>
-      <td class="active-col">
-         <label class="switch">
-           <input type="checkbox"
-           id="active-test-${t.id}"
-           name="active-test-${t.id}"
-           ${t.active ? "checked" : ""}
-           onchange="toggleActive(${t.id}, this.checked)">
-            <span class="slider"></span>
-         </label>
-      </td>
-      <td class="options">
-     <div class="menu">
-      <button class="menu-btn" type="button" onclick="toggleMenu(this)">⋮</button>
-      <div class="menu-list">
-       <div onclick='openTest(${JSON.stringify(t)})'>Edit</div>
-      ${t.used ? "" : `<div onclick='deleteTest(${t.id})'>Delete</div>`}      </div>
-     </div>
-    </td>
-   </tr>`;
+   const tr = document.createElement("tr");
+
+   const tdSno = document.createElement("td");
+   tdSno.className = "sno";
+   tdSno.textContent = String(i++);
+
+   const tdName = document.createElement("td");
+   tdName.className = "name";
+   tdName.textContent = t?.testName ? String(t.testName) : "-";
+
+   const tdCat = document.createElement("td");
+   tdCat.className = "category";
+   tdCat.textContent = t?.category ? String(t.category) : "—";
+
+   const tdShortcut = document.createElement("td");
+   tdShortcut.className = "shortcut";
+   tdShortcut.textContent = t?.shortcut ? String(t.shortcut) : "—";
+
+   const tdNormal = document.createElement("td");
+   tdNormal.className = "normal";
+   const normalText = renderNormalValues(t);
+   if (normalText) {
+    // renderNormalValues returns escaped string with \n; show as lines.
+    appendTextWithLineBreaks(tdNormal, String(normalText).replace(/&nbsp;/g, " "));
+   } else {
+    tdNormal.textContent = "—";
+   }
+
+   const tdCost = document.createElement("td");
+   tdCost.className = "cost";
+   tdCost.textContent = formatCost(t.cost);
+
+   const tdActive = document.createElement("td");
+   tdActive.className = "active-col";
+   tdActive.appendChild(
+    makeSwitch(Boolean(t.active), (state) => toggleActive(t.id, state))
+   );
+
+   const tdOptions = document.createElement("td");
+   tdOptions.className = "options";
+   const items = [
+    { label: "Edit", onClick: () => openTest(t) }
+   ];
+   if (!t.used) {
+    items.push({ label: "Delete", onClick: () => deleteTest(t.id) });
+   }
+   tdOptions.appendChild(makeMenu(items));
+
+   tr.appendChild(tdSno);
+   tr.appendChild(tdName);
+   tr.appendChild(tdCat);
+   tr.appendChild(tdShortcut);
+   tr.appendChild(tdNormal);
+   tr.appendChild(tdCost);
+   tr.appendChild(tdActive);
+   tr.appendChild(tdOptions);
+   frag.appendChild(tr);
   });
  }
 
  if(mode!=="single"){
   groups.forEach(g=>{
-   tbody.innerHTML+=`
-   <tr>
-    <td class="sno">${i++}</td>
-    <td class="name">${escapeHtml(g.groupName || "-")}</td>
-    <td class="category">Group</td>
-    <td class="shortcut">${escapeHtml(g.shortcut || "—")}</td>
-    <td class="normal">—</td>
-    <td class="cost">${formatCost(g.cost)}</td>
+   const tr = document.createElement("tr");
 
-    <td class="active-col">
-      <label class="switch">
-        <input type="checkbox"
-          id="active-group-${g.id}"
-          name="active-group-${g.id}"
-          ${(g.active === false) ? "" : "checked"}
-          onchange="toggleGroupActive(${g.id}, this.checked)">
-        <span class="slider"></span>
-      </label>
-    </td>
+   const tdSno = document.createElement("td");
+   tdSno.className = "sno";
+   tdSno.textContent = String(i++);
 
-    <td class="options">
-     <div class="menu">
-      <button class="menu-btn" type="button" onclick="toggleMenu(this)">⋮</button>
-      <div class="menu-list">
-       <div onclick='openGroup(${JSON.stringify(g)})'>Edit</div>
-       <div onclick='deleteGroup(${g.id})'>Delete</div>
-      </div>
-     </div>
-    </td>
-   </tr>`;
+   const tdName = document.createElement("td");
+   tdName.className = "name";
+   tdName.textContent = g?.groupName ? String(g.groupName) : "-";
+
+   const tdCat = document.createElement("td");
+   tdCat.className = "category";
+   tdCat.textContent = "Group";
+
+   const tdShortcut = document.createElement("td");
+   tdShortcut.className = "shortcut";
+   tdShortcut.textContent = g?.shortcut ? String(g.shortcut) : "—";
+
+   const tdNormal = document.createElement("td");
+   tdNormal.className = "normal";
+   tdNormal.textContent = "—";
+
+   const tdCost = document.createElement("td");
+   tdCost.className = "cost";
+   tdCost.textContent = formatCost(g.cost);
+
+   const tdActive = document.createElement("td");
+   tdActive.className = "active-col";
+   tdActive.appendChild(
+    makeSwitch(g.active !== false, (state) => toggleGroupActive(g.id, state))
+   );
+
+   const tdOptions = document.createElement("td");
+   tdOptions.className = "options";
+   tdOptions.appendChild(makeMenu([
+    { label: "Edit", onClick: () => openGroup(g) },
+    { label: "Delete", onClick: () => deleteGroup(g.id) }
+   ]));
+
+   tr.appendChild(tdSno);
+   tr.appendChild(tdName);
+   tr.appendChild(tdCat);
+   tr.appendChild(tdShortcut);
+   tr.appendChild(tdNormal);
+   tr.appendChild(tdCost);
+   tr.appendChild(tdActive);
+   tr.appendChild(tdOptions);
+   frag.appendChild(tr);
   });
  }
- }
+ tbody.appendChild(frag);
+}
 
 /* EDIT (REDIRECT) */
 function openTest(test){
