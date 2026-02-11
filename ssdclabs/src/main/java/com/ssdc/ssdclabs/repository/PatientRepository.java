@@ -139,4 +139,21 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     List<Patient> findRecentPatients(
             @Param("labId") String labId,
             Pageable pageable);
+
+    @Query("""
+        SELECT
+            COALESCE(SUM(CASE WHEN p.visitDate = :today THEN 1 ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN p.visitDate BETWEEN :weekStart AND :today THEN 1 ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN p.visitDate BETWEEN :monthStart AND :today THEN 1 ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN p.visitDate BETWEEN :yearStart AND :today THEN 1 ELSE 0 END), 0)
+        FROM Patient p
+        WHERE p.labId = :labId
+    """)
+    Object[] findHomeSummaryCounts(
+            @Param("labId") String labId,
+            @Param("today") LocalDate today,
+            @Param("weekStart") LocalDate weekStart,
+            @Param("monthStart") LocalDate monthStart,
+            @Param("yearStart") LocalDate yearStart
+    );
 }
