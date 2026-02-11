@@ -115,6 +115,10 @@ html {
 	color: var(--dark);
 }
 
+ main .box-info li .text h3.metric-pending {
+	color: var(--red);
+ }
+
  main .box-info li .text p {
 	color: var(--dark);
 }
@@ -158,6 +162,44 @@ html {
 	flex-basis: 500px;
 }
 
+ /* Recent Pendings: only body scrolls (heading + header stay fixed) */
+ main .table-data .order {
+	display: flex;
+	flex-direction: column;
+ }
+
+ main .table-data .order .recent-scroll {
+	--recent-head-h: 42px;
+	--recent-row-h: 44px;
+	max-height: calc(var(--recent-head-h) + (var(--recent-row-h) * 6));
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	border-radius: 14px;
+	border: 1px solid rgba(0, 0, 0, 0.06);
+ }
+
+ main .table-data .order .recent-scroll::-webkit-scrollbar {
+	width: 10px;
+ }
+
+ main .table-data .order .recent-scroll::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.12);
+	border-radius: 999px;
+ }
+
+ main .table-data .order .recent-scroll::-webkit-scrollbar-track {
+	background: transparent;
+ }
+
+ main .table-data .order table.recent-tasks thead th {
+	position: sticky;
+	top: 0;
+	height: var(--recent-head-h);
+	background: var(--light);
+	z-index: 2;
+	box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+ }
+
  main .table-data .order table {
 	width: 100%;
 	border-collapse: collapse;
@@ -171,19 +213,41 @@ html {
 	}
 
  main .table-data .order table.recent-tasks {
-		width: 100%;
-		table-layout: fixed;
-	}
+			width: 100%;
+			table-layout: fixed;
+			border-collapse: separate;
+			border-spacing: 0;
+		}
 
- main .table-data .order table.recent-tasks th,
- main .table-data .order table.recent-tasks td {
-		padding: 12px 10px;
-	}
+	 main .table-data .order table.recent-tasks th,
+	 main .table-data .order table.recent-tasks td {
+			padding: 10px 12px;
+			border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+		}
 
- main .table-data .order table.recent-tasks th:first-child,
- main .table-data .order table.recent-tasks td:first-child {
-		width: 56px; /* keep Sno close to Name */
-	}
+	 main .table-data .order table.recent-tasks tbody td {
+			height: var(--recent-row-h);
+		}
+
+	 main .table-data .order table.recent-tasks tbody tr:nth-child(even) td {
+			background: rgba(0, 0, 0, 0.02);
+		}
+
+	 main .table-data .order table.recent-tasks tbody tr:hover td {
+			background: var(--grey);
+		}
+
+	 main .table-data .order table.recent-tasks td.name {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			font-weight: 600;
+		}
+
+	 main .table-data .order table.recent-tasks th:first-child,
+	 main .table-data .order table.recent-tasks td:first-child {
+			width: 56px; /* keep Sno close to Name */
+		}
 
  main .table-data .order table.recent-tasks th:nth-child(2),
  main .table-data .order table.recent-tasks td:nth-child(2),
@@ -221,13 +285,14 @@ html {
 		white-space: nowrap;
 	}
 
- main .table-data .order table td.status-col {
-		white-space: nowrap;
-	}
+	 main .table-data .order table td.status-col {
+			white-space: nowrap;
+		}
 
- main .table-data .order table td {
-		padding: 16px 0;
-	}
+	 /* Do not override recent-tasks cell padding */
+	 main .table-data .order table:not(.recent-tasks) td {
+			padding: 16px 0;
+		}
 
  main .table-data .order table tr td img {
 		width: 36px;
@@ -276,9 +341,9 @@ html {
 		font-weight: 700;
 	}
 
- main .table-data .order table tbody tr:hover {
-	background: var(--grey);
-}
+	 main .table-data .order table tbody tr:hover {
+		background: var(--grey);
+	}
 
  main .table-data .box-info {
 	flex-grow: 1;
