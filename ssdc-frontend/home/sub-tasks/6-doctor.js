@@ -13,6 +13,13 @@ let doctors = [];
 let editDoctorId = null;
 let monthlyStats = new Map();
 
+function clearNode(node){
+  if (!node) return;
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");
   const num = Number(cleaned);
@@ -130,32 +137,81 @@ function applySearch() {
 }
 
 function renderDoctors() {
-  table.innerHTML = "";
+  clearNode(table);
+  const frag = document.createDocumentFragment();
   doctors.forEach((d, i) => {
     const key = normalizeName(d.name);
     const stats = key ? (monthlyStats.get(key) || { revenue: 0, commission: 0 }) : { revenue: 0, commission: 0 };
     const profit = stats.revenue - stats.commission;
-    table.innerHTML += `
-      <tr>
-        <td class="sno">${i + 1}</td>
-        <td class="name">${d.name || "-"}</td>
-        <td class="specialization">${d.specialization || "-"}</td>
-        <td class="hospital">${d.hospital || "-"}</td>
-        <td class="phone">${d.phone || "-"}</td>
-        <td class="num profit">₹${formatMoney(profit)}</td>
-        <td class="num share">₹${formatMoney(stats.commission)}</td>
-        <td class="center">
-          <div class="menu">
-            <span class="menu-btn" onclick="toggleMenu(this)">⋮</span>
-            <div class="menu-list">
-              <div onclick="openEdit(${d.id})">Edit</div>
-              <div class="danger" onclick="deleteDoctor(${d.id})">Delete</div>
-            </div>
-          </div>
-        </td>
-      </tr>
-    `;
+
+    const tr = document.createElement("tr");
+
+    const tdSno = document.createElement("td");
+    tdSno.className = "sno";
+    tdSno.textContent = String(i + 1);
+
+    const tdName = document.createElement("td");
+    tdName.className = "name";
+    tdName.textContent = d?.name ? String(d.name) : "-";
+
+    const tdSpec = document.createElement("td");
+    tdSpec.className = "specialization";
+    tdSpec.textContent = d?.specialization ? String(d.specialization) : "-";
+
+    const tdHospital = document.createElement("td");
+    tdHospital.className = "hospital";
+    tdHospital.textContent = d?.hospital ? String(d.hospital) : "-";
+
+    const tdPhone = document.createElement("td");
+    tdPhone.className = "phone";
+    tdPhone.textContent = d?.phone ? String(d.phone) : "-";
+
+    const tdProfit = document.createElement("td");
+    tdProfit.className = "num profit";
+    tdProfit.textContent = `₹${formatMoney(profit)}`;
+
+    const tdShare = document.createElement("td");
+    tdShare.className = "num share";
+    tdShare.textContent = `₹${formatMoney(stats.commission)}`;
+
+    const tdOpt = document.createElement("td");
+    tdOpt.className = "center";
+
+    const menu = document.createElement("div");
+    menu.className = "menu";
+    const btn = document.createElement("span");
+    btn.className = "menu-btn";
+    btn.textContent = "⋮";
+    btn.addEventListener("click", () => toggleMenu(btn));
+    const list = document.createElement("div");
+    list.className = "menu-list";
+
+    const editItem = document.createElement("div");
+    editItem.textContent = "Edit";
+    editItem.addEventListener("click", () => openEdit(d.id));
+
+    const delItem = document.createElement("div");
+    delItem.className = "danger";
+    delItem.textContent = "Delete";
+    delItem.addEventListener("click", () => deleteDoctor(d.id));
+
+    list.appendChild(editItem);
+    list.appendChild(delItem);
+    menu.appendChild(btn);
+    menu.appendChild(list);
+    tdOpt.appendChild(menu);
+
+    tr.appendChild(tdSno);
+    tr.appendChild(tdName);
+    tr.appendChild(tdSpec);
+    tr.appendChild(tdHospital);
+    tr.appendChild(tdPhone);
+    tr.appendChild(tdProfit);
+    tr.appendChild(tdShare);
+    tr.appendChild(tdOpt);
+    frag.appendChild(tr);
   });
+  table.appendChild(frag);
   applySearch();
 }
 
@@ -176,13 +232,14 @@ function loadDoctors() {
   })
   .catch(err => {
     console.error("Error loading doctors", err);
-    table.innerHTML = `
-      <tr>
-        <td colspan="8" class="empty-cell">
-          Failed to load doctors
-        </td>
-      </tr>
-    `;
+    clearNode(table);
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 8;
+    td.className = "empty-cell";
+    td.textContent = "Failed to load doctors";
+    tr.appendChild(td);
+    table.appendChild(tr);
   });
 }
 
