@@ -61,6 +61,8 @@ setInterval(() => {
 }, 30 * 1000);
 
 let selected = new Set();
+let selectedRank = new Map(); // testId -> selection sequence (higher = more recent)
+let selectedSeq = 0;
 let testInfoMap = new Map();
 let allTests = [];
 let groups = [];
@@ -647,7 +649,6 @@ function selectPatient(p){
   localStorage.setItem("prefillPatient", JSON.stringify(p));
   localStorage.removeItem("currentPatient");
   localStorage.removeItem("patientResults");
-  localStorage.removeItem("selectedTests");
   applyPatientFilter();
 }
 /* TEST LIST */
@@ -732,6 +733,7 @@ function addSelectedTest(id){
     return;
   }
   selected.add(id);
+  selectedRank.set(id, ++selectedSeq);
   renderSelectedList();
   updateBillFromSelection();
 }
@@ -744,6 +746,7 @@ function addSelectedGroup(groupId){
   group.testIds.forEach(id => {
     if (testInfoMap.has(id)) {
       selected.add(id);
+      selectedRank.set(id, ++selectedSeq);
     }
   });
   renderSelectedList();
@@ -756,9 +759,43 @@ function removeSelectedTest(id){
     return;
   }
   selected.delete(id);
+  selectedRank.delete(id);
   renderSelectedList();
   updateBillFromSelection();
   updateSuggestions();
+}
+
+function getOrderedSelectedIds(){
+  return [...selected]
+    .map(id => ({
+      id,
+      category: testInfoMap.get(id)?.category,
+      rank: selectedRank.get(id) ?? 0
+    }))
+    .sort((a, b) => {
+      const ar = categoryPriority(a.category);
+      const br = categoryPriority(b.category);
+      if (ar !== br) return ar - br;
+      return (b.rank ?? 0) - (a.rank ?? 0);
+    })
+    .map(item => item.id);
+}
+
+function saveSelectedTestsToDb(patientId, orderedIds){
+  const safePatientId = Number(patientId);
+  const ids = Array.isArray(orderedIds) ? orderedIds : [];
+  if (!Number.isFinite(safePatientId) || !ids.length) {
+    return Promise.resolve();
+  }
+  const payload = ids.map(id => ({
+    patientId: safePatientId,
+    testId: Number(id)
+  }));
+  return fetch(API_BASE_URL + "/patient-tests/select", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).then(() => {}).catch(() => {});
 }
 
 function renderSelectedList(){
@@ -793,7 +830,9 @@ function renderSelectedList(){
       const ar = categoryPriority(a.category);
       const br = categoryPriority(b.category);
       if (ar !== br) return ar - br;
-      return a.name.localeCompare(b.name);
+      const aRank = selectedRank.get(a.id) ?? 0;
+      const bRank = selectedRank.get(b.id) ?? 0;
+      return bRank - aRank;
     });
 
   if (!groupRows.length && !testRows.length) {
@@ -904,7 +943,10 @@ function handleSelectedChange(event){
     if (type === "group") {
       const group = groupMap.get(id);
       if (group && Array.isArray(group.testIds)) {
-        group.testIds.forEach(testId => selected.delete(testId));
+        group.testIds.forEach(testId => {
+          selected.delete(testId);
+          selectedRank.delete(testId);
+        });
       }
       renderSelectedList();
       updateBillFromSelection();
@@ -1191,16 +1233,17 @@ patientForm.addEventListener("submit", e => {
 
   // ✅ EXISTING PATIENT → no save
   if (current && current.id) {
-    // Keep the user's selection order; reports.html will group by category but keep this order within category.
-    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    const ok = navigateToEnterValues();
-    if (!ok) {
-      window.ssdcAlert("Failed to open results page");
-      isSubmittingPatient = false;
-      if (savePatientBtn) {
-        savePatientBtn.disabled = false;
+    const orderedIds = getOrderedSelectedIds();
+    saveSelectedTestsToDb(current.id, orderedIds).finally(() => {
+      const ok = navigateToEnterValues();
+      if (!ok) {
+        window.ssdcAlert("Failed to open results page");
+        isSubmittingPatient = false;
+        if (savePatientBtn) {
+          savePatientBtn.disabled = false;
+        }
       }
-    }
+    });
     return;
   }
 
@@ -1222,16 +1265,17 @@ patientForm.addEventListener("submit", e => {
       throw new Error("Failed to save patient");
     }
     localStorage.setItem("currentPatient", JSON.stringify(p));
-    // Keep the user's selection order; reports.html will group by category but keep this order within category.
-    localStorage.setItem("selectedTests", JSON.stringify([...selected]));
-    const ok = navigateToEnterValues();
-    if (!ok) {
-      window.ssdcAlert("Patient saved, but failed to open results page");
-      isSubmittingPatient = false;
-      if (savePatientBtn) {
-        savePatientBtn.disabled = false;
+    const orderedIds = getOrderedSelectedIds();
+    return saveSelectedTestsToDb(p.id, orderedIds).finally(() => {
+      const ok = navigateToEnterValues();
+      if (!ok) {
+        window.ssdcAlert("Patient saved, but failed to open results page");
+        isSubmittingPatient = false;
+        if (savePatientBtn) {
+          savePatientBtn.disabled = false;
+        }
       }
-    }
+    });
   })
   .catch(err => {
     console.error(err);

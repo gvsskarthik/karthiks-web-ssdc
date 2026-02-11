@@ -3,6 +3,7 @@ package com.ssdc.ssdclabs.service;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,10 +81,13 @@ public class ReportService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Report is completed and locked");
         }
 
-        Set<Long> selectedTestIds = selections.stream()
-            .map(s -> s == null ? null : s.testId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toCollection(HashSet::new));
+        Set<Long> selectedTestIds = new LinkedHashSet<>();
+        for (PatientTestSelectionDTO selection : selections) {
+            if (selection == null || selection.testId == null) {
+                continue;
+            }
+            selectedTestIds.add(selection.testId);
+        }
 
         if (selectedTestIds.isEmpty()) {
             return;
@@ -420,23 +424,21 @@ public class ReportService {
         List<ReportResult> results = resultRepo.findByPatient_Id(
             Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(patientId, "patientId"));
-        Set<Long> testIds = results.stream()
-            .map(r -> r.getTest() == null ? null : r.getTest().getId())
-            .filter(Objects::nonNull)
-            .collect(Collectors.toCollection(HashSet::new));
-
-        List<PatientTestSelectionDTO> list = testIds.stream()
-            .map(id -> new PatientTestSelectionDTO(patientId, id))
-            .collect(Collectors.toList());
-        list.sort((a, b) -> {
-            if (a == null || b == null) {
-                return 0;
+        Set<Long> orderedTestIds = new LinkedHashSet<>();
+        for (ReportResult result : results) {
+            if (result == null || result.getTest() == null) {
+                continue;
             }
-            return Long.compare(
-                a.testId == null ? 0L : a.testId,
-                b.testId == null ? 0L : b.testId
-            );
-        });
+            Long id = result.getTest().getId();
+            if (id != null) {
+                orderedTestIds.add(id);
+            }
+        }
+
+        List<PatientTestSelectionDTO> list = new ArrayList<>();
+        for (Long testId : orderedTestIds) {
+            list.add(new PatientTestSelectionDTO(patientId, testId));
+        }
         return list;
     }
 

@@ -715,21 +715,11 @@ function loadSelectedTests(){
       const fromApi = (list || [])
         .map(x => Number(x.testId))
         .filter(id => !Number.isNaN(id));
-      // Don't let a partial API response overwrite a more complete cached selection.
-      // (e.g., when coming from enter-values and selectedTests is already known)
-      const cached = readCachedSelectedTests();
-      const merged = [...new Set([...cached, ...fromApi])]
-        .filter(id => Number.isFinite(id));
-      selectedTestIds = merged;
-      try {
-        localStorage.setItem("selectedTests", JSON.stringify(selectedTestIds));
-      } catch (e) {
-        // ignore storage errors
-      }
+      selectedTestIds = fromApi.filter(id => Number.isFinite(id));
       return selectedTestIds;
     })
     .catch(() => {
-      selectedTestIds = readCachedSelectedTests();
+      selectedTestIds = [];
       return selectedTestIds;
     });
 }
@@ -763,10 +753,7 @@ function readCachedResults(){
 }
 
 function readCachedSelectedTests(){
-  const list = readStorageJson("selectedTests", []);
-  return (Array.isArray(list) ? list : [])
-    .map(id => Number(id))
-    .filter(id => Number.isFinite(id));
+  return [];
 }
 
 function readCachedTests(){

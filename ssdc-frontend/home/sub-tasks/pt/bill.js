@@ -92,13 +92,7 @@ function loadSelectedTests(){
     .then(list => (list || [])
       .map(x => Number(x.testId))
       .filter(id => !Number.isNaN(id)))
-    .catch(() => {
-      const stored =
-        JSON.parse(localStorage.getItem("selectedTests") || "[]");
-      return (stored || [])
-        .map(id => Number(id))
-        .filter(id => !Number.isNaN(id));
-    });
+    .catch(() => []);
 }
 
 function setTotals(subtotalValue, discountValue, totalValue){

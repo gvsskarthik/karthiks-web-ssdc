@@ -18,6 +18,7 @@ public interface ReportResultRepository
         LEFT JOIN FETCH r.parameter p
         WHERE r.patient.id = :patientId
           AND r.patient.labId = :labId
+        ORDER BY r.id ASC
     """)
     List<ReportResult> findByPatient_Id(@Param("labId") String labId,
                                        @Param("patientId") Long patientId);
@@ -29,6 +30,7 @@ public interface ReportResultRepository
         LEFT JOIN FETCH r.parameter p
         WHERE r.patient.id IN :patientIds
           AND r.patient.labId = :labId
+        ORDER BY r.id ASC
     """)
     List<ReportResult> findByPatient_IdIn(@Param("labId") String labId,
                                          @Param("patientIds") List<Long> patientIds);

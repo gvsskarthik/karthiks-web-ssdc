@@ -1,6 +1,7 @@
 /* ================= LOAD SAVED RESULTS (LOCAL) ================= */
 let savedResults = [];
 let selectedTestsCache = [];
+let selectedIdsCache = [];
 
 /* ================= LOAD PATIENT ================= */
 const patient =
@@ -138,23 +139,14 @@ loadPrintSettings();
 
 /* ================= LOAD SELECTED TEST IDS ================= */
 function loadSelectedIds(){
-  const local =
-    JSON.parse(localStorage.getItem("selectedTests") || "[]");
-  if (local.length) {
-    if (!reportLocked) {
-      saveSelectedTestsToDb(local);
-    }
-    return Promise.resolve(local);
-  }
-
   return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
     .then(res => res.json())
     .then(list => {
       const rows = Array.isArray(list) ? list : [];
       const ids = rows.map(x => x && x.testId).filter(Boolean);
-      localStorage.setItem("selectedTests", JSON.stringify(ids));
       return ids;
-    });
+    })
+    .catch(() => []);
 }
 
 /* ================= LOAD SAVED RESULTS (DB) ================= */
@@ -164,15 +156,10 @@ function loadSavedResults(){
     .then(list => {
       const incoming = list || [];
       savedResults = normalizeResults(incoming);
-      if (savedResults.length) {
-        localStorage.setItem("patientResults", JSON.stringify(savedResults));
-      }
       return savedResults;
     })
     .catch(() => {
-      const cached =
-        JSON.parse(localStorage.getItem("patientResults") || "[]");
-      savedResults = normalizeResults(cached);
+      savedResults = [];
       return savedResults;
     });
 }
@@ -215,36 +202,38 @@ loadSavedResults()
     let ids = selectedIds;
     if (!ids.length && savedResults.length) {
       ids = deriveSelectedFromResults();
-      localStorage.setItem("selectedTests", JSON.stringify(ids));
+      if (!reportLocked) {
+        saveSelectedTestsToDb(ids);
+      }
     }
     if (!ids.length) {
       window.ssdcAlert("No tests selected");
       return;
     }
+    selectedIdsCache = ids.slice();
 
     /* ================= LOAD TEST MASTER ================= */
     return fetch(API_BASE_URL + "/tests/active")
       .then(res => res.json())
       .then(allTests => {
-        try {
-          localStorage.setItem("testsActiveCache", JSON.stringify(allTests || []));
-          localStorage.setItem("testsActiveCacheAt", String(Date.now()));
-        } catch (e) {
-          // ignore storage errors
-        }
         const activeTests = (allTests || [])
           .filter(t => t && t.active !== false);
         const selectedTests =
           activeTests.filter(t => ids.includes(t.id));
-        selectedTestsCache = sortTestsByOrder(selectedTests);
+        selectedTestsCache = sortTestsByOrder(selectedTests, ids);
         renderTests(selectedTestsCache);
       });
   });
 
-function sortTestsByOrder(tests){
+function sortTestsByOrder(tests, selectedIds){
   const list = Array.isArray(tests) ? tests : [];
   const indexById = new Map();
-  list.forEach((t, i) => indexById.set(Number(t?.id), i));
+  (Array.isArray(selectedIds) ? selectedIds : []).forEach((id, i) => {
+    const n = Number(id);
+    if (Number.isFinite(n) && !indexById.has(n)) {
+      indexById.set(n, i);
+    }
+  });
   const categoryById = new Map();
   list.forEach(t => categoryById.set(Number(t?.id), t?.category || ""));
 
@@ -1108,13 +1097,8 @@ async function saveOnly() {
   }
 
   const results = collectResults();
-  let selectedIds = [];
-  try {
-    selectedIds = JSON.parse(localStorage.getItem("selectedTests") || "[]");
-  } catch (e) {
-    selectedIds = [];
-  }
-  if (!Array.isArray(selectedIds) || !selectedIds.length) {
+  let selectedIds = Array.isArray(selectedIdsCache) ? selectedIdsCache.slice() : [];
+  if (!selectedIds.length) {
     if (Array.isArray(selectedTestsCache) && selectedTestsCache.length) {
       selectedIds = selectedTestsCache
         .map(t => Number(t?.id))
@@ -1128,16 +1112,7 @@ async function saveOnly() {
     }
   }
 
-  // Ensure reports.html always knows the selected test list, even if the initial
-  // /patient-tests/{id} fetch hasn't completed yet.
-  try {
-    localStorage.setItem("selectedTests", JSON.stringify(selectedIds || []));
-  } catch (e) {
-    // ignore storage errors
-  }
-
   const finishSave = () => {
-    localStorage.setItem("patientResults", JSON.stringify(results));
     location.href = "reports.html";
   };
 
