@@ -1367,6 +1367,28 @@ function normalizeEditPin(value){
   return String(value == null ? "" : value).trim();
 }
 
+async function reopenCompletedPatientForEdit(patientId, editPin) {
+  const safeId = Number(patientId);
+  if (!Number.isFinite(safeId)) {
+    throw new Error("Patient ID missing");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/patients/${safeId}/status`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Edit-Pin": String(editPin || "").trim()
+    },
+    body: JSON.stringify({ status: "NOT COMPLETE" })
+  });
+
+  const text = await res.text().catch(() => "");
+  if (!res.ok) {
+    throw new Error(text || "Failed to unlock patient");
+  }
+  return text ? JSON.parse(text) : null;
+}
+
 async function ensureCompletedEditPin(patient){
   if (!isCompletedStatus(patient?.status)) {
     completedEditPin = null;
@@ -1389,7 +1411,19 @@ async function ensureCompletedEditPin(patient){
     return false;
   }
 
-  completedEditPin = normalized;
+  // Unlock permanently by reopening the report in DB (COMPLETED -> NOT COMPLETE).
+  try {
+    const updated = await reopenCompletedPatientForEdit(patient?.id || editingPatientId, normalized);
+    if (patient && typeof patient === "object") {
+      patient.status = updated?.status || "NOT COMPLETE";
+    }
+  } catch (err) {
+    console.error(err);
+    await window.ssdcAlert(err?.message || "Failed to unlock patient", { title: "Error" });
+    return false;
+  }
+
+  completedEditPin = null;
   return true;
 }
 
