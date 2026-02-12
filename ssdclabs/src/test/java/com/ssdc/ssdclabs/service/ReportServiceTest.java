@@ -56,7 +56,6 @@ class ReportServiceTest {
         row.setResultValue("13\n14\n15");
 
         when(resultRepo.findByPatient_Id("ssdc", 1L)).thenReturn(List.of(row));
-        when(paramRepo.findByTest_IdOrderByIdAsc(10L)).thenReturn(List.of(param));
 
         List<PatientTestResultDTO> out = service.getResults("ssdc", 1L);
 
@@ -94,7 +93,18 @@ class ReportServiceTest {
         row.setResultValue("50\n55");
 
         when(resultRepo.findByPatient_Id("ssdc", 1L)).thenReturn(List.of(row));
-        when(paramRepo.findByTest_IdOrderByIdAsc(20L)).thenReturn(List.of(param, new TestParameter()));
+        TestParameterRepository.TestParamCount count = new TestParameterRepository.TestParamCount() {
+            @Override
+            public Long getTestId() {
+                return 20L;
+            }
+
+            @Override
+            public Long getParamCount() {
+                return 2L;
+            }
+        };
+        when(paramRepo.countByTestIds(any())).thenReturn(List.of(count));
 
         List<PatientTestResultDTO> out = service.getResults("ssdc", 1L);
 
