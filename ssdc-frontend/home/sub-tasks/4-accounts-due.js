@@ -11,8 +11,11 @@ const backBtn = document.getElementById("backBtn");
 const dueBody = document.getElementById("dueBody");
 const rangeSubtitle = document.getElementById("rangeSubtitle");
 const tableMeta = document.getElementById("tableMeta");
+const dueDateHeader = document.getElementById("dueDateHeader");
 
 let doctors = [];
+let currentDueRows = [];
+let dueDateSortDir = null; // null | "asc" | "desc"
 
 function isYmd(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim());
@@ -182,6 +185,54 @@ function renderRows(rows) {
   tableMeta.textContent = `${list.length} patient(s) • Total Due: ${formatInr(totalDue)}`;
 }
 
+function compareYmd(a, b) {
+  const aa = String(a || "").trim();
+  const bb = String(b || "").trim();
+  if (aa === bb) return 0;
+  return aa < bb ? -1 : 1;
+}
+
+function getSortedDueRowsForDisplay() {
+  const list = Array.isArray(currentDueRows) ? currentDueRows.slice() : [];
+  if (dueDateSortDir !== "asc" && dueDateSortDir !== "desc") {
+    return list;
+  }
+  list.sort((x, y) => {
+    const c = compareYmd(x?.visitDate, y?.visitDate);
+    if (c !== 0) {
+      return dueDateSortDir === "asc" ? c : -c;
+    }
+    const xi = Number(x?.patientId) || 0;
+    const yi = Number(y?.patientId) || 0;
+    return dueDateSortDir === "asc" ? (xi - yi) : (yi - xi);
+  });
+  return list;
+}
+
+function updateDueDateHeaderLabel() {
+  if (!dueDateHeader) return;
+  let suffix = "";
+  if (dueDateSortDir === "asc") suffix = " ▲";
+  if (dueDateSortDir === "desc") suffix = " ▼";
+  dueDateHeader.textContent = `Date${suffix}`;
+}
+
+function setupDueDateHeaderSort() {
+  if (!dueDateHeader) return;
+  dueDateHeader.style.cursor = "pointer";
+  dueDateHeader.title = "Sort by date";
+  updateDueDateHeaderLabel();
+  dueDateHeader.addEventListener("click", () => {
+    if (dueDateSortDir == null) {
+      dueDateSortDir = "asc";
+    } else {
+      dueDateSortDir = dueDateSortDir === "asc" ? "desc" : "asc";
+    }
+    updateDueDateHeaderLabel();
+    renderRows(getSortedDueRowsForDisplay());
+  });
+}
+
 async function loadDoctors(selectedId) {
   clearNode(doctorSelect);
   const optAll = document.createElement("option");
@@ -241,9 +292,12 @@ async function loadDue(range) {
   showMessage("Loading…");
   try {
     const rows = await fetchJson(`${apiPath("/accounts/due")}?${qs.toString()}`);
-    renderRows(rows);
+    currentDueRows = Array.isArray(rows) ? rows : [];
+    updateDueDateHeaderLabel();
+    renderRows(getSortedDueRowsForDisplay());
   } catch (err) {
     console.error("Failed to load due list", err);
+    currentDueRows = [];
     showMessage("Failed to load due list.");
   }
 }
@@ -259,6 +313,7 @@ function init() {
   const initial = resolveInitialFilters();
   dateFromInput.value = initial.range.from;
   dateToInput.value = initial.range.to;
+  setupDueDateHeaderSort();
 
   loadDoctors(initial.doctorId).then(() => {
     const range = { from: dateFromInput.value, to: dateToInput.value };

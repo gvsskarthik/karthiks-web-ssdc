@@ -52,6 +52,7 @@ function clearNode(node) {
 }
 
 let latestRecentTasks = [];
+let homeDateSortDir = null; // null | "asc" | "desc"
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -95,6 +96,58 @@ function setupDueHeaderNavigation() {
       return;
     }
     window.location.href = `4-accounts-due.html?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+  });
+}
+
+function compareYmd(a, b) {
+  const aa = String(a || "").trim();
+  const bb = String(b || "").trim();
+  if (aa === bb) return 0;
+  return aa < bb ? -1 : 1;
+}
+
+function getSortedRecentTasksForDisplay() {
+  const list = Array.isArray(latestRecentTasks) ? latestRecentTasks.slice() : [];
+  if (homeDateSortDir !== "asc" && homeDateSortDir !== "desc") {
+    return list;
+  }
+  list.sort((x, y) => {
+    const c = compareYmd(x?.dateYmd, y?.dateYmd);
+    if (c !== 0) {
+      return homeDateSortDir === "asc" ? c : -c;
+    }
+    const xi = Number(x?.id) || 0;
+    const yi = Number(y?.id) || 0;
+    return homeDateSortDir === "asc" ? (xi - yi) : (yi - xi);
+  });
+  return list;
+}
+
+function updateHomeDateHeaderLabel() {
+  const dateHeader = document.getElementById("homeDateHeader");
+  if (!dateHeader) return;
+  let suffix = "";
+  if (homeDateSortDir === "asc") suffix = " ▲";
+  if (homeDateSortDir === "desc") suffix = " ▼";
+  dateHeader.textContent = `Date${suffix}`;
+}
+
+function setupDateHeaderSort() {
+  const dateHeader = document.getElementById("homeDateHeader");
+  if (!dateHeader) {
+    return;
+  }
+  dateHeader.style.cursor = "pointer";
+  dateHeader.title = "Sort by date";
+  updateHomeDateHeaderLabel();
+  dateHeader.addEventListener("click", () => {
+    if (homeDateSortDir == null) {
+      homeDateSortDir = "asc";
+    } else {
+      homeDateSortDir = homeDateSortDir === "asc" ? "desc" : "asc";
+    }
+    updateHomeDateHeaderLabel();
+    renderRecentTasksTable(getSortedRecentTasksForDisplay());
   });
 }
 
@@ -192,13 +245,16 @@ function loadHomeSummary(){
         });
       }
       latestRecentTasks = tasks;
-      renderRecentTasksTable(tasks);
+      updateHomeDateHeaderLabel();
+      renderRecentTasksTable(getSortedRecentTasksForDisplay());
     })
     .catch(() => {
       latestRecentTasks = [];
+      updateHomeDateHeaderLabel();
       renderRecentTasksTable([]);
     });
 }
 
 setupDueHeaderNavigation();
+setupDateHeaderSort();
 loadHomeSummary();

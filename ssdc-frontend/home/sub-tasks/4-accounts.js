@@ -14,10 +14,12 @@ const dateToInput = document.getElementById("dateTo");
 const applyFilters = document.getElementById("applyFilters");
 const detailTitle = document.getElementById("detailTitle");
 const detailsBody = document.getElementById("detailsBody");
+const accountsDateHeader = document.getElementById("accountsDateHeader");
 
 let doctors = [];
 let currentRows = [];
 let currentDoctorFallback = "";
+let dateSortDir = null; // null | "asc" | "desc"
 
 function isYmd(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim());
@@ -181,6 +183,54 @@ function renderDetails(rows, doctorNameFallback){
   detailsBody.appendChild(frag);
 }
 
+function compareYmd(a, b) {
+  const aa = String(a || "").trim();
+  const bb = String(b || "").trim();
+  if (aa === bb) return 0;
+  return aa < bb ? -1 : 1;
+}
+
+function getSortedRowsForDisplay() {
+  const list = Array.isArray(currentRows) ? currentRows.slice() : [];
+  if (dateSortDir !== "asc" && dateSortDir !== "desc") {
+    return list;
+  }
+  list.sort((x, y) => {
+    const c = compareYmd(x?.date, y?.date);
+    if (c !== 0) {
+      return dateSortDir === "asc" ? c : -c;
+    }
+    const xi = Number(x?.reportId?.replace?.(/^R/i, "")) || 0;
+    const yi = Number(y?.reportId?.replace?.(/^R/i, "")) || 0;
+    return dateSortDir === "asc" ? (xi - yi) : (yi - xi);
+  });
+  return list;
+}
+
+function updateDateHeaderLabel() {
+  if (!accountsDateHeader) return;
+  let suffix = "";
+  if (dateSortDir === "asc") suffix = " ▲";
+  if (dateSortDir === "desc") suffix = " ▼";
+  accountsDateHeader.textContent = `Date${suffix}`;
+}
+
+function setupDateHeaderSort() {
+  if (!accountsDateHeader) return;
+  accountsDateHeader.style.cursor = "pointer";
+  accountsDateHeader.title = "Sort by date";
+  updateDateHeaderLabel();
+  accountsDateHeader.addEventListener("click", () => {
+    if (dateSortDir == null) {
+      dateSortDir = "asc";
+    } else {
+      dateSortDir = dateSortDir === "asc" ? "desc" : "asc";
+    }
+    updateDateHeaderLabel();
+    renderDetails(getSortedRowsForDisplay(), currentDoctorFallback);
+  });
+}
+
 async function fetchJson(url){
   const response = await fetch(url);
   if (!response.ok) {
@@ -318,6 +368,7 @@ async function loadDetails() {
   updateDetailTitle();
   setDetailsMessage("Loading...");
   setSummaryMessage("Loading...");
+  updateDateHeaderLabel();
 
   const range = resolveCurrentRange();
   const qs = new URLSearchParams();
@@ -331,7 +382,7 @@ async function loadDetails() {
   try {
     const rows = await fetchJson(apiPath(`/accounts/details?${qs.toString()}`));
     currentRows = Array.isArray(rows) ? rows : [];
-    renderDetails(currentRows, currentDoctorFallback);
+    renderDetails(getSortedRowsForDisplay(), currentDoctorFallback);
     renderSummaryFromRows(currentRows);
   } catch (err) {
     console.error("Failed to load account details", err);
@@ -343,6 +394,7 @@ async function loadDetails() {
 function init(){
   setFilterInputsToThisMonth();
   loadDoctors().finally(() => loadDetails());
+  setupDateHeaderSort();
 
   if (sumDue) {
     sumDue.style.cursor = "pointer";
