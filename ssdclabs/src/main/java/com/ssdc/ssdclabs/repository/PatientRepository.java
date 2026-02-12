@@ -301,4 +301,46 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,
             Pageable pageable);
+
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :from AND :to
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Patient> findAllWithDoctorByLabIdAndVisitDateBetweenOrderByVisitDateDescIdDesc(
+            @Param("labId") String labId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
+
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :from AND :to
+          AND d.id = :doctorId
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Patient> findAllWithDoctorByLabIdAndDoctorIdAndVisitDateBetweenOrderByVisitDateDescIdDesc(
+            @Param("labId") String labId,
+            @Param("doctorId") Long doctorId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
+
+    @Query("""
+        SELECT p
+        FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :from AND :to
+          AND (d IS NULL OR LOWER(d.name) = 'self')
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<Patient> findAllWithDoctorSelfByLabIdAndVisitDateBetweenOrderByVisitDateDescIdDesc(
+            @Param("labId") String labId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 }

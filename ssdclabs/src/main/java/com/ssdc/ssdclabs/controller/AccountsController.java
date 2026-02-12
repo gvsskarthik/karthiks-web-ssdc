@@ -46,8 +46,28 @@ public class AccountsController {
     }
 
     @GetMapping("/details")
-    public List<AccountsDoctorDetailDTO> getAllDetails(@NonNull Principal principal) {
-        return accountsService.getAllDetails(principal.getName());
+    public List<AccountsDoctorDetailDTO> getAllDetails(
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String doctorId,
+            @NonNull Principal principal) {
+        final boolean hasAnyFilter =
+            (from != null && !from.trim().isEmpty())
+            || (to != null && !to.trim().isEmpty())
+            || (doctorId != null && !doctorId.trim().isEmpty());
+        if (!hasAnyFilter) {
+            return accountsService.getAllDetails(principal.getName());
+        }
+        try {
+            return accountsService.getDetailsFiltered(
+                principal.getName(),
+                from,
+                to,
+                doctorId
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 
     @GetMapping("/due")

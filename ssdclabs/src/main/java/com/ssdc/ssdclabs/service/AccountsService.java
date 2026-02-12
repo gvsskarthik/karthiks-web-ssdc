@@ -204,6 +204,71 @@ public class AccountsService {
         return details;
     }
 
+    public @NonNull List<AccountsDoctorDetailDTO> getDetailsFiltered(
+            @NonNull String labId,
+            String from,
+            String to,
+            String doctorId) {
+        final String safeLabId = Objects.requireNonNull(labId, "labId");
+        final DateRange range = resolveDateRange(from, to);
+
+        final DoctorFilter selection = resolveDoctorFilter(safeLabId, doctorId);
+
+        final List<Patient> patients;
+        if (selection.type == DoctorFilterType.ALL) {
+            patients = patientRepo.findAllWithDoctorByLabIdAndVisitDateBetweenOrderByVisitDateDescIdDesc(
+                safeLabId,
+                range.from(),
+                range.to()
+            );
+        } else if (selection.type == DoctorFilterType.SELF) {
+            patients = patientRepo.findAllWithDoctorSelfByLabIdAndVisitDateBetweenOrderByVisitDateDescIdDesc(
+                safeLabId,
+                range.from(),
+                range.to()
+            );
+        } else if (selection.doctorId != null) {
+            patients = patientRepo.findAllWithDoctorByLabIdAndDoctorIdAndVisitDateBetweenOrderByVisitDateDescIdDesc(
+                safeLabId,
+                selection.doctorId,
+                range.from(),
+                range.to()
+            );
+        } else {
+            patients = new ArrayList<>();
+        }
+
+        final List<AccountsDoctorDetailDTO> details = new ArrayList<>();
+        for (Patient patient : patients) {
+            double bill = safeAmount(patient);
+            double discount = safeDiscount(patient);
+            double paid = safePaid(patient, bill);
+            double due = Math.max(0, bill - paid);
+            String doctorName = resolveDoctorName(patient);
+            double rate = commissionRateFor(patient.getDoctor(), doctorName);
+            double commission = calculateCommission(bill, rate);
+            String date = patient.getVisitDate() == null
+                ? ""
+                : patient.getVisitDate().toString();
+            String reportId = patient.getId() == null
+                ? ""
+                : "R" + patient.getId();
+            details.add(new AccountsDoctorDetailDTO(
+                date,
+                reportId,
+                patient.getName(),
+                normalizeDoctorName(doctorName),
+                bill,
+                discount,
+                paid,
+                due,
+                commission
+            ));
+        }
+
+        return details;
+    }
+
     public @NonNull List<AccountsDuePatientDTO> getDuePatients(
             @NonNull String labId,
             String from,
@@ -421,6 +486,42 @@ public class AccountsService {
     }
 
     private record DateRange(LocalDate from, LocalDate to) {}
+
+    private enum DoctorFilterType { ALL, SELF, ID, INVALID }
+
+    private static final class DoctorFilter {
+        final DoctorFilterType type;
+        final Long doctorId;
+
+        DoctorFilter(DoctorFilterType type, Long doctorId) {
+            this.type = type;
+            this.doctorId = doctorId;
+        }
+    }
+
+    private DoctorFilter resolveDoctorFilter(String labId, String doctorId) {
+        if (doctorId == null) {
+            return new DoctorFilter(DoctorFilterType.ALL, null);
+        }
+        final String trimmed = doctorId.trim();
+        if (trimmed.isEmpty()) {
+            return new DoctorFilter(DoctorFilterType.ALL, null);
+        }
+        if (isSelfDoctor(trimmed)) {
+            return new DoctorFilter(DoctorFilterType.SELF, null);
+        }
+        final Long numeric = parseLong(trimmed);
+        if (numeric != null) {
+            return new DoctorFilter(DoctorFilterType.ID, numeric);
+        }
+        final Long resolved = doctorRepo.findFirstByLabIdAndNameIgnoreCase(labId, trimmed)
+            .map(Doctor::getId)
+            .orElse(null);
+        if (resolved == null) {
+            return new DoctorFilter(DoctorFilterType.INVALID, null);
+        }
+        return new DoctorFilter(DoctorFilterType.ID, resolved);
+    }
 
     private static final class OffsetBasedPageRequest extends AbstractPageRequest {
         private final long offset;

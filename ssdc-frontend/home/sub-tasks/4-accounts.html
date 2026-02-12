@@ -21,7 +21,6 @@
       <div class="subtitle">Revenue, discounts, and commissions</div>
     </div>
     <div class="header-actions">
-    <button class="btn secondary" id="dateRangeBtn">📅 Date Range</button>
     <button class="btn" id="exportExcel">⬇ Export Excel</button>
     </div>
   </div>
@@ -39,11 +38,28 @@
 
   <!-- LEFT -->
   <div class="neo card filter-card">
-    <div class="card-head filter-head">
-      <label class="small" for="doctor">Doctor Filter</label>
-      <select id="doctor" class="neo-select neo-pressed">
-        <option value="">All</option>
-      </select>
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label class="small" for="doctor">Doctor</label>
+        <select id="doctor" class="neo-select neo-pressed">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label class="small" for="dateFrom">From</label>
+        <input id="dateFrom" type="date" class="neo-input neo-pressed">
+      </div>
+
+      <div class="filter-item">
+        <label class="small" for="dateTo">To</label>
+        <input id="dateTo" type="date" class="neo-input neo-pressed">
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn" id="applyFilters" type="button">Apply</button>
+        <button class="btn secondary" id="thisMonth" type="button">This Month</button>
+      </div>
     </div>
   </div>
 
@@ -78,25 +94,6 @@
 
 </div>
 
-</div>
-
-<div class="modal" id="dateRangeModal" aria-hidden="true">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h4>Date Range</h4>
-      <button class="icon-btn" id="closeDateRange" type="button">X</button>
-    </div>
-    <div class="modal-body">
-      <label for="dateFrom">From</label>
-      <input id="dateFrom" type="date" class="neo-input neo-pressed">
-      <label for="dateTo">To</label>
-      <input id="dateTo" type="date" class="neo-input neo-pressed">
-    </div>
-    <div class="modal-actions">
-      <button class="btn" id="applyDateRange" type="button">Apply</button>
-      <button class="btn secondary" id="clearDateRange" type="button">Clear</button>
-    </div>
-  </div>
 </div>
 
 <script src="../../api.js"></script>

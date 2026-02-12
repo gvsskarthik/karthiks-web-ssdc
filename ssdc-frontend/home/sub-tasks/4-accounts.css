@@ -186,10 +186,6 @@ body {
   padding: 14px 16px;
 }
 
-.filter-card .card-head {
-  margin-bottom: 0;
-}
-
 .card-head {
   display: flex;
   align-items: center;
@@ -203,10 +199,22 @@ body {
   letter-spacing: .2px;
 }
 
-.filter-head {
-  flex-direction: column;
-  align-items: stretch;
+.filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1.2fr 1fr 1fr auto;
+  align-items: end;
+}
+
+.filter-item {
+  display: grid;
   gap: 6px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .neo-select {
@@ -386,6 +394,9 @@ thead th {
   .header{flex-direction:column; align-items:flex-start;}
   .summary{grid-template-columns:repeat(2, minmax(0, 1fr));}
   .table-wrap{max-height:none;}
+  .filter-grid{grid-template-columns:1fr 1fr;}
+  .filter-actions{justify-content:stretch;}
+  .filter-actions .btn{flex:1;}
 }
 
 @media (max-width:640px){
@@ -393,4 +404,5 @@ thead th {
   .summary{grid-template-columns:1fr;}
   .summary p{font-size:24px;}
   .btn{width:100%; justify-content:center;}
+  .filter-grid{grid-template-columns:1fr;}
 }

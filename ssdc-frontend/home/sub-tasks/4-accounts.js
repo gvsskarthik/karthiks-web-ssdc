@@ -9,21 +9,16 @@ const sumCommission = document.getElementById("sumCommission");
 const sumProfit = document.getElementById("sumProfit");
 const doctorSelect = document.getElementById("doctor");
 const exportExcel = document.getElementById("exportExcel");
-const dateRangeBtn = document.getElementById("dateRangeBtn");
-const dateRangeModal = document.getElementById("dateRangeModal");
-const closeDateRange = document.getElementById("closeDateRange");
 const dateFromInput = document.getElementById("dateFrom");
 const dateToInput = document.getElementById("dateTo");
-const applyDateRange = document.getElementById("applyDateRange");
-const clearDateRange = document.getElementById("clearDateRange");
+const applyFilters = document.getElementById("applyFilters");
+const thisMonthBtn = document.getElementById("thisMonth");
 const detailTitle = document.getElementById("detailTitle");
 const detailsBody = document.getElementById("detailsBody");
 
 let doctors = [];
-let selectedDoctor = null;
 let currentRows = [];
 let currentDoctorFallback = "";
-let dateRange = { from: null, to: null };
 
 function isYmd(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim());
@@ -52,16 +47,6 @@ function monthRangeForYmd(ymd) {
     from: `${year}-${pad2(month)}-01`,
     to: `${year}-${pad2(month)}-${pad2(lastDay)}`
   };
-}
-
-function ymdFromUtcDate(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const y = date.getUTCFullYear();
-  const m = date.getUTCMonth() + 1;
-  const d = date.getUTCDate();
-  return `${y}-${pad2(m)}-${pad2(d)}`;
 }
 
 function clearNode(node){
@@ -197,72 +182,6 @@ function renderDetails(rows, doctorNameFallback){
   detailsBody.appendChild(frag);
 }
 
-function parseDateValue(value){
-  const raw = String(value || "").trim();
-  if (!raw) {
-    return null;
-  }
-  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    const year = Number(isoMatch[1]);
-    const month = Number(isoMatch[2]);
-    const day = Number(isoMatch[3]);
-    return new Date(Date.UTC(year, month - 1, day));
-  }
-  const parts = raw.split(/[\/-]/);
-  if (parts.length === 3) {
-    let year;
-    let month;
-    let day;
-    if (parts[0].length === 4) {
-      year = Number(parts[0]);
-      month = Number(parts[1]);
-      day = Number(parts[2]);
-    } else {
-      day = Number(parts[0]);
-      month = Number(parts[1]);
-      year = Number(parts[2]);
-    }
-    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
-      return new Date(Date.UTC(year, month - 1, day));
-    }
-  }
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-  return new Date(Date.UTC(
-    parsed.getFullYear(),
-    parsed.getMonth(),
-    parsed.getDate()
-  ));
-}
-
-function applyDateFilter(rows){
-  if (!dateRange.from && !dateRange.to) {
-    return rows;
-  }
-  return rows.filter(row => {
-    const rowDate = parseDateValue(row.date);
-    if (!rowDate) {
-      return false;
-    }
-    if (dateRange.from && rowDate < dateRange.from) {
-      return false;
-    }
-    if (dateRange.to && rowDate > dateRange.to) {
-      return false;
-    }
-    return true;
-  });
-}
-
-function renderCurrentRows(rows, doctorNameFallback){
-  const filtered = applyDateFilter(rows || []);
-  renderDetails(filtered, doctorNameFallback);
-  renderSummaryFromRows(filtered);
-}
-
 async function fetchJson(url){
   const response = await fetch(url);
   if (!response.ok) {
@@ -309,18 +228,14 @@ function renderSummaryFromRows(rows){
   setSummaryValues(data);
 }
 
-async function loadAllDetails(){
-  detailTitle.innerText = "All Accounts";
-  setDetailsMessage("Loading...");
-  try{
-    const rows = await fetchJson(apiPath("/accounts/details"));
-    currentRows = Array.isArray(rows) ? rows : [];
-    currentDoctorFallback = "";
-    renderCurrentRows(currentRows);
-  } catch (err) {
-    console.error("Failed to load all account details", err);
-    setDetailsMessage("Failed to load");
+function resolveCurrentRange() {
+  const from = String(dateFromInput?.value || "").trim();
+  const to = String(dateToInput?.value || "").trim();
+  if (isYmd(from) && isYmd(to)) {
+    return { from, to };
   }
+  const month = monthRangeForYmd(getTodayYmdIst());
+  return { from: month.from, to: month.to };
 }
 
 async function loadDoctors(){
@@ -368,57 +283,69 @@ function getExportState(){
   };
 }
 
-async function selectDoctor(id){
-  selectedDoctor = id;
-  const doc = doctors.find(d => String(d.doctorId) === String(id));
-  if (!doc) {
-    detailTitle.innerText = "No Results";
-    setDetailsMessage("No records found");
+function setFilterInputsToThisMonth() {
+  const month = monthRangeForYmd(getTodayYmdIst());
+  if (dateFromInput) dateFromInput.value = month.from;
+  if (dateToInput) dateToInput.value = month.to;
+  return month;
+}
+
+function updateDetailTitle() {
+  const range = resolveCurrentRange();
+  const dateText =
+    (window.formatYmdToDdMmYyyy
+      ? `${window.formatYmdToDdMmYyyy(range.from)} to ${window.formatYmdToDdMmYyyy(range.to)}`
+      : `${range.from} to ${range.to}`);
+
+  const id = doctorSelect?.value || "";
+  if (!id) {
+    detailTitle.innerText = `All Accounts (${dateText})`;
+    currentDoctorFallback = "";
     return;
   }
+  const doc = doctors.find(d => String(d.doctorId) === String(id));
+  const docName = doc?.doctorName || "Doctor";
+  const rate = formatNumber(doc?.commissionRate);
+  detailTitle.innerText = `Billing Details: ${docName} (${rate}%) • ${dateText}`;
+  currentDoctorFallback = docName;
+}
 
-  detailTitle.innerText =
-    `Billing Details: ${doc.doctorName || "Doctor"} (${formatNumber(doc.commissionRate)}%)`;
+async function loadDetails() {
+  updateDetailTitle();
   setDetailsMessage("Loading...");
+  setSummaryMessage("Loading...");
 
-  try{
-    const rows = await fetchJson(
-      apiPath(`/accounts/doctor/${encodeURIComponent(id)}/details`)
-    );
+  const range = resolveCurrentRange();
+  const qs = new URLSearchParams();
+  qs.set("from", range.from);
+  qs.set("to", range.to);
+  const doctorId = doctorSelect?.value || "";
+  if (doctorId) {
+    qs.set("doctorId", doctorId);
+  }
 
+  try {
+    const rows = await fetchJson(apiPath(`/accounts/details?${qs.toString()}`));
     currentRows = Array.isArray(rows) ? rows : [];
-    currentDoctorFallback = doc.doctorName || "Doctor";
-    renderCurrentRows(currentRows, currentDoctorFallback);
+    renderDetails(currentRows, currentDoctorFallback);
+    renderSummaryFromRows(currentRows);
   } catch (err) {
-    console.error("Failed to load doctor details", err);
+    console.error("Failed to load account details", err);
     setDetailsMessage("Failed to load");
+    setSummaryMessage("Failed to load");
   }
 }
 
 function init(){
-  loadDoctors();
-  loadAllDetails();
+  setFilterInputsToThisMonth();
+  loadDoctors().finally(() => loadDetails());
 
   if (sumDue) {
     sumDue.style.cursor = "pointer";
     sumDue.title = "Open due list";
     sumDue.addEventListener("click", () => {
       const selectedDoctorId = doctorSelect.value || "";
-      const fromYmd = ymdFromUtcDate(dateRange.from);
-      const toYmd = ymdFromUtcDate(dateRange.to);
-
-      let range;
-      if (isYmd(fromYmd) && isYmd(toYmd)) {
-        range = { from: fromYmd, to: toYmd };
-      } else if (isYmd(fromYmd) && !isYmd(toYmd)) {
-        const month = monthRangeForYmd(fromYmd);
-        range = { from: fromYmd, to: month.to };
-      } else if (!isYmd(fromYmd) && isYmd(toYmd)) {
-        const month = monthRangeForYmd(toYmd);
-        range = { from: month.from, to: toYmd };
-      } else {
-        range = monthRangeForYmd(getTodayYmdIst());
-      }
+      const range = resolveCurrentRange();
 
       const qs = new URLSearchParams();
       qs.set("from", range.from);
@@ -437,13 +364,7 @@ function init(){
   }
 
   doctorSelect.addEventListener("change", () => {
-    const value = doctorSelect.value;
-    if (!value) {
-      selectedDoctor = null;
-      loadAllDetails();
-      return;
-    }
-    selectDoctor(value);
+    loadDetails();
   });
 
   exportExcel.addEventListener("click", () => {
@@ -452,46 +373,28 @@ function init(){
     window.open("export.html", "_blank");
   });
 
-  dateRangeBtn.addEventListener("click", () => {
-    dateRangeModal.classList.add("is-open");
-    dateRangeModal.setAttribute("aria-hidden", "false");
-  });
+  if (applyFilters) {
+    applyFilters.addEventListener("click", async () => {
+      const from = String(dateFromInput?.value || "").trim();
+      const to = String(dateToInput?.value || "").trim();
+      if (!isYmd(from) || !isYmd(to)) {
+        await window.ssdcAlert("Please select From and To dates.", { title: "Invalid Date Range" });
+        return;
+      }
+      if (from > to) {
+        await window.ssdcAlert("From date must be before To date.", { title: "Invalid Date Range" });
+        return;
+      }
+      loadDetails();
+    });
+  }
 
-  closeDateRange.addEventListener("click", () => {
-    dateRangeModal.classList.remove("is-open");
-    dateRangeModal.setAttribute("aria-hidden", "true");
-  });
-
-  dateRangeModal.addEventListener("click", (event) => {
-    if (event.target === dateRangeModal) {
-      dateRangeModal.classList.remove("is-open");
-      dateRangeModal.setAttribute("aria-hidden", "true");
-    }
-  });
-
-  applyDateRange.addEventListener("click", async () => {
-    const fromDate = parseDateValue(dateFromInput.value);
-    const toDate = parseDateValue(dateToInput.value);
-    if (fromDate && toDate && fromDate > toDate) {
-      await window.ssdcAlert("From date must be before To date.", {
-        title: "Invalid Date Range"
-      });
-      return;
-    }
-    dateRange = { from: fromDate, to: toDate };
-    renderCurrentRows(currentRows, currentDoctorFallback);
-    dateRangeModal.classList.remove("is-open");
-    dateRangeModal.setAttribute("aria-hidden", "true");
-  });
-
-  clearDateRange.addEventListener("click", () => {
-    dateFromInput.value = "";
-    dateToInput.value = "";
-    dateRange = { from: null, to: null };
-    renderCurrentRows(currentRows, currentDoctorFallback);
-    dateRangeModal.classList.remove("is-open");
-    dateRangeModal.setAttribute("aria-hidden", "true");
-  });
+  if (thisMonthBtn) {
+    thisMonthBtn.addEventListener("click", () => {
+      setFilterInputsToThisMonth();
+      loadDetails();
+    });
+  }
 }
 
 init();
