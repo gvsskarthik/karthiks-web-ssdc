@@ -4,49 +4,152 @@ let selectedTestsCache = [];
 let selectedIdsCache = [];
 
 /* ================= LOAD PATIENT ================= */
-const patient =
-  JSON.parse(localStorage.getItem("currentPatient") || "{}");
+const EDIT_PIN_COMPLETED = "7702";
+let completedEditPin = null;
+let patientId = null;
+let patient = null;
+let reportCompleted = false;
 
-if (!patient || !patient.id) {
-  window.ssdcAlert("Patient ID missing. Please open patient from Patient / Reports page.", {
-    title: "Missing Patient"
-  });
-  throw new Error("Patient ID missing");
+function getPatientIdFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const raw = params.get("patientId") || params.get("id") || "";
+  const id = Number(raw);
+  return Number.isFinite(id) ? id : null;
 }
 
-const reportLocked =
-  String(patient?.status || "").trim().toUpperCase() === "COMPLETED";
+function isCompletedStatus(status){
+  return String(status || "").trim().toUpperCase() === "COMPLETED";
+}
 
-function applyLockedUi(){
-  if (!reportLocked) {
-    return;
-  }
+function normalizeEditPin(value){
+  return String(value == null ? "" : value).trim();
+}
+
+function canEdit(){
+  return !reportCompleted || Boolean(completedEditPin);
+}
+
+function applyEditUi(){
+  const locked = !canEdit();
+
   const saveBtn = document.getElementById("btnSaveResults");
   if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = "LOCKED";
+    saveBtn.disabled = locked;
+    saveBtn.textContent = locked ? "LOCKED" : "SAVE";
   }
+
   document.querySelectorAll(".order-input").forEach(el => {
-    el.disabled = true;
+    el.disabled = locked;
   });
   document.querySelectorAll(".result-input").forEach(el => {
-    el.disabled = true;
+    el.disabled = locked;
   });
   document.querySelectorAll(".add-line-btn,.remove-line-row-btn").forEach(el => {
-    el.disabled = true;
+    el.disabled = locked;
   });
 }
 
-/* ================= SHOW PATIENT ================= */
-document.getElementById("pName").innerText = patient.name || "";
-document.getElementById("pAddress").innerText = patient.address || "";
-document.getElementById("pAgeSex").innerText =
-  (patient.age || "") + " / " + (patient.gender || "");
-document.getElementById("pDoctor").innerText = patient.doctor || "";
-document.getElementById("pDate").innerText =
-  patient.visitDate || (window.formatIstDateDisplay
-    ? window.formatIstDateDisplay(new Date())
-    : new Date().toLocaleDateString());
+function showPatientInfo(p){
+  const safe = p && typeof p === "object" ? p : {};
+  document.getElementById("pName").innerText = safe.name || "";
+  document.getElementById("pAddress").innerText = safe.address || "";
+  document.getElementById("pAgeSex").innerText =
+    (safe.age || "") + " / " + (safe.gender || "");
+  document.getElementById("pDoctor").innerText = safe.doctor || "";
+  document.getElementById("pDate").innerText =
+    safe.visitDate || (window.formatIstDateDisplay
+      ? window.formatIstDateDisplay(new Date())
+      : new Date().toLocaleDateString());
+}
+
+function navigateToReports(){
+  if (!patientId) {
+    location.href = "reports.html";
+    return;
+  }
+  const rel = `reports.html?patientId=${encodeURIComponent(patientId)}`;
+  if (parent?.loadPage) {
+    parent.loadPage(`home/sub-tasks/pt/${rel}`, "reports");
+  } else {
+    location.href = rel;
+  }
+}
+
+async function ensureCompletedEditPin(){
+  if (!reportCompleted) {
+    completedEditPin = null;
+    return true;
+  }
+
+  const pin = await window.ssdcPrompt("Report is COMPLETED. Enter PIN to edit.", {
+    title: "PIN Required",
+    inputType: "password",
+    inputPlaceholder: "Enter PIN"
+  });
+  if (pin == null) {
+    return false;
+  }
+  const normalized = normalizeEditPin(pin);
+  if (normalized !== EDIT_PIN_COMPLETED) {
+    await window.ssdcAlert("Wrong PIN", { title: "Locked" });
+    return false;
+  }
+  completedEditPin = normalized;
+  return true;
+}
+
+function loadPatientById(id){
+  const safeId = Number(id);
+  if (!Number.isFinite(safeId)) {
+    return Promise.reject(new Error("Patient ID missing"));
+  }
+  return fetch(`${API_BASE_URL}/patients/${safeId}`)
+    .then(async (res) => {
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(text || "Failed to load patient");
+      }
+      return text ? JSON.parse(text) : null;
+    });
+}
+
+function navigateToReportsList(){
+  if (parent?.loadPage) {
+    parent.loadPage("home/sub-tasks/3-reports.html", "reports");
+  } else {
+    location.href = "../3-reports.html";
+  }
+}
+
+async function initPage(){
+  patientId = getPatientIdFromUrl();
+  if (!patientId) {
+    await window.ssdcAlert("Patient ID missing. Please open patient from Patient / Reports page.", {
+      title: "Missing Patient"
+    });
+    navigateToReportsList();
+    return;
+  }
+
+  try {
+    patient = await loadPatientById(patientId);
+    reportCompleted = isCompletedStatus(patient?.status);
+    const ok = await ensureCompletedEditPin();
+    if (!ok) {
+      navigateToReports();
+      return;
+    }
+
+    showPatientInfo(patient);
+    applyEditUi();
+    await loadPrintSettings();
+    await loadAndRender();
+  } catch (err) {
+    console.error(err);
+    await window.ssdcAlert(err?.message || "Failed to load patient", { title: "Error" });
+    navigateToReportsList();
+  }
+}
 
 /* ================= LAB PRINT SETTINGS (DB) ================= */
 function clampLines(value) {
@@ -123,8 +226,6 @@ function savePrintSettings() {
     });
 }
 
-loadPrintSettings();
-
 // Inline handler replacements (CSP-safe)
 {
   const saveSpacingBtn = document.getElementById("btnSaveSpacing");
@@ -139,7 +240,10 @@ loadPrintSettings();
 
 /* ================= LOAD SELECTED TEST IDS ================= */
 function loadSelectedIds(){
-  return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
+  if (!patientId) {
+    return Promise.resolve([]);
+  }
+  return fetch(`${API_BASE_URL}/patient-tests/${patientId}`)
     .then(res => res.json())
     .then(list => {
       const rows = Array.isArray(list) ? list : [];
@@ -151,7 +255,10 @@ function loadSelectedIds(){
 
 /* ================= LOAD SAVED RESULTS (DB) ================= */
 function loadSavedResults(){
-  return fetch(`${API_BASE_URL}/patient-tests/results/${patient.id}`)
+  if (!patientId) {
+    return Promise.resolve([]);
+  }
+  return fetch(`${API_BASE_URL}/patient-tests/results/${patientId}`)
     .then(res => res.json())
     .then(list => {
       const incoming = list || [];
@@ -168,15 +275,23 @@ function saveSelectedTestsToDb(selectedIds){
   if (!selectedIds.length) {
     return Promise.resolve();
   }
+  if (!patientId) {
+    return Promise.resolve();
+  }
 
   const payload = selectedIds.map(id => ({
-    patientId: patient.id,
+    patientId: patientId,
     testId: Number(id)
   }));
 
+  const headers = { "Content-Type": "application/json" };
+  if (completedEditPin) {
+    headers["X-Edit-Pin"] = completedEditPin;
+  }
+
   return fetch(API_BASE_URL + "/patient-tests/select", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers,
     body: JSON.stringify(payload)
   }).catch(() => {});
 }
@@ -196,34 +311,37 @@ function normalizeResults(list){
   return Object.values(map);
 }
 
-loadSavedResults()
-  .then(() => loadSelectedIds())
-  .then(selectedIds => {
-    let ids = selectedIds;
-    if (!ids.length && savedResults.length) {
-      ids = deriveSelectedFromResults();
-      if (!reportLocked) {
-        saveSelectedTestsToDb(ids);
+function loadAndRender(){
+  return loadSavedResults()
+    .then(() => loadSelectedIds())
+    .then(selectedIds => {
+      let ids = selectedIds;
+      if (!ids.length && savedResults.length) {
+        ids = deriveSelectedFromResults();
+        if (canEdit()) {
+          saveSelectedTestsToDb(ids);
+        }
       }
-    }
-    if (!ids.length) {
-      window.ssdcAlert("No tests selected");
-      return;
-    }
-    selectedIdsCache = ids.slice();
+      if (!ids.length) {
+        window.ssdcAlert("No tests selected");
+        return;
+      }
+      selectedIdsCache = ids.slice();
 
-    /* ================= LOAD TEST MASTER ================= */
-    return fetch(API_BASE_URL + "/tests/active")
-      .then(res => res.json())
-      .then(allTests => {
-        const activeTests = (allTests || [])
-          .filter(t => t && t.active !== false);
-        const selectedTests =
-          activeTests.filter(t => ids.includes(t.id));
-        selectedTestsCache = sortTestsByOrder(selectedTests, ids);
-        renderTests(selectedTestsCache);
-      });
-  });
+      /* ================= LOAD TEST MASTER ================= */
+      return fetch(API_BASE_URL + "/tests/active")
+        .then(res => res.json())
+        .then(allTests => {
+          const activeTests = (allTests || [])
+            .filter(t => t && t.active !== false);
+          const selectedTests =
+            activeTests.filter(t => ids.includes(t.id));
+          selectedTestsCache = sortTestsByOrder(selectedTests, ids);
+          renderTests(selectedTestsCache);
+          applyEditUi();
+        });
+    });
+}
 
 function sortTestsByOrder(tests, selectedIds){
   const list = Array.isArray(tests) ? tests : [];
@@ -946,7 +1064,7 @@ function findDynamicRowsInGroup(body, groupKey){
 }
 
 function handleAddLineClick(event) {
-  if (reportLocked) {
+  if (!canEdit()) {
     return;
   }
   const removeRowBtn = event.target.closest(".remove-line-row-btn");
@@ -1077,7 +1195,7 @@ function collectResults() {
       const fallback = i.dataset.default || i.getAttribute("value") || i.defaultValue || "";
       const finalValue = hasRaw ? rawValue : (touched ? "" : fallback);
       return {
-        patientId: patient.id,
+        patientId: patientId,
         testId: Number(i.dataset.testid),
         subTest: i.dataset.sub || null,
         resultValue: finalValue
@@ -1088,11 +1206,9 @@ function collectResults() {
 
 /* ================= SAVE ONLY ================= */
 async function saveOnly() {
-  if (reportLocked) {
-    await window.ssdcAlert("Report is COMPLETED (locked). Editing is disabled.", {
-      title: "Locked"
-    });
-    location.href = "reports.html";
+  if (!canEdit()) {
+    await window.ssdcAlert("Report is COMPLETED. PIN is required to edit.", { title: "Locked" });
+    navigateToReports();
     return;
   }
 
@@ -1113,7 +1229,7 @@ async function saveOnly() {
   }
 
   const finishSave = () => {
-    location.href = "reports.html";
+    navigateToReports();
   };
 
   if (results.length === 0) {
@@ -1123,9 +1239,13 @@ async function saveOnly() {
 
   Promise.resolve(saveSelectedTestsToDb(selectedIds))
     .finally(() => {
+      const headers = { "Content-Type": "application/json" };
+      if (completedEditPin) {
+        headers["X-Edit-Pin"] = completedEditPin;
+      }
       fetch(API_BASE_URL + "/patient-tests/results", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify(results)
       })
         .then(async (res) => {
@@ -1141,3 +1261,5 @@ async function saveOnly() {
         });
     });
 }
+
+initPage();

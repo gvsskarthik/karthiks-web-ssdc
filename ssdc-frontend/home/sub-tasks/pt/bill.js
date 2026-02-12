@@ -1,5 +1,26 @@
-const patient =
-  JSON.parse(localStorage.getItem("currentPatient") || "{}");
+let patient = null;
+
+function getPatientIdFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const raw = params.get("patientId") || params.get("id") || "";
+  const id = Number(raw);
+  return Number.isFinite(id) ? id : null;
+}
+
+function loadPatient(patientId){
+  if (!Number.isFinite(patientId)) {
+    return Promise.reject(new Error("Patient ID missing"));
+  }
+
+  return fetch(`${API_BASE_URL}/patients/${patientId}`)
+    .then(async (res) => {
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(text || "Failed to load patient");
+      }
+      return text ? JSON.parse(text) : null;
+    });
+}
 
 function setText(id, value){
   const el = document.getElementById(id);
@@ -64,22 +85,23 @@ function resolveGroupCost(group, testMap){
 }
 
 function hydratePatient(){
-  const age = patient.age ? String(patient.age) : "";
-  const gender = patient.gender || "";
+  const p = patient && typeof patient === "object" ? patient : {};
+  const age = p.age ? String(p.age) : "";
+  const gender = p.gender || "";
   const ageSex =
     age && gender ? `${age} / ${gender}` : `${age}${gender}`;
 
-  setText("pName", patient.name || "");
+  setText("pName", p.name || "");
   setText(
     "pDate",
-    patient.visitDate || (window.formatIstDateDisplay
+    p.visitDate || (window.formatIstDateDisplay
       ? window.formatIstDateDisplay(new Date())
       : new Date().toLocaleDateString())
   );
-  setText("pAddress", patient.address || "");
+  setText("pAddress", p.address || "");
   setText("pAgeSex", ageSex);
-  setText("pDoctor", patient.doctor || "SELF");
-  setText("pMobile", patient.mobile || "");
+  setText("pDoctor", p.doctor || "SELF");
+  setText("pMobile", p.mobile || "");
 }
 
 function loadSelectedTests(){
@@ -235,4 +257,18 @@ function goPatients(){
 }
 
 hydratePatient();
-renderBill();
+{
+  const patientId = getPatientIdFromUrl();
+  loadPatient(patientId)
+    .then((data) => {
+      patient = data && typeof data === "object" ? data : null;
+      hydratePatient();
+      renderBill();
+    })
+    .catch((err) => {
+      console.error(err);
+      hydratePatient();
+      renderBill();
+      window.ssdcAlert?.(err?.message || "Failed to load patient", { title: "Error" });
+    });
+}

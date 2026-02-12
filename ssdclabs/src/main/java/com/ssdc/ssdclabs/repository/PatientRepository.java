@@ -159,6 +159,17 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     @Query("""
         SELECT p
         FROM Patient p
+        LEFT JOIN FETCH p.doctor d
+        WHERE p.id = :id
+          AND p.labId = :labId
+    """)
+    java.util.Optional<Patient> findByIdAndLabIdWithDoctor(
+            @Param("id") Long id,
+            @Param("labId") String labId);
+
+    @Query("""
+        SELECT p
+        FROM Patient p
         WHERE p.labId = :labId
         ORDER BY p.visitDate DESC, p.id DESC
     """)

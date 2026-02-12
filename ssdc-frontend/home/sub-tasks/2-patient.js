@@ -530,17 +530,6 @@ async function deleteOne(id){
     method: "DELETE"
   })
   .then(() => {
-
-    // 🔥 clear localStorage if this patient was open
-    const current =
-      JSON.parse(localStorage.getItem("currentPatient") || "{}");
-
-    if(current.id === id){
-      localStorage.removeItem("currentPatient");
-      localStorage.removeItem("selectedTests");
-      localStorage.removeItem("patientResults");
-    }
-
     loadByDate(datePicker.value);
   })
   .catch(err => {
@@ -573,17 +562,6 @@ async function deleteSelected(){
     )
   )
   .then(() => {
-
-    // 🔥 clear localStorage if deleted patient was active
-    const current =
-      JSON.parse(localStorage.getItem("currentPatient") || "{}");
-
-    if(ids.includes(current.id)){
-      localStorage.removeItem("currentPatient");
-      localStorage.removeItem("selectedTests");
-      localStorage.removeItem("patientResults");
-    }
-
     exitSelectMode();
     loadByDate(datePicker.value);
   })
@@ -594,7 +572,19 @@ async function deleteSelected(){
 }
 
 async function editPatient(id){
-  await window.ssdcAlert("Edit coming soon");
+  const safeId = Number(id);
+  if (!Number.isFinite(safeId)) {
+    await window.ssdcAlert("Patient not found");
+    return;
+  }
+  closeMenus();
+  const rel = `pt/new.html?edit=${encodeURIComponent(safeId)}`;
+  const abs = `home/sub-tasks/${rel}`;
+  if (parent?.loadPage) {
+    parent.loadPage(abs, "patient");
+  } else {
+    location.href = rel;
+  }
 }
 
 async function openBill(patient){
@@ -602,14 +592,17 @@ async function openBill(patient){
     await window.ssdcAlert("Patient not found");
     return;
   }
-
-  localStorage.setItem("currentPatient", JSON.stringify(patient));
-  localStorage.removeItem("selectedTests");
-  localStorage.removeItem("patientResults");
-
+  closeMenus();
+  const safeId = Number(patient.id);
+  if (!Number.isFinite(safeId)) {
+    await window.ssdcAlert("Patient not found");
+    return;
+  }
+  const rel = `pt/bill.html?patientId=${encodeURIComponent(safeId)}`;
+  const abs = `home/sub-tasks/${rel}`;
   if (parent?.loadPage) {
-    parent.loadPage("home/sub-tasks/pt/bill.html", "patient");
+    parent.loadPage(abs, "patient");
   } else {
-    location.href = "pt/bill.html";
+    location.href = rel;
   }
 }

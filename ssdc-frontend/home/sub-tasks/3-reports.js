@@ -228,23 +228,18 @@ function renderTable(data){
 /* ENTER VALUES */
 async function openPatient(patient){
   safeSessionSet(REPORT_DATE_KEY, reportDate.value);
-  localStorage.setItem("currentPatient", JSON.stringify(patient));
-  localStorage.removeItem("selectedTests");
-  localStorage.removeItem("patientResults");
-
-  if (String(patient?.status || "").trim().toUpperCase() === "COMPLETED") {
-    await window.ssdcAlert("Report is COMPLETED (locked). Editing is disabled.", {
-      title: "Locked"
-    });
-    parent.loadPage(
-      "home/sub-tasks/pt/reports.html",
-      "reports"
-    );
+  const patientId = Number(patient?.id);
+  if (!Number.isFinite(patientId)) {
+    await window.ssdcAlert("Patient not found");
     return;
   }
 
+  if (String(patient?.status || "").trim().toUpperCase() === "COMPLETED") {
+    await window.ssdcAlert("Report is COMPLETED. PIN is required to edit.", { title: "Locked" });
+  }
+
   parent.loadPage(
-    "home/sub-tasks/pt/enter-values.html",
+    `home/sub-tasks/pt/enter-values.html?patientId=${encodeURIComponent(patientId)}`,
     "reports"
   );
 }
@@ -252,12 +247,14 @@ async function openPatient(patient){
 /* FINAL REPORT */
 function openReport(patient){
   safeSessionSet(REPORT_DATE_KEY, reportDate.value);
-  localStorage.setItem("currentPatient", JSON.stringify(patient));
-  localStorage.removeItem("selectedTests");
-  localStorage.removeItem("patientResults");
+  const patientId = Number(patient?.id);
+  if (!Number.isFinite(patientId)) {
+    window.ssdcAlert("Patient not found");
+    return;
+  }
 
   parent.loadPage(
-    "home/sub-tasks/pt/reports.html",
+    `home/sub-tasks/pt/reports.html?patientId=${encodeURIComponent(patientId)}`,
     "reports"
   );
 }

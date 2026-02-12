@@ -149,7 +149,7 @@ class ReportServiceTest {
             new PatientTestResultDTO(null, 1L, 10L, "Haemoglobin::extra-1", "15")
         );
 
-        service.saveResults("ssdc", incoming);
+        service.saveResults("ssdc", incoming, null);
 
         ArgumentCaptor<List> saveCaptor = ArgumentCaptor.forClass(List.class);
         verify(resultRepo).saveAll(saveCaptor.capture());

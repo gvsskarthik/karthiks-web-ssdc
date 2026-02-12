@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,16 +30,18 @@ public class PatientTestController {
     @PostMapping("/select")
     public void saveSelectedTests(
             @RequestBody @NonNull List<PatientTestSelectionDTO> tests,
+            @RequestHeader(value = "X-Edit-Pin", required = false) String editPin,
             @NonNull Principal principal) {
-        reportService.saveSelectedTests(principal.getName(), tests);
+        reportService.saveSelectedTests(principal.getName(), tests, editPin);
     }
 
     // SAVE RESULTS
     @PostMapping("/results")
     public void saveResults(
             @RequestBody @NonNull List<PatientTestResultDTO> results,
+            @RequestHeader(value = "X-Edit-Pin", required = false) String editPin,
             @NonNull Principal principal) {
-        reportService.saveResults(principal.getName(), results);
+        reportService.saveResults(principal.getName(), results, editPin);
     }
 
     // LOAD TESTS FOR PATIENT

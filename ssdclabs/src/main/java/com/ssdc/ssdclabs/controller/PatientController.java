@@ -43,6 +43,16 @@ public class PatientController {
             Objects.requireNonNull(LocalDate.parse(date), "date"));
     }
 
+    /* GET BY ID */
+    @GetMapping("/{id:\\d+}")
+    public @NonNull Patient getPatient(@PathVariable @NonNull Long id,
+                                       @NonNull Principal principal) {
+        return service.getPatientById(
+            Objects.requireNonNull(principal.getName(), "labId"),
+            Objects.requireNonNull(id, "id")
+        );
+    }
+
     /* SEARCH (ALL PATIENTS) */
     @GetMapping("/search")
     public List<Patient> searchPatients(
@@ -71,6 +81,28 @@ public class PatientController {
         );
     }
 
+    /* UPDATE PATIENT */
+    @PutMapping("/{id:\\d+}")
+    public @NonNull Patient updatePatient(@PathVariable @NonNull Long id,
+                                          @RequestBody @NonNull Patient patient,
+                                          @RequestHeader(value = "X-Edit-Pin", required = false) String editPin,
+                                          @NonNull Principal principal) {
+        try {
+            return service.updatePatient(
+                Objects.requireNonNull(principal.getName(), "labId"),
+                Objects.requireNonNull(id, "id"),
+                Objects.requireNonNull(patient, "patient"),
+                editPin
+            );
+        } catch (ResponseStatusException ex) {
+            throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update patient");
+        }
+    }
+
     /* DELETE */
     @DeleteMapping("/{id:\\d+}")
     public void deletePatient(@PathVariable @NonNull Long id,
@@ -84,6 +116,7 @@ public class PatientController {
     @PutMapping("/{id:\\d+}/status")
     public @NonNull Patient updateStatus(@PathVariable @NonNull Long id,
                                          @RequestBody @NonNull Map<String, String> body,
+                                         @RequestHeader(value = "X-Edit-Pin", required = false) String editPin,
                                          @NonNull Principal principal) {
         String status = body.get("status");
         if (status == null || status.trim().isEmpty()) {
@@ -93,7 +126,8 @@ public class PatientController {
             return service.updateStatus(
                 Objects.requireNonNull(principal.getName(), "labId"),
                 Objects.requireNonNull(id, "id"),
-                Objects.requireNonNull(status, "status")
+                Objects.requireNonNull(status, "status"),
+                editPin
             );
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());

@@ -90,17 +90,40 @@ let patientSearchRequestId = 0;
 let lastPatientSearchKey = "";
 const PATIENT_SEARCH_DELAY_MS = 50;
 
-function navigateToEnterValues(){
+const EDIT_PIN_COMPLETED = "7702";
+let editingPatientId = null;
+let completedEditPin = null;
+let testsReadyResolve = null;
+const testsReady = new Promise((resolve) => {
+  testsReadyResolve = resolve;
+});
+
+function getEditPatientIdFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const raw = params.get("edit");
+  const id = raw == null ? NaN : Number(raw);
+  return Number.isFinite(id) ? id : null;
+}
+
+editingPatientId = getEditPatientIdFromUrl();
+
+function navigateToEnterValues(patientId){
+  const safeId = Number(patientId);
+  if (!Number.isFinite(safeId)) {
+    return false;
+  }
+  const rel = `enter-values.html?patientId=${encodeURIComponent(safeId)}`;
+  const abs = `home/sub-tasks/pt/${rel}`;
   try {
     if (parent && typeof parent.loadPage === "function") {
-      parent.loadPage("home/sub-tasks/pt/enter-values.html");
+      parent.loadPage(abs, "patient");
       return true;
     }
   } catch (err) {
     console.error(err);
   }
   try {
-    window.location.href = "enter-values.html";
+    window.location.href = rel;
     return true;
   } catch (err) {
     console.error(err);
@@ -115,12 +138,10 @@ selectedList.addEventListener("change", handleSelectedChange);
 savePatientBtn.addEventListener("click", () => patientForm.requestSubmit());
 
 nameInput.addEventListener("input", () => {
-  localStorage.removeItem("currentPatient");
   applyPatientFilter();
 });
 
 mobileInput.addEventListener("input", () => {
-  localStorage.removeItem("currentPatient");
   applyPatientFilter();
 });
 
@@ -170,26 +191,29 @@ dueInput.addEventListener("input", () => {
 
 
 /* LOAD DOCTORS */
-fetch(API_BASE_URL + "/doctors")
-.then(r=>r.json())
-.then(list => {
-  const seen = new Set(["self"]);
-  (list || []).forEach(x => {
-    const name = String(x?.name || "").trim();
-    if (!name) {
-      return;
-    }
-    const key = name.toLowerCase();
-    if (key === "self" || seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    const opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
-    doctor.appendChild(opt);
+const doctorsReady = fetch(API_BASE_URL + "/doctors")
+  .then(r=>r.json())
+  .then(list => {
+    const seen = new Set(["self"]);
+    (list || []).forEach(x => {
+      const name = String(x?.name || "").trim();
+      if (!name) {
+        return;
+      }
+      const key = name.toLowerCase();
+      if (key === "self" || seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      doctor.appendChild(opt);
+    });
+  })
+  .catch((err) => {
+    console.error(err);
   });
-});
 
 /* LOAD EXISTING PATIENTS (LIVE SEARCH) */
 renderExistingPatients([], "idle");
@@ -645,10 +669,6 @@ function selectPatient(p){
   setInputValue(dueInput, "");
   updateBillFromSelection();
 
-  // Prefill only; keep visits separate
-  localStorage.setItem("prefillPatient", JSON.stringify(p));
-  localStorage.removeItem("currentPatient");
-  localStorage.removeItem("patientResults");
   applyPatientFilter();
 }
 /* TEST LIST */
@@ -658,13 +678,14 @@ Promise.all([
   fetch(API_BASE_URL + "/groups").then(r => r.json()).catch(() => [])
 ])
 .then(([testList, groupList]) => {
-  try {
-    localStorage.setItem("testsActiveCache", JSON.stringify(testList || []));
-    localStorage.setItem("testsActiveCacheAt", String(Date.now()));
-  } catch (e) {
-    // ignore storage errors
-  }
   initTests(testList, groupList);
+})
+.catch((err) => {
+  console.error(err);
+  initTests([], []);
+  if (window.ssdcAlert) {
+    window.ssdcAlert("Failed to load tests. Please refresh.", { title: "Error" });
+  }
 });
 
 /** @param {TestItem[]} list */
@@ -721,6 +742,11 @@ function initTests(list, groupList){
   renderSelectedList();
   updateBillFromSelection();
   updateSuggestions();
+
+  if (typeof testsReadyResolve === "function") {
+    testsReadyResolve();
+    testsReadyResolve = null;
+  }
 }
 
 /* ================= LOGIC ================= */
@@ -782,7 +808,7 @@ function getOrderedSelectedIds(){
     .map(item => item.id);
 }
 
-function saveSelectedTestsToDb(patientId, orderedIds){
+function saveSelectedTestsToDb(patientId, orderedIds, editPin){
   const safePatientId = Number(patientId);
   const ids = Array.isArray(orderedIds) ? orderedIds : [];
   if (!Number.isFinite(safePatientId) || !ids.length) {
@@ -792,9 +818,13 @@ function saveSelectedTestsToDb(patientId, orderedIds){
     patientId: safePatientId,
     testId: Number(id)
   }));
+  const headers = { "Content-Type": "application/json" };
+  if (editPin) {
+    headers["X-Edit-Pin"] = editPin;
+  }
   return fetch(API_BASE_URL + "/patient-tests/select", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers,
     body: JSON.stringify(payload)
   }).then(() => {}).catch(() => {});
 }
@@ -1215,45 +1245,75 @@ patientForm.addEventListener("submit", e => {
     savePatientBtn.disabled = true;
   }
 
-  const current =
-    JSON.parse(localStorage.getItem("currentPatient") || "null");
-  localStorage.removeItem("prefillPatient");
+  const payload = {
+    name: document.getElementById("name").value.trim(),
+    age: Number(document.getElementById("age").value),
+    gender: document.getElementById("gender").value,
+    mobile: document.getElementById("mobile").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    doctor: document.getElementById("doctor").value || "SELF",
+    visitDate: document.getElementById("visitDate").value,
+    amount: parseMoney(amountInput.value),
+    discount: parseMoney(discountInput.value),
+    paid: parseMoney(paidInput.value)
+  };
 
-	  const payload = {
-	    name: document.getElementById("name").value.trim(),
-	    age: Number(document.getElementById("age").value),
-	    gender: document.getElementById("gender").value,
-	    mobile: document.getElementById("mobile").value.trim(),
-	    address: document.getElementById("address").value.trim(),
-	    doctor: document.getElementById("doctor").value || "SELF",
-	    visitDate: document.getElementById("visitDate").value,
-	    amount: parseMoney(amountInput.value),
-	    discount: parseMoney(discountInput.value),
-	    paid: parseMoney(paidInput.value),
-	    status: "NOT COMPLETE"
-	  };
+  const orderedIds = getOrderedSelectedIds();
+  const headers = { "Content-Type": "application/json" };
+  if (completedEditPin) {
+    headers["X-Edit-Pin"] = completedEditPin;
+  }
 
-  // ✅ EXISTING PATIENT → no save
-  if (current && current.id) {
-    const orderedIds = getOrderedSelectedIds();
-    saveSelectedTestsToDb(current.id, orderedIds).finally(() => {
-      const ok = navigateToEnterValues();
-      if (!ok) {
-        window.ssdcAlert("Failed to open results page");
-        isSubmittingPatient = false;
-        if (savePatientBtn) {
-          savePatientBtn.disabled = false;
-        }
+  const openResults = (patientId) => {
+    const ok = navigateToEnterValues(patientId);
+    if (!ok) {
+      window.ssdcAlert("Failed to open results page");
+      isSubmittingPatient = false;
+      if (savePatientBtn) {
+        savePatientBtn.disabled = false;
+      }
+    }
+  };
+
+  // ✅ EDIT PATIENT
+  if (editingPatientId) {
+    fetch(`${API_BASE_URL}/patients/${editingPatientId}`, {
+      method: "PUT",
+      headers: headers,
+      body: JSON.stringify(payload)
+    })
+    .then(async (res) => {
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(text || "Failed to update patient");
+      }
+      return text ? JSON.parse(text) : null;
+    })
+    .then(() => {
+      return saveSelectedTestsToDb(editingPatientId, orderedIds, completedEditPin);
+    })
+    .then(() => {
+      openResults(editingPatientId);
+    })
+    .catch(err => {
+      console.error(err);
+      window.ssdcAlert(err?.message || "Failed to update patient");
+      isSubmittingPatient = false;
+      if (savePatientBtn) {
+        savePatientBtn.disabled = false;
       }
     });
     return;
   }
 
-  // ✅ NEW PATIENT → save
+  // ✅ NEW PATIENT
   fetch(API_BASE_URL + "/patients", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      ...payload,
+      status: "NOT COMPLETE"
+    })
   })
   .then(async (res) => {
     const text = await res.text().catch(() => "");
@@ -1266,25 +1326,208 @@ patientForm.addEventListener("submit", e => {
     if (!p || !p.id) {
       throw new Error("Failed to save patient");
     }
-    localStorage.setItem("currentPatient", JSON.stringify(p));
-    const orderedIds = getOrderedSelectedIds();
-    return saveSelectedTestsToDb(p.id, orderedIds).finally(() => {
-      const ok = navigateToEnterValues();
-      if (!ok) {
-        window.ssdcAlert("Patient saved, but failed to open results page");
-        isSubmittingPatient = false;
-        if (savePatientBtn) {
-          savePatientBtn.disabled = false;
-        }
-      }
-    });
+    return saveSelectedTestsToDb(p.id, orderedIds, null).then(() => p.id);
+  })
+  .then((patientId) => {
+    openResults(patientId);
   })
   .catch(err => {
     console.error(err);
-    window.ssdcAlert("Failed to save patient");
+    window.ssdcAlert(err?.message || "Failed to save patient");
     isSubmittingPatient = false;
     if (savePatientBtn) {
       savePatientBtn.disabled = false;
     }
   });
 });
+
+function navigateToPatients(){
+  try {
+    if (parent && typeof parent.loadPage === "function") {
+      parent.loadPage("home/sub-tasks/2-patient.html", "patient");
+      return true;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  try {
+    window.location.href = "../2-patient.html";
+    return true;
+  } catch (err) {
+    console.error(err);
+  }
+  return false;
+}
+
+function isCompletedStatus(status){
+  return String(status || "").trim().toUpperCase() === "COMPLETED";
+}
+
+function normalizeEditPin(value){
+  return String(value == null ? "" : value).trim();
+}
+
+async function ensureCompletedEditPin(patient){
+  if (!isCompletedStatus(patient?.status)) {
+    completedEditPin = null;
+    return true;
+  }
+
+  const pin = await window.ssdcPrompt("Report is COMPLETED. Enter PIN to edit.", {
+    title: "PIN Required",
+    inputType: "password",
+    inputPlaceholder: "Enter PIN"
+  });
+
+  if (pin == null) {
+    return false;
+  }
+
+  const normalized = normalizeEditPin(pin);
+  if (normalized !== EDIT_PIN_COMPLETED) {
+    await window.ssdcAlert("Wrong PIN", { title: "Locked" });
+    return false;
+  }
+
+  completedEditPin = normalized;
+  return true;
+}
+
+function fetchJsonOrThrow(res){
+  if (!res) {
+    return Promise.reject(new Error("Server error"));
+  }
+  return res.text()
+    .catch(() => "")
+    .then((text) => {
+      if (!res.ok) {
+        throw new Error(text || "Request failed");
+      }
+      return text ? JSON.parse(text) : null;
+    });
+}
+
+function loadPatientById(patientId){
+  const safeId = Number(patientId);
+  if (!Number.isFinite(safeId)) {
+    return Promise.reject(new Error("Patient ID missing"));
+  }
+  return fetch(`${API_BASE_URL}/patients/${safeId}`)
+    .then(fetchJsonOrThrow);
+}
+
+function loadSelectedTestIds(patientId){
+  const safeId = Number(patientId);
+  if (!Number.isFinite(safeId)) {
+    return Promise.resolve([]);
+  }
+  return fetch(`${API_BASE_URL}/patient-tests/${safeId}`)
+    .then(r => r.json())
+    .then(list => (list || [])
+      .map(x => Number(x && x.testId))
+      .filter(n => Number.isFinite(n) && n > 0))
+    .catch(() => []);
+}
+
+function setSelectedIds(ids){
+  selected.clear();
+  selectedRank.clear();
+  selectedSeq = 0;
+
+  const list = Array.isArray(ids) ? ids : [];
+  list.forEach((raw) => {
+    const id = Number(raw);
+    if (!Number.isFinite(id) || !testInfoMap.has(id)) {
+      return;
+    }
+    selected.add(id);
+    selectedRank.set(id, ++selectedSeq);
+  });
+
+  renderSelectedList();
+  updateBillFromSelection();
+  updateSuggestions();
+}
+
+function applyPatientToForm(patient){
+  if (!patient) {
+    return;
+  }
+
+  const visit = String(patient.visitDate || "").trim();
+  if (visit) {
+    visitDate.value = visit;
+    isAutoVisitDate = false;
+  }
+
+  document.getElementById("name").value = patient.name || "";
+  document.getElementById("age").value = patient.age || "";
+  document.getElementById("gender").value = patient.gender || "Male";
+  document.getElementById("mobile").value = patient.mobile || "";
+  document.getElementById("address").value = patient.address || "";
+  {
+    const doctorSelect = document.getElementById("doctor");
+    const doctorName = String(patient.doctor || "").trim();
+    if (!doctorSelect) {
+      // ignore
+    } else if (!doctorName || doctorName.toUpperCase() === "SELF") {
+      doctorSelect.value = "";
+    } else {
+      doctorSelect.value = doctorName;
+      if (doctorSelect.value !== doctorName) {
+        const opt = document.createElement("option");
+        opt.value = doctorName;
+        opt.textContent = doctorName;
+        doctorSelect.appendChild(opt);
+        doctorSelect.value = doctorName;
+      }
+    }
+  }
+
+  const payable = Number(patient.amount) || 0;
+  const discount = Number(patient.discount) || 0;
+  const paid = Number(patient.paid) || 0;
+
+  lastPricingEdited = "payable";
+  lastPaymentEdited = "paid";
+  setInputValue(amountInput, formatMoney(payable));
+  setInputValue(discountInput, formatMoney(discount));
+  setInputValue(paidInput, formatMoney(paid));
+  setInputValue(dueInput, formatMoney(Math.max(0, payable - paid)));
+}
+
+async function initEditMode(){
+  if (!editingPatientId) {
+    return;
+  }
+
+  if (savePatientBtn) {
+    savePatientBtn.textContent = "UPDATE PATIENT & ENTER RESULTS";
+  }
+  const title = document.querySelector(".wrapper .neo-card h3");
+  if (title) {
+    title.textContent = "Edit Patient Registration";
+  }
+
+  try {
+    const patient = await loadPatientById(editingPatientId);
+    const ok = await ensureCompletedEditPin(patient);
+    if (!ok) {
+      navigateToPatients();
+      return;
+    }
+
+    await doctorsReady;
+    applyPatientToForm(patient);
+
+    await testsReady;
+    const ids = await loadSelectedTestIds(editingPatientId);
+    setSelectedIds(ids);
+  } catch (err) {
+    console.error(err);
+    await window.ssdcAlert(err?.message || "Failed to load patient", { title: "Error" });
+    navigateToPatients();
+  }
+}
+
+initEditMode();

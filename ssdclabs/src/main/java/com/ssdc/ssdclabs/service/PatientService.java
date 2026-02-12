@@ -13,6 +13,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.ssdc.ssdclabs.dto.RecentTaskDTO;
 import com.ssdc.ssdclabs.model.Doctor;
@@ -27,6 +29,7 @@ public class PatientService {
 
     public static final String STATUS_NOT_COMPLETE = "NOT COMPLETE";
     public static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String COMPLETED_EDIT_PIN = "7702";
 
     private final PatientRepository patientRepo;
     private final ReportResultRepository resultRepo;
@@ -61,10 +64,70 @@ public class PatientService {
         return Objects.requireNonNull(patientRepo.save(patient), "saved patient");
     }
 
+    @Transactional(readOnly = true)
+    public @NonNull Patient getPatientById(@NonNull String labId,
+                                           @NonNull Long patientId) {
+        return patientRepo.findByIdAndLabIdWithDoctor(
+            Objects.requireNonNull(patientId, "patientId"),
+            Objects.requireNonNull(labId, "labId")
+        ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+    }
+
+    @Transactional
+    public @NonNull Patient updatePatient(@NonNull String labId,
+                                          @NonNull Long patientId,
+                                          @NonNull Patient updates,
+                                          String editPin) {
+        Patient patient = patientRepo.findByIdAndLabId(
+            Objects.requireNonNull(patientId, "patientId"),
+            Objects.requireNonNull(labId, "labId")
+        ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+
+        final boolean completed = STATUS_COMPLETED.equalsIgnoreCase(
+            patient.getStatus() == null ? "" : patient.getStatus().trim()
+        );
+        if (completed && !isValidCompletedEditPin(editPin)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PIN required to edit COMPLETED patient");
+        }
+
+        String name = updates.getName();
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        patient.setName(name.trim());
+        patient.setAge(updates.getAge());
+        patient.setGender(updates.getGender() == null ? Gender.ANY : updates.getGender());
+
+        String mobile = updates.getMobile();
+        patient.setMobile(mobile == null || mobile.trim().isEmpty() ? null : mobile.trim());
+
+        String address = updates.getAddress();
+        patient.setAddress(address == null || address.trim().isEmpty() ? null : address.trim());
+
+        Double amount = updates.getAmount();
+        patient.setAmount(amount == null ? 0.0 : amount);
+
+        Double discount = updates.getDiscount();
+        patient.setDiscount(discount == null ? 0.0 : discount);
+
+        patient.setPaid(updates.getPaid());
+
+        if (updates.getVisitDate() != null) {
+            patient.setVisitDate(updates.getVisitDate());
+        }
+
+        String doctorName = updates.getDoctorName();
+        Doctor doctor = resolveDoctor(labId, doctorName);
+        patient.setDoctor(doctor);
+
+        return Objects.requireNonNull(patientRepo.save(patient), "saved patient");
+    }
+
     @Transactional
     public @NonNull Patient updateStatus(@NonNull String labId,
                                          @NonNull Long patientId,
-                                         @NonNull String status) {
+                                         @NonNull String status,
+                                         String editPin) {
         String normalized = status.trim().toUpperCase();
         String finalStatus;
         if (STATUS_COMPLETED.equals(normalized)) {
@@ -79,6 +142,14 @@ public class PatientService {
             Objects.requireNonNull(patientId, "patientId"),
             Objects.requireNonNull(labId, "labId")
         ).orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+
+        final boolean currentlyCompleted = STATUS_COMPLETED.equalsIgnoreCase(
+            patient.getStatus() == null ? "" : patient.getStatus().trim()
+        );
+        if (currentlyCompleted && !STATUS_COMPLETED.equals(finalStatus)
+                && !isValidCompletedEditPin(editPin)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PIN required to reopen COMPLETED patient");
+        }
 
         patient.setStatus(finalStatus);
         return Objects.requireNonNull(patientRepo.save(patient), "saved patient");
@@ -285,5 +356,12 @@ public class PatientService {
                 doctor.setName(trimmed);
                 return doctorRepo.save(doctor);
             });
+    }
+
+    private static boolean isValidCompletedEditPin(String editPin) {
+        if (editPin == null) {
+            return false;
+        }
+        return COMPLETED_EDIT_PIN.equals(editPin.trim());
     }
 }

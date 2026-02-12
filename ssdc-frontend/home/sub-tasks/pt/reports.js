@@ -1,9 +1,30 @@
 /* ================= LOAD DATA ================= */
-const patient =
-  JSON.parse(localStorage.getItem("currentPatient") || "{}");
-
+let patientId = null;
+let patient = null;
 let results = [];
 let selectedTestIds = [];
+
+function getPatientIdFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const raw = params.get("patientId") || params.get("id") || "";
+  const id = Number(raw);
+  return Number.isFinite(id) ? id : null;
+}
+
+function loadPatientById(id){
+  const safeId = Number(id);
+  if (!Number.isFinite(safeId)) {
+    return Promise.reject(new Error("Patient ID missing"));
+  }
+  return fetch(`${API_BASE_URL}/patients/${safeId}`)
+    .then(async (res) => {
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        throw new Error(text || "Failed to load patient");
+      }
+      return text ? JSON.parse(text) : null;
+    });
+}
 
 function clearNode(node){
   if (!node) return;
@@ -44,14 +65,6 @@ function appendIndentText(node, level){
 
 function isCompletedStatus(status){
   return String(status || "").trim().toUpperCase() === "COMPLETED";
-}
-
-function persistPatient(){
-  try {
-    localStorage.setItem("currentPatient", JSON.stringify(patient || {}));
-  } catch (e) {
-    // ignore storage errors
-  }
 }
 
 function syncReportLockUi(){
@@ -104,7 +117,6 @@ function markCompleted(){
       if (updated && typeof updated === "object" && updated.status) {
         patient.status = updated.status;
       }
-      persistPatient();
       syncReportLockUi();
       window.ssdcAlert("Report marked as COMPLETED. Editing is locked.", { title: "Completed" });
     })
@@ -117,28 +129,28 @@ function markCompleted(){
     });
 }
 
-/* ================= PATIENT DETAILS ================= */
-document.getElementById("pName").innerText =
-  patient.name || "";
+function showPatientInfo(){
+  const safe = patient && typeof patient === "object" ? patient : {};
+  document.getElementById("pName").innerText =
+    safe.name || "";
 
-document.getElementById("pAddress").innerText =
-  patient.address || "";
+  document.getElementById("pAddress").innerText =
+    safe.address || "";
 
-document.getElementById("pAgeSex").innerText =
-  (patient.age || "") + " / " + (patient.gender || "");
+  document.getElementById("pAgeSex").innerText =
+    (safe.age || "") + " / " + (safe.gender || "");
 
-document.getElementById("pDoctor").innerText =
-  patient.doctor || "SELF";
+  document.getElementById("pDoctor").innerText =
+    safe.doctor || "SELF";
 
-document.getElementById("pMobile").innerText =
-  patient.mobile || "";
+  document.getElementById("pMobile").innerText =
+    safe.mobile || "";
 
-document.getElementById("pDate").innerText =
-  patient.visitDate || (window.formatIstDateDisplay
-    ? window.formatIstDateDisplay(new Date())
-    : new Date().toLocaleDateString());
-
-syncReportLockUi();
+  document.getElementById("pDate").innerText =
+    safe.visitDate || (window.formatIstDateDisplay
+      ? window.formatIstDateDisplay(new Date())
+      : new Date().toLocaleDateString());
+}
 
 /* ================= RANGE CHECK ================= */
 function isOutOfRange(value, normalText, gender){
@@ -688,28 +700,27 @@ function resolveUnitText(test, param, index){
 }
 
 function loadResults(){
-  if (!patient || !patient.id) {
+  if (!patientId) {
     return Promise.resolve([]);
   }
-  return fetch(`${API_BASE_URL}/patient-tests/results/${patient.id}`)
+  return fetch(`${API_BASE_URL}/patient-tests/results/${patientId}`)
     .then(res => res.json())
     .then(list => {
       results = list || [];
-      localStorage.setItem("patientResults", JSON.stringify(results));
       return results;
     })
     .catch(() => {
-      results = JSON.parse(localStorage.getItem("patientResults") || "[]");
+      results = [];
       return results;
     });
 }
 
 function loadSelectedTests(){
-  if (!patient || !patient.id) {
+  if (!patientId) {
     selectedTestIds = [];
     return Promise.resolve([]);
   }
-  return fetch(`${API_BASE_URL}/patient-tests/${patient.id}`)
+  return fetch(`${API_BASE_URL}/patient-tests/${patientId}`)
     .then(res => res.json())
     .then(list => {
       const fromApi = (list || [])
@@ -731,41 +742,6 @@ function deriveSelectedFromResults(){
   return [...ids];
 }
 
-const TESTS_CACHE_KEY = "testsActiveCache";
-const TESTS_CACHE_AT_KEY = "testsActiveCacheAt";
-const GROUPS_CACHE_KEY = "groupsCache";
-
-function readStorageJson(key, fallback){
-  const fn = window.SSDC?.utils?.readStorageJson;
-  return typeof fn === "function" ? fn(key, fallback) : fallback;
-}
-
-function writeStorageJson(key, value){
-  const fn = window.SSDC?.utils?.writeStorageJson;
-  if (typeof fn === "function") {
-    fn(key, value);
-  }
-}
-
-function readCachedResults(){
-  const list = readStorageJson("patientResults", []);
-  return Array.isArray(list) ? list : [];
-}
-
-function readCachedSelectedTests(){
-  return [];
-}
-
-function readCachedTests(){
-  const list = readStorageJson(TESTS_CACHE_KEY, []);
-  return Array.isArray(list) ? list : [];
-}
-
-function readCachedGroups(){
-  const list = readStorageJson(GROUPS_CACHE_KEY, []);
-  return Array.isArray(list) ? list : [];
-}
-
 function deriveSelectedFromResultsList(list){
   const ids = new Set(
     (Array.isArray(list) ? list : [])
@@ -779,27 +755,18 @@ function loadGroupsAll(){
   return fetch(API_BASE_URL + "/groups")
     .then(res => res.json())
     .then(list => {
-      const groups = Array.isArray(list) ? list : [];
-      writeStorageJson(GROUPS_CACHE_KEY, groups);
-      return groups;
+      return Array.isArray(list) ? list : [];
     })
-    .catch(() => readCachedGroups());
+    .catch(() => []);
 }
 
 function loadTestsActive(){
   return fetch(API_BASE_URL + "/tests/active")
     .then(res => res.json())
     .then(list => {
-      const tests = Array.isArray(list) ? list : [];
-      writeStorageJson(TESTS_CACHE_KEY, tests);
-      try {
-        localStorage.setItem(TESTS_CACHE_AT_KEY, String(Date.now()));
-      } catch (e) {
-        // ignore
-      }
-      return tests;
+      return Array.isArray(list) ? list : [];
     })
-    .catch(() => readCachedTests());
+    .catch(() => []);
 }
 
 function renderReport(tests, resultList, selectedIds, groupList){
@@ -1316,27 +1283,45 @@ function renderReport(tests, resultList, selectedIds, groupList){
   renderScreenPages();
 }
 
-/* ================= FAST CACHE RENDER ================= */
-const cachedResults = readCachedResults();
-const cachedSelectedIds = readCachedSelectedTests();
-const cachedTests = readCachedTests();
-const cachedGroups = readCachedGroups();
+function navigateToReportsList(){
+  if (parent?.loadPage) {
+    parent.loadPage("home/sub-tasks/3-reports.html", "reports");
+  } else {
+    location.href = "../3-reports.html";
+  }
+}
 
-if (cachedResults.length || cachedSelectedIds.length) {
-  renderReport(cachedTests, cachedResults, cachedSelectedIds, cachedGroups);
-} else {
+async function initPage(){
+  patientId = getPatientIdFromUrl();
+  if (!patientId) {
+    await window.ssdcAlert("Patient ID missing. Please open report from Reports page.", {
+      title: "Missing Patient"
+    });
+    navigateToReportsList();
+    return;
+  }
+
   const body = document.getElementById("reportBody");
   if (body) {
     appendMessageRow(body, "Loading report...");
   }
   renderScreenPages();
-}
 
-/* ================= REFRESH FROM API (PARALLEL) ================= */
-Promise.all([loadResults(), loadSelectedTests(), loadTestsActive(), loadGroupsAll()])
-  .then(([freshResults, freshSelectedIds, freshTests, freshGroups]) => {
+  try {
+    patient = await loadPatientById(patientId);
+    showPatientInfo();
+    syncReportLockUi();
+
+    const [freshResults, freshSelectedIds, freshTests, freshGroups] =
+      await Promise.all([loadResults(), loadSelectedTests(), loadTestsActive(), loadGroupsAll()]);
+
     renderReport(freshTests, freshResults, freshSelectedIds, freshGroups);
-  });
+  } catch (err) {
+    console.error(err);
+    await window.ssdcAlert(err?.message || "Failed to load report", { title: "Error" });
+    navigateToReportsList();
+  }
+}
 
 /* ================= ACTIONS ================= */
 function goPatients(){
@@ -1800,3 +1785,5 @@ function renderScreenPages(){
 window.addEventListener("resize", () => {
   renderScreenPages();
 });
+
+initPage();
