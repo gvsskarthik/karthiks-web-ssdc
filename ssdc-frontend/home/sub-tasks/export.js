@@ -64,10 +64,14 @@ function renderRows(rows){
     const doctorLabel = row.doctorName
       || (exportDoctorId ? exportDoctorName : "-");
     const due = parseNumber(row.dueAmount ?? row.due ?? 0);
+    const dateText =
+      (window.formatYmdToDdMmYyyy && row.date)
+        ? window.formatYmdToDdMmYyyy(row.date)
+        : (row.date || "-");
 
     const tr = document.createElement("tr");
     const tdDate = document.createElement("td");
-    tdDate.textContent = row.date || "-";
+    tdDate.textContent = dateText;
     const tdReport = document.createElement("td");
     tdReport.textContent = row.reportId || "-";
     const tdPatient = document.createElement("td");
@@ -139,8 +143,12 @@ function buildCsv(rows){
     const doctorLabel = row.doctorName
       || (exportDoctorId ? exportDoctorName : "");
     const due = parseNumber(row.dueAmount ?? row.due ?? 0);
+    const dateText =
+      (window.formatYmdToDdMmYyyy && row.date)
+        ? window.formatYmdToDdMmYyyy(row.date)
+        : (row.date || "");
     const line = [
-      row.date || "",
+      dateText,
       row.reportId || "",
       row.patientName || "",
       doctorLabel,

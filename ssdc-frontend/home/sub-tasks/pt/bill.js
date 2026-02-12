@@ -94,9 +94,11 @@ function hydratePatient(){
   setText("pName", p.name || "");
   setText(
     "pDate",
-    p.visitDate || (window.formatIstDateDisplay
-      ? window.formatIstDateDisplay(new Date())
-      : new Date().toLocaleDateString())
+    p.visitDate
+      ? (window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(p.visitDate) : p.visitDate)
+      : (window.formatIstDateDisplay
+        ? window.formatIstDateDisplay(new Date())
+        : new Date().toLocaleDateString())
   );
   setText("pAddress", p.address || "");
   setText("pAgeSex", ageSex);

@@ -75,7 +75,11 @@ function resolveInitialFilters() {
 
 function setSubtitle(range, doctorName) {
   const docText = doctorName ? ` • ${doctorName}` : "";
-  rangeSubtitle.textContent = `${range.from} to ${range.to}${docText}`;
+  const fromText =
+    window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(range.from) : range.from;
+  const toText =
+    window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(range.to) : range.to;
+  rangeSubtitle.textContent = `${fromText} to ${toText}${docText}`;
 }
 
 function clearNode(node) {
@@ -128,7 +132,10 @@ function renderRows(rows) {
     const tr = document.createElement("tr");
 
     const tdDate = document.createElement("td");
-    tdDate.textContent = r?.visitDate ? String(r.visitDate) : "-";
+    tdDate.textContent =
+      (window.formatYmdToDdMmYyyy && r?.visitDate)
+        ? window.formatYmdToDdMmYyyy(r.visitDate)
+        : (r?.visitDate ? String(r.visitDate) : "-");
 
     const tdSno = document.createElement("td");
     tdSno.textContent = String(idx + 1);

@@ -146,10 +146,13 @@ function showPatientInfo(){
   document.getElementById("pMobile").innerText =
     safe.mobile || "";
 
-  document.getElementById("pDate").innerText =
-    safe.visitDate || (window.formatIstDateDisplay
-      ? window.formatIstDateDisplay(new Date())
-      : new Date().toLocaleDateString());
+  const dateText =
+    safe.visitDate
+      ? (window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(safe.visitDate) : safe.visitDate)
+      : (window.formatIstDateDisplay
+        ? window.formatIstDateDisplay(new Date())
+        : new Date().toLocaleDateString());
+  document.getElementById("pDate").innerText = dateText;
 }
 
 /* ================= RANGE CHECK ================= */
@@ -1480,11 +1483,16 @@ function shareWhatsApp(){
     mobile = "91" + mobile;
   }
 
+  const visitDateText =
+    patient?.visitDate
+      ? (window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(patient.visitDate) : patient.visitDate)
+      : "";
+
   const text =
 `Sai Sree Swetha Diagnostics
 
 Patient: ${patient.name}
-Date: ${patient.visitDate}
+Date: ${visitDateText}
 
 Please collect your report from the lab.`;
 

@@ -144,7 +144,10 @@ function renderDetails(rows, doctorNameFallback){
 
     const tr = document.createElement("tr");
     const tdDate = document.createElement("td");
-    tdDate.textContent = r.date || "-";
+    tdDate.textContent =
+      (window.formatYmdToDdMmYyyy && r.date)
+        ? window.formatYmdToDdMmYyyy(r.date)
+        : (r.date || "-");
     const tdReport = document.createElement("td");
     tdReport.textContent = r.reportId || "-";
     const tdPatient = document.createElement("td");

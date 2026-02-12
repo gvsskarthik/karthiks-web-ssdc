@@ -237,7 +237,7 @@ function formatDashboardDateTime(date) {
     const minutes = pad2(date.getMinutes());
     const seconds = pad2(date.getSeconds());
 
-    return `${dayName} ${day}/${month}/${year}. ${hourStr}:${minutes}:${seconds} ${ampm}`;
+    return `${dayName} ${day}-${month}-${year}. ${hourStr}:${minutes}:${seconds} ${ampm}`;
 }
 
 function updateDashboardDateTime() {

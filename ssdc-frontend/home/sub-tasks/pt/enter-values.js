@@ -56,10 +56,13 @@ function showPatientInfo(p){
   document.getElementById("pAgeSex").innerText =
     (safe.age || "") + " / " + (safe.gender || "");
   document.getElementById("pDoctor").innerText = safe.doctor || "";
-  document.getElementById("pDate").innerText =
-    safe.visitDate || (window.formatIstDateDisplay
-      ? window.formatIstDateDisplay(new Date())
-      : new Date().toLocaleDateString());
+  const dateText =
+    safe.visitDate
+      ? (window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(safe.visitDate) : safe.visitDate)
+      : (window.formatIstDateDisplay
+        ? window.formatIstDateDisplay(new Date())
+        : new Date().toLocaleDateString());
+  document.getElementById("pDate").innerText = dateText;
 }
 
 function navigateToReports(){

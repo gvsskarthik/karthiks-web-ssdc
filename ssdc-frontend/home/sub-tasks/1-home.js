@@ -34,14 +34,14 @@ function formatInr(amount) {
   }
 }
 
-function formatYmdToDdMmYy(ymd) {
+function formatYmdToDdMmYyyy(ymd) {
   const s = normalizeYmd(ymd);
   if (!s) return "-";
   const parts = s.split("-");
-  const yy = parts[0].slice(2);
+  const yyyy = parts[0];
   const mm = parts[1];
   const dd = parts[2];
-  return `${dd}-${mm}-${yy}`;
+  return `${dd}-${mm}-${yyyy}`;
 }
 
 function clearNode(node) {
@@ -132,7 +132,7 @@ function renderRecentTasksTable(tasks) {
 
     const tdDate = document.createElement("td");
     tdDate.className = "date";
-    tdDate.textContent = formatYmdToDdMmYy(t.dateYmd);
+    tdDate.textContent = formatYmdToDdMmYyyy(t.dateYmd);
 
     const tdDue = document.createElement("td");
     tdDue.className = `amount ${dueClass}`;

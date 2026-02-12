@@ -28,24 +28,54 @@
   // device/browser timezone is misconfigured.
   window.IST_TIME_ZONE = "Asia/Kolkata";
 
+  window.formatYmdToDdMmYyyy = function (ymd) {
+    const raw = String(ymd == null ? "" : ymd).trim();
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) {
+      return `${iso[3]}-${iso[2]}-${iso[1]}`;
+    }
+    const already = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (already) {
+      return raw;
+    }
+    const shortYear = raw.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+    if (shortYear) {
+      return `${shortYear[1]}-${shortYear[2]}-20${shortYear[3]}`;
+    }
+    return raw;
+  };
+
   window.formatIstDateDisplay = function (date) {
     const d = date instanceof Date ? date : new Date();
-    return new Intl.DateTimeFormat("en-IN", {
-      timeZone: window.IST_TIME_ZONE
-    }).format(d);
+    const ymd = window.getIstDateInputValue ? window.getIstDateInputValue(d) : "";
+    return window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(ymd) : ymd;
   };
 
   window.formatIstDateTimeDisplay = function (date) {
     const d = date instanceof Date ? date : new Date();
-    return new Intl.DateTimeFormat("en-IN", {
-      timeZone: window.IST_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    }).format(d);
+    const ymd = window.getIstDateInputValue ? window.getIstDateInputValue(d) : "";
+    const datePart = window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(ymd) : ymd;
+
+    try {
+      const parts = new Intl.DateTimeFormat("en-IN", {
+        timeZone: window.IST_TIME_ZONE,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      }).formatToParts(d);
+      const map = {};
+      parts.forEach((p) => {
+        if (p && p.type) {
+          map[p.type] = p.value;
+        }
+      });
+      const timePart = `${map.hour || "00"}:${map.minute || "00"}:${map.second || "00"}`;
+      const period = map.dayPeriod ? String(map.dayPeriod).toUpperCase() : "";
+      return `${datePart} ${timePart}${period ? " " + period : ""}`.trim();
+    } catch (err) {
+      return datePart;
+    }
   };
 
   window.getIstDateInputValue = function (date) {
