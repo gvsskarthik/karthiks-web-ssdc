@@ -7,6 +7,7 @@ public class PatientTestResultDTO {
     public Long testId;
     public String subTest;
     public String resultValue;
+    public Boolean clear;
 
     @SuppressWarnings("unused")
     public PatientTestResultDTO() {}

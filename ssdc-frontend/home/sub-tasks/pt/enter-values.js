@@ -613,7 +613,7 @@ function buildResultSlots(baseName, defaultResults, savedBySub) {
     slots.push({
       label,
       subKey,
-      savedValue: saved?.resultValue || saved?.value || "",
+      savedValue: saved ? (saved.resultValue ?? saved.value ?? "") : null,
       defaultValue: defaultValue || ""
     });
   };
@@ -680,9 +680,10 @@ function renderResultControl(testId,
                              param,
                              savedValue,
                              defaultValue){
+  const hasSaved = savedValue !== null && savedValue !== undefined;
   const defaultText = defaultValue == null ? "" : String(defaultValue);
-  const savedText = savedValue == null ? "" : String(savedValue);
-  const safeValue = savedText.trim() !== "" ? savedText : defaultText;
+  const savedText = hasSaved ? String(savedValue) : "";
+  const safeValue = hasSaved ? savedText : defaultText;
 
   const input = document.createElement("input");
   input.className = "result-input";
@@ -751,7 +752,7 @@ function renderTests(tests) {
         `result-${test.id}`,
         null,
         singleParam,
-        saved?.resultValue || saved?.value || "",
+        saved ? (saved.resultValue ?? saved.value ?? "") : null,
         Array.isArray(singleParam.defaultResults)
           ? (singleParam.defaultResults[0] || "")
           : ""
@@ -814,7 +815,7 @@ function renderTests(tests) {
             inputId,
             subKey,
             singleParam,
-            savedItem?.resultValue || savedItem?.value || "",
+            savedItem ? (savedItem.resultValue ?? savedItem.value ?? "") : null,
             defaultResults[i] || ""
           );
 
@@ -869,7 +870,7 @@ function renderTests(tests) {
             inputId,
             subKey,
             singleParam,
-            row?.resultValue || row?.value || "",
+            row ? (row.resultValue ?? row.value ?? "") : null,
             ""
           );
 
@@ -1194,14 +1195,16 @@ function collectResults() {
       const touched = i.dataset.touched === "1";
       const fallback = i.dataset.default || i.getAttribute("value") || i.defaultValue || "";
       const finalValue = hasRaw ? rawValue : (touched ? "" : fallback);
+      const clear = touched && !hasRaw;
       return {
         patientId: patientId,
         testId: Number(i.dataset.testid),
         subTest: i.dataset.sub || null,
-        resultValue: finalValue
+        resultValue: finalValue,
+        clear
       };
     })
-    .filter(r => r.resultValue && r.resultValue.trim() !== "");
+    .filter(r => r.clear || (r.resultValue && r.resultValue.trim() !== ""));
 }
 
 /* ================= SAVE ONLY ================= */

@@ -174,4 +174,62 @@ class ReportServiceTest {
         assertEquals(1, deleted.size());
         assertEquals(1001L, ((ReportResult) deleted.get(0)).getId());
     }
+
+    @Test
+    void saveResults_clearTrue_clearsValueAndDeletesLineRows() {
+        ReportService service = new ReportService(resultRepo, testRepo, paramRepo, patientRepo);
+
+        Patient patient = new Patient();
+        patient.setId(1L);
+        patient.setLabId("ssdc");
+
+        com.ssdc.ssdclabs.model.Test test = new com.ssdc.ssdclabs.model.Test();
+        test.setId(10L);
+        test.setTestName("Haemoglobin");
+
+        TestParameter param = new TestParameter();
+        param.setId(100L);
+        param.setName("Haemoglobin");
+
+        ReportResult base = new ReportResult();
+        base.setId(1000L);
+        base.setPatient(patient);
+        base.setTest(test);
+        base.setParameter(param);
+        base.setSubTest("");
+        base.setResultValue("13\n14");
+
+        ReportResult lineRow = new ReportResult();
+        lineRow.setId(1001L);
+        lineRow.setPatient(patient);
+        lineRow.setTest(test);
+        lineRow.setParameter(param);
+        lineRow.setSubTest("Haemoglobin::2");
+        lineRow.setResultValue("14");
+
+        when(patientRepo.findByIdAndLabId(1L, "ssdc")).thenReturn(Optional.of(patient));
+        when(testRepo.findByIdAndLabId(10L, "ssdc")).thenReturn(Optional.of(test));
+        when(paramRepo.findByTest_IdOrderByIdAsc(10L)).thenReturn(List.of(param));
+        when(resultRepo.findByPatient_IdIn("ssdc", List.of(1L))).thenReturn(List.of(base, lineRow));
+        when(resultRepo.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PatientTestResultDTO clear = new PatientTestResultDTO(null, 1L, 10L, null, "");
+        clear.clear = true;
+
+        service.saveResults("ssdc", List.of(clear), null);
+
+        ArgumentCaptor<List> saveCaptor = ArgumentCaptor.forClass(List.class);
+        verify(resultRepo).saveAll(saveCaptor.capture());
+        List<?> saved = saveCaptor.getValue();
+        assertEquals(1, saved.size());
+        ReportResult savedRow = (ReportResult) saved.get(0);
+        assertEquals(1000L, savedRow.getId());
+        assertEquals(null, savedRow.getResultValue());
+
+        ArgumentCaptor<List> deleteCaptor = ArgumentCaptor.forClass(List.class);
+        verify(resultRepo).deleteAll(deleteCaptor.capture());
+        List<?> deleted = deleteCaptor.getValue();
+        assertEquals(1, deleted.size());
+        assertEquals(1001L, ((ReportResult) deleted.get(0)).getId());
+    }
 }

@@ -154,13 +154,6 @@ public class ReportService {
                 }
                 ReportResult existing = existingByParam.get(param.getId());
                 if (existing != null) {
-                    if (isBlank(existing.getResultValue())) {
-                        String defaultValue = firstDefaultResult(param);
-                        if (!isBlank(defaultValue)) {
-                            existing.setResultValue(defaultValue);
-                            toSave.add(existing);
-                        }
-                    }
                     continue;
                 }
                 ReportResult result = new ReportResult();
@@ -211,6 +204,7 @@ public class ReportService {
         Map<GroupKey, Patient> groupPatient = new HashMap<>();
         Map<GroupKey, Test> groupTest = new HashMap<>();
         Map<GroupKey, TestParameter> groupParam = new HashMap<>();
+        Set<GroupKey> clearRequested = new HashSet<>();
 
         int seq = 0;
         for (PatientTestResultDTO incoming : results) {
@@ -225,8 +219,9 @@ public class ReportService {
                 continue;
             }
 
+            boolean wantsClear = Boolean.TRUE.equals(incoming.clear);
             String cleanedValue = normalizeResultValue(incoming.resultValue);
-            if (isBlank(cleanedValue)) {
+            if (isBlank(cleanedValue) && !wantsClear) {
                 seq++;
                 continue;
             }
@@ -285,24 +280,28 @@ public class ReportService {
             }
 
             GroupKey key = new GroupKey(patientId, testId, param.getId());
-            incomingByGroup.computeIfAbsent(key, k -> new ArrayList<>())
-                .add(new IncomingLine(
-                    computeLineSortKey(normalizedSubTest, seq),
-                    seq,
-                    cleanedValue
-                ));
             groupPatient.putIfAbsent(key, patient);
             groupTest.putIfAbsent(key, test);
             groupParam.putIfAbsent(key, param);
+
+            if (!isBlank(cleanedValue)) {
+                incomingByGroup.computeIfAbsent(key, k -> new ArrayList<>())
+                    .add(new IncomingLine(
+                        computeLineSortKey(normalizedSubTest, seq),
+                        seq,
+                        cleanedValue
+                    ));
+            } else if (wantsClear) {
+                clearRequested.add(key);
+            }
             seq++;
         }
 
-        if (incomingByGroup.isEmpty()) {
+        if (incomingByGroup.isEmpty() && clearRequested.isEmpty()) {
             return;
         }
 
         Map<GroupKey, List<ReportResult>> existingByGroup = new HashMap<>();
-        Map<Long, List<ReportResult>> existingByPatient = new HashMap<>();
         List<Long> patientIdList = touchedPatients.stream()
             .filter(Objects::nonNull)
             .toList();
@@ -316,9 +315,6 @@ public class ReportService {
                 if (patientId == null) {
                     continue;
                 }
-                existingByPatient
-                    .computeIfAbsent(patientId, k -> new ArrayList<>())
-                    .add(result);
                 if (result.getTest() == null || result.getParameter() == null) {
                     continue;
                 }
@@ -394,6 +390,47 @@ public class ReportService {
             }
         }
 
+        for (GroupKey key : clearRequested) {
+            if (incomingByGroup.containsKey(key)) {
+                continue; // values win
+            }
+
+            Patient patient = groupPatient.get(key);
+            Test test = groupTest.get(key);
+            TestParameter param = groupParam.get(key);
+            if (patient == null || test == null || param == null) {
+                continue;
+            }
+
+            List<ReportResult> existing = existingByGroup.getOrDefault(key, List.of());
+            ReportResult base = pickBaseResult(existing, param.getName());
+            if (base == null) {
+                base = new ReportResult();
+                base.setPatient(patient);
+                base.setTest(test);
+                base.setParameter(param);
+                base.setSubTest("");
+            }
+
+            base.setResultValue(null);
+            toSave.add(base);
+
+            for (ReportResult result : existing) {
+                if (result == null || result == base) {
+                    continue;
+                }
+                String sub = normalizeSubTest(result.getSubTest());
+                if (sub != null && sub.contains("::")) {
+                    toDelete.add(result);
+                    continue;
+                }
+                if (!isBlank(result.getResultValue())) {
+                    result.setResultValue(null);
+                    toSave.add(result);
+                }
+            }
+        }
+
         if (!toDelete.isEmpty()) {
             resultRepo.deleteAll(toDelete);
         }
@@ -401,32 +438,6 @@ public class ReportService {
             resultRepo.saveAll(toSave);
         }
 
-        // Backfill defaults for any blank results on the same patients.
-        if (!touchedPatients.isEmpty() && !existingByPatient.isEmpty()) {
-            List<ReportResult> defaultsToSave = new ArrayList<>();
-            for (Long patientId : touchedPatients) {
-                if (patientId == null) {
-                    continue;
-                }
-                List<ReportResult> existing =
-                    existingByPatient.getOrDefault(patientId, List.of());
-                for (ReportResult result : existing) {
-                    if (result == null || !isBlank(result.getResultValue())) {
-                        continue;
-                    }
-                    String defaultValue =
-                        firstDefaultResult(result.getParameter());
-                    String finalValue = resolveFinalResult(null, defaultValue);
-                    if (!isBlank(finalValue)) {
-                        result.setResultValue(finalValue);
-                        defaultsToSave.add(result);
-                    }
-                }
-            }
-            if (!defaultsToSave.isEmpty()) {
-                resultRepo.saveAll(defaultsToSave);
-            }
-        }
     }
 
     @Transactional(readOnly = true)
