@@ -12,7 +12,6 @@ const exportExcel = document.getElementById("exportExcel");
 const dateFromInput = document.getElementById("dateFrom");
 const dateToInput = document.getElementById("dateTo");
 const applyFilters = document.getElementById("applyFilters");
-const thisMonthBtn = document.getElementById("thisMonth");
 const detailTitle = document.getElementById("detailTitle");
 const detailsBody = document.getElementById("detailsBody");
 
@@ -283,6 +282,11 @@ function getExportState(){
   };
 }
 
+function getExportRange() {
+  const range = resolveCurrentRange();
+  return { from: range.from, to: range.to };
+}
+
 function setFilterInputsToThisMonth() {
   const month = monthRangeForYmd(getTodayYmdIst());
   if (dateFromInput) dateFromInput.value = month.from;
@@ -369,8 +373,17 @@ function init(){
 
   exportExcel.addEventListener("click", () => {
     const state = getExportState();
-    localStorage.setItem("accountsExportFilter", JSON.stringify(state));
-    window.open("export.html", "_blank");
+    const range = getExportRange();
+    const qs = new URLSearchParams();
+    if (state.doctorId) {
+      qs.set("doctorId", String(state.doctorId));
+      qs.set("doctorName", String(state.doctorName || "Doctor"));
+    } else {
+      qs.set("doctorName", "All");
+    }
+    qs.set("from", range.from);
+    qs.set("to", range.to);
+    window.open(`export.html?${qs.toString()}`, "_blank");
   });
 
   if (applyFilters) {
@@ -389,12 +402,7 @@ function init(){
     });
   }
 
-  if (thisMonthBtn) {
-    thisMonthBtn.addEventListener("click", () => {
-      setFilterInputsToThisMonth();
-      loadDetails();
-    });
-  }
+  // Page loads with current month by default; no "This Month" button needed.
 }
 
 init();

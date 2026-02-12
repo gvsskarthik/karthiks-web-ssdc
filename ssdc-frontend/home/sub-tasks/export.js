@@ -8,11 +8,12 @@ const generatedAtEl = document.getElementById("generatedAt");
 const exportDownloadBtn = document.getElementById("btnExportDownload");
 const exportPrintBtn = document.getElementById("btnExportPrint");
 
-const exportState = JSON.parse(
-  localStorage.getItem("accountsExportFilter") || "{}"
-);
-const exportDoctorId = exportState.doctorId || "";
-const exportDoctorName = exportState.doctorName || "All";
+const params = new URLSearchParams(window.location.search || "");
+const exportDoctorId = params.get("doctorId") || "";
+const exportDoctorName = params.get("doctorName")
+  || (exportDoctorId ? "Doctor" : "All");
+const exportFrom = params.get("from") || "";
+const exportTo = params.get("to") || "";
 
 doctorNameEl.textContent = exportDoctorName;
 generatedAtEl.textContent = window.formatIstDateTimeDisplay
@@ -107,9 +108,20 @@ async function fetchJson(url){
 
 async function loadRows(){
   setBodyMessage("Loading...");
-  const endpoint = exportDoctorId
-    ? `/accounts/doctor/${encodeURIComponent(exportDoctorId)}/details`
-    : "/accounts/details";
+  const qs = new URLSearchParams();
+  if (exportFrom) {
+    qs.set("from", exportFrom);
+  }
+  if (exportTo) {
+    qs.set("to", exportTo);
+  }
+  if (exportDoctorId) {
+    qs.set("doctorId", exportDoctorId);
+  }
+  const endpoint =
+    qs.toString()
+      ? `/accounts/details?${qs.toString()}`
+      : "/accounts/details";
 
   try{
     const rows = await fetchJson(apiPath(endpoint));
