@@ -311,6 +311,14 @@ function normalizeResults(list){
   return Object.values(map);
 }
 
+/* ================= LOAD GROUPS (DB) ================= */
+function loadGroupsAll(){
+  return fetch(API_BASE_URL + "/groups")
+    .then(res => res.json())
+    .then(list => (Array.isArray(list) ? list : []))
+    .catch(() => []);
+}
+
 function loadAndRender(){
   return loadSavedResults()
     .then(() => loadSelectedIds())
@@ -329,40 +337,176 @@ function loadAndRender(){
       selectedIdsCache = ids.slice();
 
       /* ================= LOAD TEST MASTER ================= */
-      return fetch(API_BASE_URL + "/tests/active")
-        .then(res => res.json())
-        .then(allTests => {
-          const activeTests = (allTests || [])
-            .filter(t => t && t.active !== false);
-          const selectedTests =
-            activeTests.filter(t => ids.includes(t.id));
-          selectedTestsCache = sortTestsByOrder(selectedTests, ids);
-          renderTests(selectedTestsCache);
-          applyEditUi();
-        });
+      return Promise.all([
+        fetch(API_BASE_URL + "/tests/active").then(res => res.json()).catch(() => []),
+        loadGroupsAll()
+      ]).then(([allTests, groupList]) => {
+        const activeTests = (allTests || [])
+          .filter(t => t && t.active !== false);
+        const selectedTests =
+          activeTests.filter(t => ids.includes(t.id));
+        selectedTestsCache = sortTestsByOrder(selectedTests, ids, groupList);
+        renderTests(selectedTestsCache);
+        applyEditUi();
+      });
     });
 }
 
-function sortTestsByOrder(tests, selectedIds){
+function sortTestsByOrder(tests, selectedIds, groupList){
   const list = Array.isArray(tests) ? tests : [];
   const indexById = new Map();
+  const selectedIdSet = new Set();
   (Array.isArray(selectedIds) ? selectedIds : []).forEach((id, i) => {
     const n = Number(id);
     if (Number.isFinite(n) && !indexById.has(n)) {
       indexById.set(n, i);
+      selectedIdSet.add(n);
     }
   });
   const categoryById = new Map();
-  list.forEach(t => categoryById.set(Number(t?.id), t?.category || ""));
-
-  return [...list].sort((a, b) => {
-    const aId = Number(a?.id);
-    const bId = Number(b?.id);
-    const ar = categoryPriority(categoryById.get(aId));
-    const br = categoryPriority(categoryById.get(bId));
-    if (ar !== br) return ar - br;
-    return (indexById.get(aId) ?? 0) - (indexById.get(bId) ?? 0);
+  const testById = new Map();
+  list.forEach(t => {
+    const id = Number(t?.id);
+    if (!Number.isFinite(id)) {
+      return;
+    }
+    testById.set(id, t);
+    categoryById.set(id, t?.category || "");
   });
+
+  const groups = (Array.isArray(groupList) ? groupList : [])
+    .map((g, idx) => {
+      const id = Number(g?.id);
+      if (!Number.isFinite(id)) {
+        return null;
+      }
+      const ids = Array.isArray(g?.testIds) ? g.testIds : [];
+      const testIds = ids
+        .map(testId => Number(testId))
+        .filter(testId => Number.isFinite(testId));
+      return {
+        id,
+        order: idx,
+        category: g?.category || "",
+        active: g?.active !== false,
+        testIds
+      };
+    })
+    .filter(g => g && g.active && Array.isArray(g.testIds) && g.testIds.length);
+
+  const groupOrderById = new Map();
+  groups.forEach(g => groupOrderById.set(Number(g.id), Number(g.order) || 0));
+
+  // Pick groups that fully match selected tests and don't overlap (same as pt/new.html behavior).
+  const candidates = groups
+    .slice()
+    .sort((a, b) => {
+      const diff = (b.testIds?.length || 0) - (a.testIds?.length || 0);
+      if (diff !== 0) return diff;
+      return (a.order || 0) - (b.order || 0);
+    });
+
+  const chosenGroups = [];
+  const covered = new Set();
+  candidates.forEach(group => {
+    const ids = group.testIds || [];
+    const allSelected = ids.every(id => selectedIdSet.has(id));
+    if (!allSelected) {
+      return;
+    }
+    const overlaps = ids.some(id => covered.has(id));
+    if (overlaps) {
+      return;
+    }
+    chosenGroups.push(group);
+    ids.forEach(id => covered.add(id));
+  });
+
+  const coveredForOutput = new Set();
+  const blocks = [];
+
+  chosenGroups.forEach(group => {
+    const presentIds = (group.testIds || []).filter(id => testById.has(id));
+    if (!presentIds.length) {
+      return;
+    }
+    presentIds.forEach(id => coveredForOutput.add(id));
+
+    let minSelection = Number.MAX_SAFE_INTEGER;
+    (group.testIds || []).forEach(id => {
+      const idx = indexById.get(id);
+      if (typeof idx === "number" && idx < minSelection) {
+        minSelection = idx;
+      }
+    });
+
+    let categoryRank = 99;
+    const groupCategory = String(group.category || "").trim();
+    if (groupCategory) {
+      categoryRank = categoryPriority(groupCategory);
+    } else {
+      presentIds.forEach(id => {
+        const rank = categoryPriority(categoryById.get(id) || "");
+        if (rank < categoryRank) {
+          categoryRank = rank;
+        }
+      });
+    }
+
+    blocks.push({
+      type: "group",
+      categoryRank,
+      minSelection,
+      order: groupOrderById.get(group.id) ?? 0,
+      firstId: presentIds[0],
+      tests: presentIds.map(id => testById.get(id)).filter(Boolean)
+    });
+  });
+
+  list.forEach(test => {
+    const id = Number(test?.id);
+    if (!Number.isFinite(id) || coveredForOutput.has(id)) {
+      return;
+    }
+    blocks.push({
+      type: "test",
+      categoryRank: categoryPriority(test?.category || ""),
+      minSelection: indexById.get(id) ?? Number.MAX_SAFE_INTEGER,
+      order: Number.MAX_SAFE_INTEGER,
+      firstId: id,
+      tests: [test]
+    });
+  });
+
+  blocks.sort((a, b) => {
+    const ar = Number(a?.categoryRank ?? 99);
+    const br = Number(b?.categoryRank ?? 99);
+    if (ar !== br) return ar - br;
+
+    const ai = Number(a?.minSelection ?? Number.MAX_SAFE_INTEGER);
+    const bi = Number(b?.minSelection ?? Number.MAX_SAFE_INTEGER);
+    if (ai !== bi) return ai - bi;
+
+    if (a.type !== b.type) {
+      return a.type === "group" ? -1 : 1;
+    }
+
+    const ao = Number(a?.order ?? Number.MAX_SAFE_INTEGER);
+    const bo = Number(b?.order ?? Number.MAX_SAFE_INTEGER);
+    if (ao !== bo) return ao - bo;
+
+    return Number(a?.firstId ?? 0) - Number(b?.firstId ?? 0);
+  });
+
+  const output = [];
+  blocks.forEach(block => {
+    (block?.tests || []).forEach(test => {
+      if (test) {
+        output.push(test);
+      }
+    });
+  });
+  return output;
 }
 
 function normalizeKey(value){
