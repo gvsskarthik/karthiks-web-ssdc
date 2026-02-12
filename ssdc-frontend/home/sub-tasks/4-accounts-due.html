@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Due Patients</title>
+  <link href="../../vendor/fonts/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="components.css">
+  <link rel="stylesheet" href="4-accounts-due.css">
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <div>
+      <h1>Due Patients</h1>
+      <div class="subtitle" id="rangeSubtitle">—</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn secondary" id="backBtn" type="button">← Accounts</button>
+    </div>
+  </div>
+
+  <div class="neo card filter-card">
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label class="small" for="doctor">Doctor</label>
+        <select id="doctor" class="neo-select neo-pressed">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label class="small" for="dateFrom">From</label>
+        <input id="dateFrom" type="date" class="neo-input neo-pressed">
+      </div>
+
+      <div class="filter-item">
+        <label class="small" for="dateTo">To</label>
+        <input id="dateTo" type="date" class="neo-input neo-pressed">
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn" id="applyFilters" type="button">Apply</button>
+        <button class="btn secondary" id="thisMonth" type="button">This Month</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="neo card">
+    <div class="card-head">
+      <h3 id="tableTitle">Due List</h3>
+      <div class="meta muted" id="tableMeta"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Doctor</th>
+            <th class="num">Due Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="dueBody">
+          <tr>
+            <td colspan="7" class="muted text-center">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="../../api.js"></script>
+<script src="4-accounts-due.js"></script>
+</body>
+</html>
+

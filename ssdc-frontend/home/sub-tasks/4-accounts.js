@@ -25,6 +25,45 @@ let currentRows = [];
 let currentDoctorFallback = "";
 let dateRange = { from: null, to: null };
 
+function isYmd(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim());
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function getTodayYmdIst() {
+  if (typeof window.getIstDateInputValue === "function") {
+    return window.getIstDateInputValue(new Date());
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
+function monthRangeForYmd(ymd) {
+  const base = String(ymd || "").trim();
+  if (!isYmd(base)) {
+    return monthRangeForYmd(getTodayYmdIst());
+  }
+  const year = Number(base.slice(0, 4));
+  const month = Number(base.slice(5, 7)); // 1..12
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return {
+    from: `${year}-${pad2(month)}-01`,
+    to: `${year}-${pad2(month)}-${pad2(lastDay)}`
+  };
+}
+
+function ymdFromUtcDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  return `${y}-${pad2(m)}-${pad2(d)}`;
+}
+
 function clearNode(node){
   if (!node) return;
   while (node.firstChild) {
@@ -356,6 +395,43 @@ async function selectDoctor(id){
 function init(){
   loadDoctors();
   loadAllDetails();
+
+  if (sumDue) {
+    sumDue.style.cursor = "pointer";
+    sumDue.title = "Open due list";
+    sumDue.addEventListener("click", () => {
+      const selectedDoctorId = doctorSelect.value || "";
+      const fromYmd = ymdFromUtcDate(dateRange.from);
+      const toYmd = ymdFromUtcDate(dateRange.to);
+
+      let range;
+      if (isYmd(fromYmd) && isYmd(toYmd)) {
+        range = { from: fromYmd, to: toYmd };
+      } else if (isYmd(fromYmd) && !isYmd(toYmd)) {
+        const month = monthRangeForYmd(fromYmd);
+        range = { from: fromYmd, to: month.to };
+      } else if (!isYmd(fromYmd) && isYmd(toYmd)) {
+        const month = monthRangeForYmd(toYmd);
+        range = { from: month.from, to: toYmd };
+      } else {
+        range = monthRangeForYmd(getTodayYmdIst());
+      }
+
+      const qs = new URLSearchParams();
+      qs.set("from", range.from);
+      qs.set("to", range.to);
+      if (selectedDoctorId) {
+        qs.set("doctorId", selectedDoctorId);
+      }
+
+      const url = `home/sub-tasks/4-accounts-due.html?${qs.toString()}`;
+      if (typeof parent !== "undefined" && parent && typeof parent.loadPage === "function") {
+        parent.loadPage(url, "accounts");
+        return;
+      }
+      window.location.href = `4-accounts-due.html?${qs.toString()}`;
+    });
+  }
 
   doctorSelect.addEventListener("change", () => {
     const value = doctorSelect.value;

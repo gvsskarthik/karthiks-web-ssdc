@@ -51,6 +51,53 @@ function clearNode(node) {
   }
 }
 
+let latestRecentTasks = [];
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function getTodayYmdIst() {
+  if (typeof window.getIstDateInputValue === "function") {
+    return window.getIstDateInputValue(new Date());
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
+function monthRangeForYmd(ymd) {
+  const base = normalizeYmd(ymd) || getTodayYmdIst();
+  const year = Number(base.slice(0, 4));
+  const month = Number(base.slice(5, 7)); // 1..12
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return {
+    from: `${year}-${pad2(month)}-01`,
+    to: `${year}-${pad2(month)}-${pad2(lastDay)}`
+  };
+}
+
+function setupDueHeaderNavigation() {
+  const dueHeader = document.querySelector("table.recent-tasks thead th.amount");
+  if (!dueHeader) {
+    return;
+  }
+  dueHeader.style.cursor = "pointer";
+  dueHeader.title = "Open due list";
+  dueHeader.addEventListener("click", () => {
+    const baseYmd =
+      (latestRecentTasks && latestRecentTasks.length && latestRecentTasks[0]?.dateYmd)
+        ? latestRecentTasks[0].dateYmd
+        : getTodayYmdIst();
+    const range = monthRangeForYmd(baseYmd);
+    const url = `home/sub-tasks/4-accounts-due.html?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+
+    if (typeof parent !== "undefined" && parent && typeof parent.loadPage === "function") {
+      parent.loadPage(url, "accounts");
+      return;
+    }
+    window.location.href = `4-accounts-due.html?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+  });
+}
+
 function renderRecentTasksTable(tasks) {
   const tbody = document.getElementById("recentTasksBody");
   if (!tbody) {
@@ -144,11 +191,14 @@ function loadHomeSummary(){
           pending: Boolean(r && r.pending)
         });
       }
+      latestRecentTasks = tasks;
       renderRecentTasksTable(tasks);
     })
     .catch(() => {
+      latestRecentTasks = [];
       renderRecentTasksTable([]);
     });
 }
 
+setupDueHeaderNavigation();
 loadHomeSummary();

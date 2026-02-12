@@ -7,11 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.AbstractPageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import com.ssdc.ssdclabs.dto.AccountsDuePatientDTO;
 import com.ssdc.ssdclabs.dto.AccountsDoctorDTO;
 import com.ssdc.ssdclabs.dto.AccountsDoctorDetailDTO;
 import com.ssdc.ssdclabs.dto.AccountsSummaryDTO;
@@ -22,6 +29,8 @@ import com.ssdc.ssdclabs.repository.PatientRepository;
 
 @Service
 public class AccountsService {
+
+    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
 
     private final PatientRepository patientRepo;
     private final DoctorRepository doctorRepo;
@@ -195,6 +204,57 @@ public class AccountsService {
         return details;
     }
 
+    public @NonNull List<AccountsDuePatientDTO> getDuePatients(
+            @NonNull String labId,
+            String from,
+            String to,
+            String doctorId,
+            int limit,
+            int offset) {
+        final String safeLabId = Objects.requireNonNull(labId, "labId");
+
+        final int safeLimit = clamp(limit, 1, 5000, 2000);
+        final int safeOffset = Math.max(0, offset);
+        final Pageable pageable = new OffsetBasedPageRequest(safeOffset, safeLimit);
+
+        final DateRange range = resolveDateRange(from, to);
+
+        if (doctorId == null || doctorId.trim().isEmpty()) {
+            return patientRepo.findDuePatients(safeLabId, range.from(), range.to(), pageable);
+        }
+
+        final String trimmedDoctorId = doctorId.trim();
+        if (isSelfDoctor(trimmedDoctorId)) {
+            return patientRepo.findDuePatientsSelf(safeLabId, range.from(), range.to(), pageable);
+        }
+
+        final Long numericDoctorId = parseLong(trimmedDoctorId);
+        if (numericDoctorId != null) {
+            return patientRepo.findDuePatientsByDoctorId(
+                safeLabId,
+                numericDoctorId,
+                range.from(),
+                range.to(),
+                pageable
+            );
+        }
+
+        // Fallback: accept doctorName for convenience.
+        final Long resolvedByName = doctorRepo.findFirstByLabIdAndNameIgnoreCase(safeLabId, trimmedDoctorId)
+            .map(Doctor::getId)
+            .orElse(null);
+        if (resolvedByName == null) {
+            return new ArrayList<>();
+        }
+        return patientRepo.findDuePatientsByDoctorId(
+            safeLabId,
+            resolvedByName,
+            range.from(),
+            range.to(),
+            pageable
+        );
+    }
+
 
     private String normalizeDoctorName(String doctorName) {
         if (doctorName == null) {
@@ -307,6 +367,101 @@ public class AccountsService {
             return Double.parseDouble(value.toString());
         } catch (Exception ex) {
             return 0;
+        }
+    }
+
+    private static int clamp(int value, int min, int max, int defaultValue) {
+        if (value <= 0) {
+            return defaultValue;
+        }
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private DateRange resolveDateRange(String from, String to) {
+        LocalDate parsedFrom = parseDate(from);
+        LocalDate parsedTo = parseDate(to);
+
+        if (parsedFrom == null && parsedTo == null) {
+            LocalDate today = LocalDate.now(IST);
+            LocalDate start = today.withDayOfMonth(1);
+            LocalDate end = today.with(TemporalAdjusters.lastDayOfMonth());
+            return new DateRange(start, end);
+        }
+
+        if (parsedFrom == null) {
+            LocalDate start = parsedTo.withDayOfMonth(1);
+            return new DateRange(start, parsedTo);
+        }
+
+        if (parsedTo == null) {
+            LocalDate end = parsedFrom.with(TemporalAdjusters.lastDayOfMonth());
+            return new DateRange(parsedFrom, end);
+        }
+
+        if (parsedFrom.isAfter(parsedTo)) {
+            throw new IllegalArgumentException("from must be before to");
+        }
+
+        return new DateRange(parsedFrom, parsedTo);
+    }
+
+    private LocalDate parseDate(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(trimmed);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Invalid date. Use YYYY-MM-DD");
+        }
+    }
+
+    private record DateRange(LocalDate from, LocalDate to) {}
+
+    private static final class OffsetBasedPageRequest extends AbstractPageRequest {
+        private final long offset;
+
+        OffsetBasedPageRequest(long offset, int limit) {
+            super(0, limit);
+            this.offset = Math.max(0, offset);
+        }
+
+        @Override
+        public long getOffset() {
+            return offset;
+        }
+
+        @Override
+        public Sort getSort() {
+            return Sort.unsorted();
+        }
+
+        @Override
+        public Pageable next() {
+            return new OffsetBasedPageRequest(getOffset() + getPageSize(), getPageSize());
+        }
+
+        @Override
+        public Pageable previous() {
+            long newOffset = Math.max(0, getOffset() - getPageSize());
+            return new OffsetBasedPageRequest(newOffset, getPageSize());
+        }
+
+        @Override
+        public Pageable first() {
+            return new OffsetBasedPageRequest(0, getPageSize());
+        }
+
+        @Override
+        public Pageable withPage(int pageNumber) {
+            if (pageNumber < 0) {
+                return first();
+            }
+            return new OffsetBasedPageRequest((long) pageNumber * getPageSize(), getPageSize());
         }
     }
 }

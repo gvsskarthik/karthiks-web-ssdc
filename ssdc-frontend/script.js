@@ -41,6 +41,7 @@ const menuByPage = {
     "home/sub-tasks/2-patient.html": "patient",
     "home/sub-tasks/3-reports.html": "reports",
     "home/sub-tasks/4-accounts.html": "accounts",
+    "home/sub-tasks/4-accounts-due.html": "accounts",
     "home/sub-tasks/5-tests.html": "tests",
     "home/sub-tasks/6-doctor.html": "doctors",
     "home/sub-tasks/7-settings.html": "settings"

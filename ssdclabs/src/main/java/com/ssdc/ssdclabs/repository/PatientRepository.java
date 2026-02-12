@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.ssdc.ssdclabs.dto.AccountsDuePatientDTO;
 import com.ssdc.ssdclabs.model.Patient;
 
 public interface PatientRepository extends JpaRepository<Patient, Long> {
@@ -225,4 +226,76 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("labId") String labId,
             @Param("visitDate") LocalDate visitDate
     );
+
+    @Query("""
+        SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
+            p.id,
+            p.name,
+            p.mobile,
+            p.address,
+            COALESCE(d.name, 'SELF'),
+            (COALESCE(p.amount, 0.0) - COALESCE(p.paid, 0.0)),
+            COALESCE(p.status, 'NOT COMPLETE')
+        )
+        FROM Patient p
+        LEFT JOIN p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :from AND :to
+          AND (COALESCE(p.amount, 0.0) - COALESCE(p.paid, 0.0)) > 0.0
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<AccountsDuePatientDTO> findDuePatients(
+            @Param("labId") String labId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            Pageable pageable);
+
+    @Query("""
+        SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
+            p.id,
+            p.name,
+            p.mobile,
+            p.address,
+            COALESCE(d.name, 'SELF'),
+            (COALESCE(p.amount, 0.0) - COALESCE(p.paid, 0.0)),
+            COALESCE(p.status, 'NOT COMPLETE')
+        )
+        FROM Patient p
+        LEFT JOIN p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :from AND :to
+          AND (COALESCE(p.amount, 0.0) - COALESCE(p.paid, 0.0)) > 0.0
+          AND d.id = :doctorId
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<AccountsDuePatientDTO> findDuePatientsByDoctorId(
+            @Param("labId") String labId,
+            @Param("doctorId") Long doctorId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            Pageable pageable);
+
+    @Query("""
+        SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
+            p.id,
+            p.name,
+            p.mobile,
+            p.address,
+            COALESCE(d.name, 'SELF'),
+            (COALESCE(p.amount, 0.0) - COALESCE(p.paid, 0.0)),
+            COALESCE(p.status, 'NOT COMPLETE')
+        )
+        FROM Patient p
+        LEFT JOIN p.doctor d
+        WHERE p.labId = :labId
+          AND p.visitDate BETWEEN :from AND :to
+          AND (COALESCE(p.amount, 0.0) - COALESCE(p.paid, 0.0)) > 0.0
+          AND (d IS NULL OR LOWER(d.name) = 'self')
+        ORDER BY p.visitDate DESC, p.id DESC
+    """)
+    List<AccountsDuePatientDTO> findDuePatientsSelf(
+            @Param("labId") String labId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            Pageable pageable);
 }
