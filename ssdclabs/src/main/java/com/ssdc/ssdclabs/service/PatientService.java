@@ -286,13 +286,13 @@ public class PatientService {
             .comparingInt(Row::group)
             .thenComparing((Row a, Row b) -> {
                 // Past days: newer date first.
-                if (a.group() == 4 || b.group() == 4) {
+                if (a.group() == 4 && b.group() == 4) {
                     return b.date().compareTo(a.date());
                 }
                 return 0;
             })
             .thenComparingInt(Row::sub)
-            .thenComparingLong((Row r) -> r.dto().id()).reversed()
+            .thenComparing(Comparator.comparingLong((Row r) -> r.dto().id()).reversed())
         );
 
         if (rows.size() <= safeLimit) {
