@@ -131,11 +131,94 @@ function renderEmpty(message){
   clearNode(table);
   const tr = document.createElement("tr");
   const td = document.createElement("td");
-  td.colSpan = 5;
+  td.colSpan = 6;
   td.className = "no-data";
   td.textContent = message || "No data";
   tr.appendChild(td);
   table.appendChild(tr);
+}
+
+function formatInr(value){
+  const n = Number(value) || 0;
+  try {
+    const fmt = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+    return "₹" + fmt.format(Math.round(n));
+  } catch (e) {
+    return "₹" + String(Math.round(n));
+  }
+}
+
+function normalizeMobile(value){
+  let mobile = String(value || "").replace(/\D/g, "");
+  if (!mobile) {
+    return "";
+  }
+  if (!mobile.startsWith("91")) {
+    mobile = "91" + mobile;
+  }
+  return mobile;
+}
+
+function formatAgeSex(patient){
+  const age = patient?.age ? String(patient.age) : "";
+  const sex = patient?.gender ? String(patient.gender) : "";
+  if (age && sex) {
+    return `${age}/${sex}`;
+  }
+  return age || sex || "";
+}
+
+function buildWhatsAppMessage(patient){
+  const id = Number(patient?.id);
+  const reportId = Number.isFinite(id) ? `R${id}` : "";
+  const name = String(patient?.name || "").trim();
+  const ageSex = formatAgeSex(patient);
+  const total = Number(patient?.amount) || 0;
+  const paid = Number(patient?.paid) || 0;
+  const due = Math.max(0, total - paid);
+
+  const lines = [];
+  lines.push("Sai Sree Swetha Diagnostics");
+  lines.push("");
+  lines.push("Report READY ✅");
+  lines.push(`Patient: ${name}${ageSex ? ` (${ageSex})` : ""}`);
+  if (reportId) {
+    lines.push(`Report ID: ${reportId}`);
+  }
+  lines.push("");
+  lines.push(`Total: ${formatInr(total)}`);
+  lines.push(`Paid: ${formatInr(paid)}`);
+
+  if (due > 0) {
+    lines.push(`Due: ${formatInr(due)}`);
+  } else {
+    lines.push("Payment: CLEARED ✅");
+  }
+
+  lines.push("");
+  lines.push("Please collect from lab.");
+  return lines.join("\n");
+}
+
+async function informWhatsApp(patient){
+  const isCompleted =
+    String(patient?.status || "").trim().toUpperCase() === "COMPLETED";
+  if (!isCompleted) {
+    await window.ssdcAlert("Report not completed", { title: "Not Completed" });
+    return;
+  }
+
+  const mobile = normalizeMobile(patient?.mobile);
+  if (!mobile) {
+    await window.ssdcAlert("Patient mobile number not available", { title: "Missing Mobile" });
+    return;
+  }
+
+  const text = buildWhatsAppMessage(patient);
+  window.open(
+    `https://wa.me/${mobile}?text=${encodeURIComponent(text)}`,
+    "_blank"
+  );
 }
 
 function matchesPatient(patient, query){
@@ -213,11 +296,21 @@ function renderTable(data){
     btn.addEventListener("click", () => openReport(p));
     tdAction.appendChild(btn);
 
+    const tdInform = document.createElement("td");
+    tdInform.className = "inform-col";
+    const waBtn = document.createElement("button");
+    waBtn.type = "button";
+    waBtn.className = `wa-btn ${isCompleted ? "" : "is-disabled"}`.trim();
+    waBtn.innerHTML = `<i class="bx bxl-whatsapp"></i><span>WhatsApp</span>`;
+    waBtn.addEventListener("click", () => informWhatsApp(p));
+    tdInform.appendChild(waBtn);
+
     tr.appendChild(tdSno);
     tr.appendChild(tdName);
     tr.appendChild(tdDoctor);
     tr.appendChild(tdStatus);
     tr.appendChild(tdAction);
+    tr.appendChild(tdInform);
     frag.appendChild(tr);
   });
 

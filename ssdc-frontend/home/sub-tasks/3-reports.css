@@ -146,6 +146,13 @@ thead th {
   padding: 0 12px 6px;
 }
 
+thead th.action-col,
+thead th.inform-col,
+tbody td.action-col,
+tbody td.inform-col {
+  text-align: center;
+}
+
 tbody tr {
   background: #fff;
   transition: transform .15s ease, box-shadow .15s ease;
@@ -176,27 +183,15 @@ tbody td:last-child {
   width: 60px;
 }
 
-.name {
-  width: 260px;
+.name,
+.doctor,
+.status-col,
+.action-col,
+.inform-col {
+  width: calc((100% - 60px) / 5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.doctor {
-  width: 220px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.status-col {
-  width: 140px;
-  white-space: nowrap;
-}
-
-.action-col {
-  width: 90px;
 }
 
 .status {
@@ -221,6 +216,34 @@ tbody td:last-child {
   cursor: pointer;
   color: var(--accent);
   font-weight: 600;
+}
+
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wa-btn:hover {
+  background: rgba(21, 128, 61, 0.16);
+}
+
+.wa-btn.is-disabled {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.wa-btn i {
+  font-size: 16px;
 }
 
 .no-data {
