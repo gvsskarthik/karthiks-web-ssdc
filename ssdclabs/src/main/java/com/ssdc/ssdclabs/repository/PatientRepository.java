@@ -229,6 +229,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     @Query("""
         SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
+            p.visitDate,
             p.id,
             p.name,
             p.mobile,
@@ -252,6 +253,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     @Query("""
         SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
+            p.visitDate,
             p.id,
             p.name,
             p.mobile,
@@ -277,6 +279,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     @Query("""
         SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
+            p.visitDate,
             p.id,
             p.name,
             p.mobile,

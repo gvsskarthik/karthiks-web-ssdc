@@ -105,7 +105,7 @@ function showMessage(message) {
   clearNode(dueBody);
   const tr = document.createElement("tr");
   const td = document.createElement("td");
-  td.colSpan = 7;
+  td.colSpan = 8;
   td.className = "muted text-center";
   td.textContent = message;
   tr.appendChild(td);
@@ -126,6 +126,9 @@ function renderRows(rows) {
 
   list.forEach((r, idx) => {
     const tr = document.createElement("tr");
+
+    const tdDate = document.createElement("td");
+    tdDate.textContent = r?.visitDate ? String(r.visitDate) : "-";
 
     const tdSno = document.createElement("td");
     tdSno.textContent = String(idx + 1);
@@ -164,6 +167,7 @@ function renderRows(rows) {
     tr.appendChild(tdDue);
     tr.appendChild(tdStatus);
 
+    tr.insertBefore(tdDate, tr.firstChild);
     frag.appendChild(tr);
   });
 
@@ -305,4 +309,3 @@ function init() {
 }
 
 init();
-
