@@ -345,22 +345,16 @@ function setFilterInputsToThisMonth() {
 }
 
 function updateDetailTitle() {
-  const range = resolveCurrentRange();
-  const dateText =
-    (window.formatYmdToDdMmYyyy
-      ? `${window.formatYmdToDdMmYyyy(range.from)} to ${window.formatYmdToDdMmYyyy(range.to)}`
-      : `${range.from} to ${range.to}`);
-
   const id = doctorSelect?.value || "";
   if (!id) {
-    detailTitle.innerText = `All Accounts (${dateText})`;
+    detailTitle.innerText = "All Accounts";
     currentDoctorFallback = "";
     return;
   }
   const doc = doctors.find(d => String(d.doctorId) === String(id));
   const docName = doc?.doctorName || "Doctor";
   const rate = formatNumber(doc?.commissionRate);
-  detailTitle.innerText = `Billing Details: ${docName} (${rate}%) • ${dateText}`;
+  detailTitle.innerText = `Billing Details: ${docName} (${rate}%)`;
   currentDoctorFallback = docName;
 }
 

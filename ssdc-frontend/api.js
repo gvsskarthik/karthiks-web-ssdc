@@ -89,6 +89,72 @@
     }).format(d);
   };
 
+  // Disable future dates for all <input type="date"> by setting max=IST today.
+  // Also clamps manually-typed future values back to max.
+  window.applyMaxTodayToDateInputs = function (root) {
+    const doc = root && root.querySelectorAll ? root : document;
+    const max = window.getIstDateInputValue ? window.getIstDateInputValue(new Date()) : "";
+    if (!max) {
+      return;
+    }
+    const inputs = doc.querySelectorAll('input[type="date"]');
+    inputs.forEach((input) => {
+      if (!input) return;
+      try {
+        input.max = max;
+      } catch (e) {
+        // ignore
+      }
+      try {
+        if (!input.dataset) return;
+        if (input.dataset.maxTodayBound === "1") return;
+        input.dataset.maxTodayBound = "1";
+        input.addEventListener("change", () => {
+          const v = String(input.value || "").trim();
+          if (v && v > max) {
+            input.value = max;
+          }
+        });
+      } catch (e) {
+        // ignore
+      }
+    });
+  };
+
+  (function initMaxTodayWatcher() {
+    function applyNow() {
+      try {
+        window.applyMaxTodayToDateInputs(document);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", applyNow, { once: true });
+    } else {
+      applyNow();
+    }
+
+    try {
+      if (!document.body || !window.MutationObserver) {
+        return;
+      }
+      let scheduled = false;
+      const observer = new MutationObserver(() => {
+        if (scheduled) return;
+        scheduled = true;
+        setTimeout(() => {
+          scheduled = false;
+          applyNow();
+        }, 50);
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {
+      // ignore
+    }
+  })();
+
   if (!window.fetch) {
     return;
   }
