@@ -27,7 +27,6 @@ body {
   color: #fff;
   border-color: transparent;
   box-shadow: var(--shadow-accent);
-  font-size: var(--fs-14);
 }
 
 .neo-btn.secondary,
@@ -114,19 +113,17 @@ table td {
 
 .table-wrap table {
   min-width: 720px;
-  min-width: calc(720px * var(--ui-scale-bounded));
 }
 
 @media (max-width: 900px) {
   .table-box {
-    padding: var(--space-3);
+    padding: 12px;
   }
 }
 
 @media (max-width: 600px) {
   .table-wrap table {
     min-width: 640px;
-    min-width: calc(640px * var(--ui-scale-bounded));
   }
 }
 
@@ -137,7 +134,7 @@ table td {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: var(--space-4);
+  padding: 18px;
   background: rgba(30, 38, 45, 0.30);
   backdrop-filter: blur(4px);
   z-index: 999999;
@@ -157,7 +154,7 @@ table td {
   box-shadow:
     0 26px 70px rgba(28, 41, 61, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.65);
-  padding: var(--space-4) var(--space-4);
+  padding: 18px 16px;
 }
 
 .ssdc-popup-header {
@@ -170,14 +167,14 @@ table td {
 
 .ssdc-popup-title {
   margin: 0;
-  font-size: var(--fs-18);
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
 
 .ssdc-popup-x {
-  width: calc(34px * var(--ui-scale-bounded));
-  height: calc(34px * var(--ui-scale-bounded));
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   border: 1px solid var(--theme-line);
   background: var(--theme-surface);
@@ -213,8 +210,8 @@ table td {
 
 .ssdc-popup-input {
   width: 100%;
-  height: var(--control-h-md);
-  padding: 0 var(--space-3);
+  height: 42px;
+  padding: 0 14px;
   border-radius: 12px;
   border: 1px solid var(--theme-line);
   background: var(--theme-field-bg);
@@ -235,14 +232,14 @@ table td {
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: var(--space-4);
+  margin-top: 16px;
 }
 
 .ssdc-popup-btn {
   border: none;
   border-radius: 999px;
-  height: calc(40px * var(--ui-scale-bounded));
-  padding: 0 var(--space-4);
+  height: 40px;
+  padding: 0 16px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;

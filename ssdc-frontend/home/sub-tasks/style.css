@@ -8,7 +8,7 @@ html {
 /* MAIN */
  main {
 	width: 100%;
-	padding: var(--space-4);
+	padding: 16px;
 	margin: 0;  
 	font-family: var(--poppins), sans-serif;
 	overflow-y: visible;   /* FIX */
@@ -24,7 +24,7 @@ html {
 }
 
  main .head-title .left h1 {
-	font-size: calc(36px * var(--ui-scale-bounded));
+	font-size: 36px;
 	font-weight: 600;
 	margin-bottom: 10px;
 	color: var(--dark);
@@ -56,7 +56,7 @@ html {
 }
 
  main .head-title .right .date-time {
-	font-size: var(--fs-14);
+	font-size: 14px;
 	font-weight: 500;
 	color: var(--dark);
 	font-variant-numeric: tabular-nums;
@@ -70,7 +70,7 @@ html {
 }
 
  main .box-info li {
-	padding: var(--space-6);
+	padding: 24px;
 	background: var(--light);
 	border-radius: 20px;
 	display: flex;
@@ -110,7 +110,7 @@ html {
 }
 
  main .box-info li .text h3 {
-	font-size: var(--fs-24);
+	font-size: 24px;
 	font-weight: 600;
 	color: var(--dark);
 }
@@ -143,7 +143,7 @@ html {
  main .table-data > div {
 	border-radius: 20px;
 	background: var(--light);
-	padding: var(--space-6);
+	padding: 24px;
 	overflow-x: auto;
 	box-shadow: 2px 2px 6px #b6a9a9, -1px -1px 6px #ffffff;
 }
@@ -157,7 +157,7 @@ html {
 
  main .table-data .head h3 {
 	margin-right: auto;
-	font-size: var(--fs-24);
+	font-size: 24px;
 	font-weight: 600;
 }
 
@@ -221,8 +221,8 @@ html {
 }
 
  main .table-data .order table th {
-	padding-bottom: 12px;
-		font-size: var(--fs-13);
+		padding-bottom: 12px;
+		font-size: 13px;
 		text-align: left;
 		border-bottom: 1px solid var(--grey);
 	}

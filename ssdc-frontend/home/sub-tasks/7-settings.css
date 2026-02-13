@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: var(--space-6);
+  padding: 24px;
   min-height: 100vh;
 }
 
 .page {
-  max-width: var(--page-max-scaled);
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
   display: grid;
@@ -21,14 +21,14 @@ body {
 }
 
 .head-title h1 {
-  font-size: var(--fs-32);
+  font-size: 32px;
   font-weight: 700;
   margin: 0;
   letter-spacing: .3px;
 }
 
 .subtitle {
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
   letter-spacing: .4px;
@@ -64,12 +64,12 @@ body {
 
 .card-head h3 {
   margin: 0;
-  font-size: var(--fs-18);
+  font-size: 18px;
   letter-spacing: .2px;
 }
 
 .hint {
-  font-size: var(--fs-13);
+  font-size: 13px;
   color: var(--muted);
   margin-top: 6px;
 }
@@ -94,7 +94,7 @@ body {
 }
 
 .btn i {
-  font-size: var(--fs-18);
+  font-size: 18px;
 }
 
 .btn:hover {
@@ -159,7 +159,7 @@ body {
 }
 
 .icon-btn i {
-  font-size: var(--fs-18);
+  font-size: 18px;
 }
 
 .icon-btn:hover {
@@ -178,7 +178,7 @@ body {
 }
 
 .small {
-  font-size: var(--fs-11);
+  font-size: 11px;
   color: var(--muted);
   font-weight: 600;
   text-transform: uppercase;
@@ -187,11 +187,11 @@ body {
 
 .neo-input {
   width: 100%;
-  height: var(--control-h-md);
+  height: 42px;
   padding: 0 14px;
   border: none;
   border-radius: 12px;
-  font-size: var(--fs-14);
+  font-size: 14px;
   outline: none;
   border: 1px solid var(--line);
   transition: box-shadow .15s ease, border-color .15s ease;
@@ -211,7 +211,7 @@ body {
 .status-text {
   margin-top: 12px;
   min-height: 18px;
-  font-size: var(--fs-13);
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -221,7 +221,7 @@ body {
 }
 
 @media (max-width:900px){
-  body{padding:var(--space-4)}
+  body{padding:16px}
   .head-title{flex-direction:column; align-items:flex-start}
   .card-head{flex-direction:column; align-items:stretch}
   .card-actions{justify-content:flex-start}
@@ -229,6 +229,6 @@ body {
 }
 
 @media (max-width:640px){
-  .head-title h1{font-size:var(--fs-30)}
+  .head-title h1{font-size:28px}
   .btn{width:100%; justify-content:center}
 }

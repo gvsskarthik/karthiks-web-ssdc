@@ -1,8 +1,4 @@
 :root {
-  --ssdc-ui-scale: 1;
-  --ui-scale-bounded: 1;
-  --ui-scale-bounded: clamp(0.9, var(--ssdc-ui-scale, 1), 1.12);
-
   --font-sans: "Poppins", "Lato", sans-serif;
 
   --theme-bg: #f6f1e7;
@@ -30,10 +26,6 @@
   --radius-md: 14px;
   --radius-lg: 22px;
 
-  --radius-sm: calc(10px * var(--ui-scale-bounded));
-  --radius-md: calc(14px * var(--ui-scale-bounded));
-  --radius-lg: calc(22px * var(--ui-scale-bounded));
-
   --space-0: 0px;
   --space-1: 4px;
   --space-2: 8px;
@@ -42,44 +34,6 @@
   --space-5: 20px;
   --space-6: 24px;
   --space-7: 32px;
-
-  --space-1: calc(4px * var(--ui-scale-bounded));
-  --space-2: calc(8px * var(--ui-scale-bounded));
-  --space-3: calc(12px * var(--ui-scale-bounded));
-  --space-4: calc(16px * var(--ui-scale-bounded));
-  --space-5: calc(20px * var(--ui-scale-bounded));
-  --space-6: calc(24px * var(--ui-scale-bounded));
-  --space-7: calc(32px * var(--ui-scale-bounded));
-
-  --fs-11: 11px;
-  --fs-12: 12px;
-  --fs-13: 13px;
-  --fs-14: 14px;
-  --fs-18: 18px;
-  --fs-24: 24px;
-  --fs-30: 30px;
-  --fs-32: 32px;
-
-  --fs-11: calc(11px * var(--ui-scale-bounded));
-  --fs-12: calc(12px * var(--ui-scale-bounded));
-  --fs-13: calc(13px * var(--ui-scale-bounded));
-  --fs-14: calc(14px * var(--ui-scale-bounded));
-  --fs-18: calc(18px * var(--ui-scale-bounded));
-  --fs-24: calc(24px * var(--ui-scale-bounded));
-  --fs-30: calc(30px * var(--ui-scale-bounded));
-  --fs-32: calc(32px * var(--ui-scale-bounded));
-
-  --control-h-sm: 36px;
-  --control-h-md: 42px;
-  --control-h-sm: calc(36px * var(--ui-scale-bounded));
-  --control-h-md: calc(42px * var(--ui-scale-bounded));
-
-  --page-max-scaled: 1200px;
-  --page-max-scaled: calc(1200px * var(--ui-scale-bounded));
-  --page-max-mid: 1100px;
-  --page-max-mid: calc(1100px * var(--ui-scale-bounded));
-  --page-max-print: 900px;
-  --page-max-print: calc(900px * var(--ui-scale-bounded));
 
   --z-dropdown: 1000;
   --z-modal: 1100;

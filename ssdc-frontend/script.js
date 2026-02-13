@@ -1,10 +1,6 @@
 /* ================= SIDEBAR ACTIVE ================= */
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
 const pageFrame = document.getElementById('page-frame');
-const UI_BASELINE_WIDTH = 1512;
-const UI_BASELINE_HEIGHT = 982;
-const UI_SCALE_MIN = 0.90;
-const UI_SCALE_MAX = 1.12;
 
 function readAuthToken() {
     return typeof window.getAuthToken === "function" ? window.getAuthToken() : null;
@@ -13,45 +9,6 @@ function readAuthToken() {
 function clearStoredAuthToken() {
     if (typeof window.clearAuthToken === "function") {
         window.clearAuthToken();
-    }
-}
-
-function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value));
-}
-
-function computeUiScale() {
-    const viewportWidth = Math.max(window.innerWidth || 0, 320);
-    const viewportHeight = Math.max(window.innerHeight || 0, 320);
-    const rawScale = Math.min(
-        viewportWidth / UI_BASELINE_WIDTH,
-        viewportHeight / UI_BASELINE_HEIGHT
-    );
-    if (!Number.isFinite(rawScale) || rawScale <= 0) {
-        return 1;
-    }
-    return clamp(rawScale, UI_SCALE_MIN, UI_SCALE_MAX);
-}
-
-function applyUiScaleToDocument(doc, scale) {
-    if (!doc || !doc.documentElement) {
-        return;
-    }
-    doc.documentElement.style.setProperty("--ssdc-ui-scale", String(scale));
-}
-
-function applyUiScale() {
-    const scale = computeUiScale();
-    applyUiScaleToDocument(document, scale);
-
-    if (!pageFrame) {
-        return;
-    }
-    try {
-        const frameDoc = pageFrame.contentDocument || pageFrame.contentWindow?.document;
-        applyUiScaleToDocument(frameDoc, scale);
-    } catch (error) {
-        // Ignore cross-origin or frame-readiness errors.
     }
 }
 
@@ -214,7 +171,6 @@ window.addEventListener('resize', () => {
         sidebar.classList.remove('hide');
     }
     isMobile = nowMobile;
-    applyUiScale();
 });
 
 /* 🔹 Expose to iframe */
@@ -256,10 +212,8 @@ if (pageFrame) {
     pageFrame.addEventListener("load", () => {
         const framePage = getFramePagePath();
         updateMenuForPage(framePage);
-        applyUiScale();
         applyFrameTheme();
     });
-    applyUiScale();
     applyFrameTheme();
 }
 
