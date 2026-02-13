@@ -49,7 +49,7 @@ body {
 }
 
 .card {
-  padding: var(--space-4);
+  padding: 18px;
   border-radius: var(--radius-lg);
   animation: fadeUp .55s ease both;
 }
@@ -145,8 +145,8 @@ body {
 .icon-btn {
   position: absolute;
   right: 8px;
-  width: calc(34px * var(--ui-scale-bounded));
-  height: calc(34px * var(--ui-scale-bounded));
+  width: 34px;
+  height: 34px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;

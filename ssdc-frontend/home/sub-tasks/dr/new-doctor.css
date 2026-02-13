@@ -1,35 +1,32 @@
 body {
   margin: 0;
-  padding: var(--space-5);
+  padding: 20px;
 }
 
 .neo-card {
-  width: 100%;
-  max-width: var(--page-max-modal);
+  max-width: 520px;
   margin: auto;
-  padding: calc(30px * var(--ui-scale-bounded));
+  padding: 30px;
   border-radius: 24px;
 }
 
 .neo-card h2 {
-  margin-bottom: calc(25px * var(--ui-scale-bounded));
-  font-size: var(--fs-24);
+  margin-bottom: 25px;
   text-align: center;
 }
 
 .form-group {
-  margin-bottom: var(--space-4);
+  margin-bottom: 18px;
 }
 
 .form-group label {
-  font-size: var(--fs-14);
+  font-size: 14px;
   color: var(--theme-muted);
 }
 
 .neo-input {
   width: 100%;
-  min-height: var(--control-h-md);
-  padding: 0 14px;
+  padding: 12px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--theme-line);
   background: var(--theme-field-bg);
@@ -44,19 +41,8 @@ body {
 
 .neo-btn {
   width: 100%;
-  min-height: var(--control-h-md);
-  padding: 0 12px;
+  padding: 12px;
   border-radius: var(--radius-lg);
   font-weight: 600;
   cursor: pointer;
-}
-
-@media (max-width: 560px) {
-  body {
-    padding: var(--space-4);
-  }
-
-  .neo-card {
-    padding: var(--space-5);
-  }
 }

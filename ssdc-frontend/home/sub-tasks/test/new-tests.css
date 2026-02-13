@@ -1,23 +1,22 @@
 body {
   margin: 0;
-  padding: var(--space-5);
+  padding: 24px;
   min-height: 100vh;
 }
 
 .neo-card {
-  width: 100%;
-  max-width: var(--page-max-scaled);
+  max-width: 1200px;
   margin: 0 auto;
-  padding: calc(26px * var(--ui-scale-bounded));
+  padding: 26px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--theme-line);
   display: grid;
-  gap: var(--space-4);
+  gap: 18px;
 }
 
 h2 {
   margin: 0;
-  font-size: var(--fs-24);
+  font-size: 24px;
   letter-spacing: .3px;
 }
 
@@ -34,11 +33,10 @@ label {
 input, textarea, select {
   width: 100%;
   padding: 10px 12px;
-  min-height: var(--control-h-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--theme-line);
   background: var(--theme-field-bg);
-  font-size: var(--fs-14);
+  font-size: 14px;
   color: var(--theme-ink);
 }
 
@@ -89,12 +87,12 @@ input[type="checkbox"] {
 
 .section-header h3 {
   margin: 0;
-  font-size: var(--fs-18);
+  font-size: 16px;
 }
 
 .param-card {
   margin-top: 12px;
-  padding: calc(16px * var(--ui-scale-bounded));
+  padding: 16px;
   border-radius: var(--radius-md);
   background: var(--theme-surface-2);
   border: 1px solid var(--theme-line);
@@ -122,7 +120,7 @@ input[type="checkbox"] {
 
 .param-title {
   margin: 0;
-  font-size: var(--fs-14);
+  font-size: 15px;
 }
 
 .section-row {
@@ -202,12 +200,12 @@ input[type="checkbox"] {
 
 .btn.small {
   padding: 8px 12px;
-  font-size: var(--fs-12);
+  font-size: 12px;
 }
 
 .btn.link {
   padding: 6px 10px;
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-danger);
   background: transparent;
   box-shadow: none;
@@ -215,7 +213,7 @@ input[type="checkbox"] {
 
 .message {
   margin-top: 6px;
-  font-size: var(--fs-13);
+  font-size: 13px;
   color: var(--theme-muted);
 }
 
@@ -229,9 +227,9 @@ input[type="checkbox"] {
 
 .field-msg {
   margin-top: 6px;
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-danger);
-  min-height: calc(14px * var(--ui-scale-bounded));
+  min-height: 14px;
 }
 
 .inline {
@@ -270,7 +268,7 @@ input[type="checkbox"] {
 }
 
 @media (max-width:640px){
-  body{padding:var(--space-4);}
+  body{padding:16px;}
   .grid-2,
   .grid-3{
     grid-template-columns:1fr;

@@ -267,7 +267,7 @@ body {
 }
 
 .table-wrap {
-  max-height: calc(520px * var(--ui-scale-bounded));
+  max-height: 520px;
   overflow: auto;
   border-radius: 12px;
   background: #fff;
@@ -277,7 +277,7 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: var(--table-min-md);
+  min-width: 860px;
 }
 
 th, td {
@@ -332,7 +332,7 @@ thead th {
 
 .modal-card {
   width: 100%;
-  max-width: var(--page-max-compact);
+  max-width: 360px;
   padding: calc(18px * var(--ui-scale-bounded));
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
@@ -347,13 +347,13 @@ thead th {
 
 .modal-head h4 {
   margin: 0;
-  font-size: var(--fs-14);
+  font-size: 16px;
   letter-spacing: .2px;
 }
 
 .icon-btn {
-  width: calc(32px * var(--ui-scale-bounded));
-  height: calc(32px * var(--ui-scale-bounded));
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 10px;
   background: var(--bg-soft);

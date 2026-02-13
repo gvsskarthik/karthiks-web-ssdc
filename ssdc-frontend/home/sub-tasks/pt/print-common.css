@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  padding: var(--space-5);
+  padding: 20px;
   font-family: var(--font-sans, Poppins, Arial, sans-serif);
   background: var(--theme-bg, #ecf0f3);
   color: var(--theme-ink, #111);
@@ -11,26 +11,23 @@ body.in-frame {
 }
 
 .neo-card {
-  max-width: var(--page-max-print);
+  max-width: 900px;
   margin: auto;
-  padding: calc(30px * var(--ui-scale-bounded));
+  padding: 30px;
   background: var(--theme-surface, #fff);
   border-radius: var(--radius-sm, 10px);
 }
 
 /* HEADER */
-.header {
-  text-align: center;
-  margin-bottom: var(--space-5);
-}
+.header {text-align:center;margin-bottom:20px}
 .header h2 {margin:0}
 
 /* PATIENT */
 .patient-box{
   border:1px solid var(--theme-line, #000);
-  padding: var(--space-3);
-  font-size: var(--fs-13);
-  margin-bottom: var(--space-5);
+  padding:12px;
+  font-size:13px;
+  margin-bottom:20px;
 }
 .row{
   display:flex;
@@ -53,34 +50,17 @@ th{background: var(--theme-surface-2, #f2f2f2)}
 .actions{
   display:flex;
   gap:10px;
-  margin-top: var(--space-6);
+  margin-top:25px;
 }
 .btn{
   flex:1;
-  min-height: var(--control-h-sm);
-  padding: 12px;
+  padding:12px;
   font-weight:600;
   cursor:pointer;
   border:none;
   border-radius:6px;
 }
 .print{background:#2980b9;color:#fff}
-
-@media (max-width: 720px) {
-  body {
-    padding: var(--space-4);
-  }
-
-  .row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .actions {
-    flex-direction: column;
-  }
-}
 
 @media print{
   body{background:#fff;color:#000}

@@ -1,36 +1,40 @@
+:root {
+  --page-max: 1200px;
+}
+
 body {
   margin: 0;
-  padding: var(--space-6);
+  padding: 24px;
 }
 
 .page {
-  max-width: var(--page-max-scaled);
+  max-width: var(--page-max);
   margin: 0 auto;
   display: grid;
-  gap: var(--space-6);
+  gap: 24px;
 }
 
 .wrapper {
   display: grid;
   grid-template-columns: minmax(0,1.15fr) minmax(0,0.85fr);
-  gap: var(--space-6);
+  gap: 24px;
   align-items: start;
 }
 
 .wrapper-vertical {
   display: grid;
-  gap: var(--space-6);
+  gap: 24px;
 }
 
 .neo-card {
-  padding: calc(22px * var(--ui-scale-bounded));
+  padding: 22px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--theme-line);
 }
 
 h3 {
   margin: 0 0 16px;
-  font-size: var(--fs-18);
+  font-size: 18px;
   letter-spacing: .3px;
 }
 
@@ -47,7 +51,7 @@ h3 {
 }
 
 label {
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-muted);
   margin-bottom: 6px;
   display: block;
@@ -58,11 +62,10 @@ label {
 .neo-input, .neo-select, .search {
   width: 100%;
   padding: 10px 12px;
-  min-height: var(--control-h-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--theme-line);
   box-shadow: none;
-  font-size: var(--fs-14);
+  font-size: 14px;
 }
 
 .neo-input:focus, .neo-select:focus, .search:focus {
@@ -101,7 +104,7 @@ label {
 
 .action-bar .neo-btn {
   width: 100%;
-  max-width: calc(340px * var(--ui-scale-bounded));
+  max-width: 340px;
 }
 
 #existingPatients {
@@ -118,7 +121,7 @@ label {
 }
 
 .existing-page-info {
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-muted);
   margin: 0 auto;
 }
@@ -139,7 +142,7 @@ label {
 }
 
 .patient-row b {
-  font-size: var(--fs-14);
+  font-size: 14px;
 }
 
 .small-btn {
@@ -206,7 +209,7 @@ label {
 }
 
 .suggestion-meta {
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-muted);
 }
 
@@ -242,7 +245,7 @@ label {
 }
 
 .selected-item.group-test .selected-cost {
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-muted);
 }
 
@@ -294,7 +297,7 @@ label {
 }
 
 .bill-amount {
-  width: calc(110px * var(--ui-scale-bounded));
+  width: 110px;
   text-align: right;
   font-weight: 600;
 }
@@ -302,14 +305,14 @@ label {
 .bill-summary {
   margin-top: 14px;
   margin-left: auto;
-  max-width: var(--page-max-modal);
+  max-width: 520px;
   display: grid;
   gap: 10px;
 }
 
 .bill-summary-row {
   display: grid;
-  grid-template-columns: 1fr auto minmax(calc(180px * var(--ui-scale-bounded)), calc(240px * var(--ui-scale-bounded)));
+  grid-template-columns: 1fr auto minmax(180px, 240px);
   align-items: center;
   column-gap: 10px;
 }
@@ -318,7 +321,7 @@ label {
   margin: 0;
   display: inline-block;
   text-align: right;
-  font-size: var(--fs-12);
+  font-size: 12px;
   color: var(--theme-muted);
   text-transform: uppercase;
   letter-spacing: .4px;
@@ -342,7 +345,7 @@ label {
 }
 
 .bill-summary-value .neo-input {
-  max-width: calc(240px * var(--ui-scale-bounded));
+  max-width: 240px;
   text-align: right;
 }
 
@@ -369,12 +372,12 @@ label {
 }
 
 @media (max-width:1020px){
-  body{padding:var(--space-5)}
+  body{padding:18px}
   .wrapper{grid-template-columns:1fr}
 }
 
 @media (max-width:720px){
-  body{padding:var(--space-4)}
+  body{padding:16px}
   .row{flex-direction:column}
   .action-bar{justify-content:stretch}
   .action-bar .neo-btn{max-width:none}

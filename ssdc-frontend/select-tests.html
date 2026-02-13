@@ -10,31 +10,31 @@
   <link rel="stylesheet" href="home/sub-tasks/components.css">
   <link rel="stylesheet" href="index.css">
 </head>
-<body class="select-tests-page">
+<body>
 
-<div class="box onboarding-box">
+<div class="box" style="max-width: 760px;">
   <h1>Select Tests</h1>
-  <p class="onboarding-subtitle">
+  <p style="margin-top:-8px; opacity:0.85;">
     Import default tests from admin template, or skip and add manually.
   </p>
 
-  <div class="onboarding-actions">
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin: 18px 0;">
     <button class="btn" id="btnAll" type="button">Accept All Tests</button>
     <button class="btn" id="btnSelected" type="button">Import Selected</button>
     <button class="toggle-btn" id="btnSkip" type="button">Skip (Add Manually)</button>
   </div>
 
-  <div id="status" class="onboarding-status"></div>
+  <div id="status" style="margin: 10px 0; opacity:0.9;"></div>
 
-  <div class="onboarding-table-wrap">
-    <table class="onboarding-table">
+  <div style="max-height: 55vh; overflow:auto; border-radius: 10px;">
+    <table style="width:100%; border-collapse:collapse;">
       <thead>
-        <tr>
-          <th>Select</th>
-          <th>Test</th>
-          <th>Shortcut</th>
-          <th>Category</th>
-          <th>Cost</th>
+        <tr style="text-align:left;">
+          <th style="padding:10px;">Select</th>
+          <th style="padding:10px;">Test</th>
+          <th style="padding:10px;">Shortcut</th>
+          <th style="padding:10px;">Category</th>
+          <th style="padding:10px;">Cost</th>
         </tr>
       </thead>
       <tbody id="testRows"></tbody>
@@ -46,3 +46,4 @@
 <script src="select-tests.js"></script>
 </body>
 </html>
+
