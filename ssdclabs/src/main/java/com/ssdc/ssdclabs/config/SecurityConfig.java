@@ -38,7 +38,13 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/change-password").authenticated()
+                .requestMatchers(
+                    "/auth/change-password",
+                    "/auth/2fa/status",
+                    "/auth/2fa/setup",
+                    "/auth/2fa/enable",
+                    "/auth/2fa/disable"
+                ).authenticated()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
