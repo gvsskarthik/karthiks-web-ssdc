@@ -101,6 +101,31 @@ body {
   text-align: center;
 }
 
+.login-step {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-step[hidden],
+.login-step.is-hidden {
+  display: none !important;
+  position: static;
+  visibility: hidden;
+  opacity: 0;
+  transition: none;
+}
+
+.login-note {
+  width: min(360px, 100%);
+  margin: 6px 0 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--auth-black);
+}
+
 .form__input {
   width: min(360px, 100%);
   height: 40px;
@@ -129,6 +154,14 @@ body {
 .main .form input.form__input {
   background: var(--auth-neu-1);
   color: inherit;
+}
+
+.code-input {
+  letter-spacing: .34em;
+  text-align: center;
+  padding-left: 18px;
+  font-weight: 700;
+  font-size: 20px;
 }
 
 .button {
@@ -167,6 +200,12 @@ body {
     -2px -2px 6px var(--auth-white);
   transform: scale(.97);
   transition: .25s;
+}
+
+.form__button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .form__link {
@@ -352,5 +391,10 @@ body {
 
   .button {
     width: min(220px, 100%);
+  }
+
+  .code-input {
+    font-size: 18px;
+    letter-spacing: .26em;
   }
 }

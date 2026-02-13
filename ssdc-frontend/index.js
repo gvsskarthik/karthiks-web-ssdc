@@ -114,6 +114,7 @@ function applyAuthMode(mode, { animate = false } = {}) {
 }
 
 function showSignup() {
+  resetLoginFlowToPassword({ skipFocus: true });
   applyAuthMode("signup", { animate: true });
 }
 
@@ -208,6 +209,279 @@ async function postJson(url, body) {
   return text ? JSON.parse(text) : {};
 }
 
+const LOGIN_PHASE_PASSWORD = "password";
+const LOGIN_PHASE_TWO_FACTOR = "twoFactor";
+
+const loginFlowState = {
+  phase: LOGIN_PHASE_PASSWORD,
+  challengeLabId: null,
+  challengeToken: null,
+  challengeExpiresAt: null,
+  challengeLabName: null
+};
+
+function getLoginFlowEls() {
+  return {
+    form: document.getElementById("loginForm"),
+    subhead: document.getElementById("loginFlowSubhead"),
+    passwordStep: document.getElementById("loginPasswordStep"),
+    twoFactorStep: document.getElementById("loginTwoFactorStep"),
+    twoFactorNote: document.getElementById("twoFactorNote"),
+    labIdInput: document.getElementById("loginLabId"),
+    passInput: document.getElementById("loginPass"),
+    codeInput: document.getElementById("loginTwoFactorCode"),
+    passwordSubmit: document.getElementById("btnLoginPassword"),
+    verifySubmit: document.getElementById("btnVerifyTwoFactor"),
+    backButton: document.getElementById("btnBackToPassword")
+  };
+}
+
+function trimToNull(value) {
+  const next = String(value == null ? "" : value).trim();
+  return next ? next : null;
+}
+
+function normalizeDigits(value, maxLength) {
+  return String(value == null ? "" : value).replace(/\D+/g, "").slice(0, maxLength || 6);
+}
+
+function parseChallengeExpiry(value) {
+  const raw = trimToNull(value);
+  if (!raw) {
+    return null;
+  }
+  const date = new Date(raw);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function describeChallengeExpiry(expiryDate) {
+  if (!expiryDate) {
+    return "Enter the 6-digit code from your authenticator app.";
+  }
+  try {
+    return `Enter the 6-digit code from your authenticator app. Expires at ${expiryDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+  } catch (e) {
+    return "Enter the 6-digit code from your authenticator app.";
+  }
+}
+
+function clearLoginChallengeState() {
+  loginFlowState.challengeLabId = null;
+  loginFlowState.challengeToken = null;
+  loginFlowState.challengeExpiresAt = null;
+  loginFlowState.challengeLabName = null;
+}
+
+function canVerifyTwoFactorCode() {
+  const { codeInput } = getLoginFlowEls();
+  const code = normalizeDigits(codeInput ? codeInput.value : "", 6);
+  return Boolean(
+    loginFlowState.challengeLabId
+      && loginFlowState.challengeToken
+      && code.length === 6
+  );
+}
+
+function updateTwoFactorVerifyButtonState() {
+  const { verifySubmit, codeInput } = getLoginFlowEls();
+  if (!verifySubmit) {
+    return;
+  }
+  const isEnabled = canVerifyTwoFactorCode();
+  verifySubmit.disabled = !isEnabled || Boolean(codeInput && codeInput.disabled);
+}
+
+function updateTwoFactorNote() {
+  const { twoFactorNote } = getLoginFlowEls();
+  if (!twoFactorNote) {
+    return;
+  }
+  twoFactorNote.textContent = describeChallengeExpiry(loginFlowState.challengeExpiresAt);
+}
+
+function setLoginPhase(phase, options) {
+  const {
+    subhead,
+    passwordStep,
+    twoFactorStep,
+    codeInput,
+    passwordSubmit,
+    verifySubmit,
+    labIdInput,
+    passInput
+  } = getLoginFlowEls();
+  const skipFocus = Boolean(options && options.skipFocus);
+
+  loginFlowState.phase = phase === LOGIN_PHASE_TWO_FACTOR
+    ? LOGIN_PHASE_TWO_FACTOR
+    : LOGIN_PHASE_PASSWORD;
+
+  const isTwoFactor = loginFlowState.phase === LOGIN_PHASE_TWO_FACTOR;
+  if (subhead) {
+    subhead.textContent = isTwoFactor
+      ? "Verify your sign-in using authenticator code"
+      : "Use Lab ID and password";
+  }
+
+  if (passwordStep) {
+    passwordStep.hidden = isTwoFactor;
+    passwordStep.classList.toggle("is-hidden", isTwoFactor);
+  }
+  if (twoFactorStep) {
+    twoFactorStep.hidden = !isTwoFactor;
+    twoFactorStep.classList.toggle("is-hidden", !isTwoFactor);
+  }
+
+  if (passwordSubmit) {
+    passwordSubmit.disabled = isTwoFactor;
+  }
+  if (codeInput) {
+    codeInput.value = normalizeDigits(codeInput.value, 6);
+    codeInput.disabled = !isTwoFactor;
+  }
+  if (verifySubmit) {
+    verifySubmit.disabled = true;
+  }
+
+  updateTwoFactorNote();
+  updateTwoFactorVerifyButtonState();
+
+  if (!skipFocus) {
+    try {
+      if (isTwoFactor && codeInput) {
+        codeInput.focus();
+        codeInput.select();
+      } else if (!isTwoFactor && passInput) {
+        passInput.focus();
+        passInput.select();
+      } else if (!isTwoFactor && labIdInput) {
+        labIdInput.focus();
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+}
+
+function resetLoginFlowToPassword(options) {
+  clearLoginChallengeState();
+  const { codeInput } = getLoginFlowEls();
+  if (codeInput) {
+    codeInput.value = "";
+  }
+  setLoginPhase(LOGIN_PHASE_PASSWORD, { skipFocus: Boolean(options && options.skipFocus) });
+}
+
+async function submitPasswordLogin() {
+  const { labIdInput, passInput, passwordSubmit } = getLoginFlowEls();
+  const labId = normalizeLabId(labIdInput ? labIdInput.value : "");
+  const password = passInput ? passInput.value : "";
+
+  if (!labId || !password) {
+    throw new Error("labId and password are required");
+  }
+
+  if (passwordSubmit) {
+    passwordSubmit.disabled = true;
+  }
+
+  try {
+    // Clear any previously synced session in this tab before logging in.
+    clearToken();
+    const data = await postJson(authUrl("/auth/login"), { labId, password });
+    if (data && data.twoFactorRequired === true) {
+      const challengeLabId = normalizeLabId(data.labId || labId);
+      const loginChallenge = trimToNull(data.loginChallenge);
+      if (!challengeLabId || !loginChallenge) {
+        throw new Error("Login challenge not received");
+      }
+      loginFlowState.challengeLabId = challengeLabId;
+      loginFlowState.challengeToken = loginChallenge;
+      loginFlowState.challengeExpiresAt = parseChallengeExpiry(data.challengeExpiresAt);
+      loginFlowState.challengeLabName = trimToNull(data.labName);
+      setLoginPhase(LOGIN_PHASE_TWO_FACTOR);
+      return;
+    }
+
+    if (!data || !data.token) {
+      throw new Error("Login failed");
+    }
+    clearLoginChallengeState();
+    setToken(data.token);
+    if (data.labName && typeof window.setLabName === "function") {
+      window.setLabName(data.labName);
+    }
+    window.location.href = "dashboard.html";
+  } finally {
+    if (passwordSubmit && loginFlowState.phase !== LOGIN_PHASE_TWO_FACTOR) {
+      passwordSubmit.disabled = false;
+    }
+  }
+}
+
+async function submitTwoFactorLogin() {
+  const { codeInput, verifySubmit } = getLoginFlowEls();
+  const code = normalizeDigits(codeInput ? codeInput.value : "", 6);
+
+  if (!loginFlowState.challengeLabId || !loginFlowState.challengeToken) {
+    throw new Error("Login challenge missing. Please sign in again.");
+  }
+  if (code.length !== 6) {
+    throw new Error("Enter a valid 6-digit verification code");
+  }
+
+  if (codeInput) {
+    codeInput.value = code;
+    codeInput.disabled = true;
+  }
+  if (verifySubmit) {
+    verifySubmit.disabled = true;
+  }
+
+  try {
+    const data = await postJson(authUrl("/auth/verify-2fa-login"), {
+      labId: loginFlowState.challengeLabId,
+      loginChallenge: loginFlowState.challengeToken,
+      code
+    });
+    if (!data || !data.token) {
+      throw new Error("Login failed");
+    }
+    const fallbackLabName = loginFlowState.challengeLabName;
+    clearLoginChallengeState();
+    setToken(data.token);
+    const finalLabName = trimToNull(data.labName) || fallbackLabName;
+    if (finalLabName && typeof window.setLabName === "function") {
+      window.setLabName(finalLabName);
+    }
+    window.location.href = "dashboard.html";
+  } finally {
+    if (codeInput && loginFlowState.phase === LOGIN_PHASE_TWO_FACTOR) {
+      codeInput.disabled = false;
+      codeInput.focus();
+      codeInput.select();
+    }
+    updateTwoFactorVerifyButtonState();
+  }
+}
+
+function bindTwoFactorLoginUi() {
+  const { codeInput, backButton } = getLoginFlowEls();
+  if (codeInput) {
+    codeInput.addEventListener("input", () => {
+      lockSessionSync();
+      codeInput.value = normalizeDigits(codeInput.value, 6);
+      updateTwoFactorVerifyButtonState();
+    });
+    codeInput.addEventListener("focus", lockSessionSync);
+  }
+  if (backButton) {
+    backButton.addEventListener("click", () => {
+      resetLoginFlowToPassword();
+    });
+  }
+}
+
 // If already logged in, go to dashboard.
 if (getToken()) {
   window.location.href = "dashboard.html";
@@ -218,7 +492,8 @@ if (getToken()) {
 try {
   const labIdInput = document.getElementById("loginLabId");
   const passInput = document.getElementById("loginPass");
-  [labIdInput, passInput].filter(Boolean).forEach((el) => {
+  const codeInput = document.getElementById("loginTwoFactorCode");
+  [labIdInput, passInput, codeInput].filter(Boolean).forEach((el) => {
     el.addEventListener("input", lockSessionSync);
     el.addEventListener("focus", lockSessionSync);
   });
@@ -262,27 +537,26 @@ try {
   }
 })();
 
+bindTwoFactorLoginUi();
+setLoginPhase(LOGIN_PHASE_PASSWORD);
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   lockSessionSync();
-  const labId = normalizeLabId(document.getElementById("loginLabId").value);
-  const password = document.getElementById("loginPass").value;
-
   try {
-    // Clear any previously synced session in this tab before logging in.
-    clearToken();
-    const data = await postJson(authUrl("/auth/login"), { labId, password });
-    if (!data || !data.token) {
-      throw new Error("Login failed");
+    if (loginFlowState.phase === LOGIN_PHASE_TWO_FACTOR) {
+      await submitTwoFactorLogin();
+      return;
     }
-    setToken(data.token);
-    if (data.labName && typeof window.setLabName === "function") {
-      window.setLabName(data.labName);
-    }
-    window.location.href = "dashboard.html";
+    await submitPasswordLogin();
   } catch (err) {
+    const message = err && err.message ? err.message : "Login failed";
+    const shouldResetChallenge = /\bInvalid or expired login challenge\b/i.test(message);
+    if (shouldResetChallenge) {
+      resetLoginFlowToPassword();
+    }
     clearToken();
-    await softAlert(err && err.message ? err.message : "Login failed");
+    await softAlert(message);
   }
 });
 

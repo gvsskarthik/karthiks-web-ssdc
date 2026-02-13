@@ -23,37 +23,64 @@
   <div class="container a-container" id="a-container">
     <form id="loginForm" class="form" autocomplete="on">
       <h2 class="form__title title">Sign in to SSDC</h2>
-      <span class="form__span">Use Lab ID and password</span>
+      <span class="form__span" id="loginFlowSubhead">Use Lab ID and password</span>
 
-      <label class="sr-only" for="loginLabId">Lab ID</label>
-      <input
-        type="text"
-        id="loginLabId"
-        class="form__input"
-        placeholder="Lab ID"
-        autocomplete="username"
-        required>
+      <div id="loginPasswordStep" class="login-step">
+        <label class="sr-only" for="loginLabId">Lab ID</label>
+        <input
+          type="text"
+          id="loginLabId"
+          class="form__input"
+          placeholder="Lab ID"
+          autocomplete="username"
+          required>
 
-      <label class="sr-only" for="loginPass">Password</label>
-      <input
-        type="password"
-        id="loginPass"
-        class="form__input"
-        placeholder="Password"
-        autocomplete="current-password"
-        required>
+        <label class="sr-only" for="loginPass">Password</label>
+        <input
+          type="password"
+          id="loginPass"
+          class="form__input"
+          placeholder="Password"
+          autocomplete="current-password"
+          required>
 
-      <button class="form__button button" type="submit">SIGN IN</button>
+        <button class="form__button button" id="btnLoginPassword" type="submit">SIGN IN</button>
 
-      <button type="button" class="form__link link-btn" id="btnForgotPassword">
-        Forgot password?
-      </button>
-      <button type="button" class="form__link link-btn" id="btnResendVerification">
-        Resend verification link
-      </button>
-      <button type="button" class="form__link link-btn" id="btnShowSignup">
-        New user? Sign Up
-      </button>
+        <button type="button" class="form__link link-btn" id="btnForgotPassword">
+          Forgot password?
+        </button>
+        <button type="button" class="form__link link-btn" id="btnResendVerification">
+          Resend verification link
+        </button>
+        <button type="button" class="form__link link-btn" id="btnShowSignup">
+          New user? Sign Up
+        </button>
+      </div>
+
+      <div id="loginTwoFactorStep" class="login-step is-hidden" hidden>
+        <p class="login-note" id="twoFactorNote">
+          Enter the 6-digit code from your authenticator app.
+        </p>
+
+        <label class="sr-only" for="loginTwoFactorCode">Verification code</label>
+        <input
+          type="text"
+          id="loginTwoFactorCode"
+          class="form__input code-input"
+          placeholder="123456"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          pattern="\\d{6}"
+          disabled>
+
+        <button class="form__button button" id="btnVerifyTwoFactor" type="submit" disabled>
+          VERIFY CODE
+        </button>
+        <button type="button" class="form__link link-btn" id="btnBackToPassword">
+          Back to password login
+        </button>
+      </div>
     </form>
   </div>
 

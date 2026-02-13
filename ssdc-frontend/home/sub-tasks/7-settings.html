@@ -99,6 +99,93 @@
 
             <div id="passwordStatus" class="status-text"></div>
         </div>
+
+        <div class="neo card">
+            <div class="card-head">
+                <div>
+                    <h3>Authenticator App Verification</h3>
+                    <div class="hint">Protect sign-in with a 6-digit code from your authenticator app.</div>
+                </div>
+                <div class="card-actions">
+                    <span id="twoFactorBadge" class="status-pill">Loading...</span>
+                </div>
+            </div>
+
+            <div id="twoFactorEnabledMeta" class="hint"></div>
+
+            <div id="twoFactorSetupSection" class="twofactor-section">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="small" for="twoFactorSetupPasswordInput">Current Password</label>
+                        <div class="password-field">
+                            <input id="twoFactorSetupPasswordInput" class="neo-input neo-pressed" type="password" autocomplete="current-password" placeholder="Current password">
+                            <button class="icon-btn" type="button" id="toggleTwoFactorSetupPasswordBtn" aria-label="Show password">
+                                <i class="bx bx-show"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn" type="button" id="twoFactorStartSetupBtn">
+                            <i class="bx bx-shield-plus"></i> Generate Setup
+                        </button>
+                    </div>
+                </div>
+
+                <div id="twoFactorSetupResult" class="twofactor-setup-result" hidden>
+                    <div class="hint">Step 1: Add this key in your authenticator app.</div>
+                    <div class="twofactor-key-row">
+                        <input id="twoFactorManualKeyInput" class="neo-input neo-pressed mono-input" type="text" readonly>
+                        <button class="btn secondary" type="button" id="copyTwoFactorManualKeyBtn">
+                            <i class="bx bx-copy"></i> Copy
+                        </button>
+                    </div>
+                    <a id="twoFactorOtpAuthLink" class="text-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
+                        Open authenticator app link
+                    </a>
+                    <div id="twoFactorSetupExpiresText" class="hint"></div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="small" for="twoFactorEnableCodeInput">Verification Code</label>
+                            <input id="twoFactorEnableCodeInput" class="neo-input neo-pressed code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn" type="button" id="twoFactorEnableBtn" disabled>
+                                <i class="bx bx-check-shield"></i> Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="twoFactorDisableSection" class="twofactor-section" hidden>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="small" for="twoFactorDisablePasswordInput">Current Password</label>
+                        <div class="password-field">
+                            <input id="twoFactorDisablePasswordInput" class="neo-input neo-pressed" type="password" autocomplete="current-password" placeholder="Current password">
+                            <button class="icon-btn" type="button" id="toggleTwoFactorDisablePasswordBtn" aria-label="Show password">
+                                <i class="bx bx-show"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="small" for="twoFactorDisableCodeInput">Authenticator Code</label>
+                        <input id="twoFactorDisableCodeInput" class="neo-input neo-pressed code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn danger" type="button" id="twoFactorDisableBtn" disabled>
+                            <i class="bx bx-shield-minus"></i> Disable 2FA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="twoFactorStatusText" class="status-text"></div>
+        </div>
     </div>
 
     <script src="../../api.js"></script>
