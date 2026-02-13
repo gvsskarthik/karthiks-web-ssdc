@@ -2,6 +2,7 @@ if(parent?.setActiveMenu){ parent.setActiveMenu("patient"); }
 
 const datePicker = document.getElementById("datePicker");
 const searchBox  = document.getElementById("searchBox");
+const doctorFilter = document.getElementById("doctorFilter");
 const dateToggle = document.getElementById("dateToggle");
 const searchToggle = document.getElementById("searchToggle");
 const tableBody  = document.getElementById("patientTable");
@@ -25,6 +26,7 @@ let searchController = null;
 let searchRequestId = 0;
 
 const SEARCH_PAGE_LIMIT = 50;
+const DOCTOR_SELF_VALUE = "__SELF__";
 
 const PATIENTS_DATE_KEY = "SSDC_PATIENTS_SELECTED_DATE";
 
@@ -77,6 +79,7 @@ function getLocalDateInputValue(date = new Date()) {
     safeSessionSet(PATIENTS_DATE_KEY, datePicker.value);
   }
 }
+loadDoctorFilterOptions();
 loadByDate(datePicker.value);
 
 function safeJson(res) {
@@ -167,8 +170,114 @@ function loadByDate(date){
 
   fetch(`${API_BASE_URL}/patients/by-date/${date}`)
     .then(r=>r.json())
-    .then(d=>{ allPatients=d; renderTable(d); })
+    .then(d=>{ allPatients=Array.isArray(d) ? d : []; renderCurrentList(allPatients); })
     .catch(()=>renderEmpty());
+}
+
+function normalizeDoctorName(value){
+  const raw = String(value || "").trim();
+  const normalized = raw.toUpperCase();
+  if (!raw || normalized === "SELF" || normalized === "WALK-IN" || normalized === "WALK IN") {
+    return "SELF";
+  }
+  return normalized;
+}
+
+function getSelectedDoctorKey(){
+  if (!doctorFilter) return "";
+  const selected = String(doctorFilter.value || "").trim();
+  if (!selected) return "";
+  if (selected === DOCTOR_SELF_VALUE) return "SELF";
+  return normalizeDoctorName(selected);
+}
+
+function applyDoctorFilter(list){
+  const items = Array.isArray(list) ? list : [];
+  const selectedDoctorKey = getSelectedDoctorKey();
+  if (!selectedDoctorKey) return items;
+  return items.filter((patient) => normalizeDoctorName(patient?.doctor) === selectedDoctorKey);
+}
+
+function renderCurrentList(list){
+  renderTable(applyDoctorFilter(list));
+}
+
+function sortDoctorNames(names){
+  return names.sort((a, b) =>
+    String(a).localeCompare(String(b), "en", { sensitivity: "base" })
+  );
+}
+
+async function fetchDoctorFilterNames(){
+  const unique = new Map();
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/accounts/doctors`);
+    if (res && res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        data.forEach((doctor) => {
+          const name = String(doctor?.doctorName || "").trim();
+          if (!name) return;
+          const key = normalizeDoctorName(name);
+          if (key === "SELF") return;
+          if (!unique.has(key)) unique.set(key, name);
+        });
+      }
+    }
+  } catch (e) {
+    // ignore and try fallback
+  }
+
+  if (unique.size === 0) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/doctors`);
+      if (res && res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          data.forEach((doctor) => {
+            const name = String(doctor?.name || "").trim();
+            if (!name) return;
+            const key = normalizeDoctorName(name);
+            if (key === "SELF") return;
+            if (!unique.has(key)) unique.set(key, name);
+          });
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  return sortDoctorNames(Array.from(unique.values()));
+}
+
+async function loadDoctorFilterOptions(){
+  if (!doctorFilter) return;
+  const previous = String(doctorFilter.value || "");
+
+  doctorFilter.innerHTML = "";
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "All Doctors";
+  doctorFilter.appendChild(allOption);
+
+  const selfOption = document.createElement("option");
+  selfOption.value = DOCTOR_SELF_VALUE;
+  selfOption.textContent = "Self / Walk-in";
+  doctorFilter.appendChild(selfOption);
+
+  const names = await fetchDoctorFilterNames();
+  names.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    doctorFilter.appendChild(option);
+  });
+
+  if (previous) {
+    doctorFilter.value = previous;
+  }
 }
 
 function loadSearchPage(page){
@@ -178,7 +287,7 @@ function loadSearchPage(page){
     searchPage = 0;
     searchHasMore = false;
     updateSearchPager();
-    renderTable(allPatients);
+    renderCurrentList(allPatients);
     return;
   }
 
@@ -222,7 +331,7 @@ function loadSearchPage(page){
       searchPage = Math.max(0, page);
       searchHasMore = safe.length >= SEARCH_PAGE_LIMIT;
       updateSearchPager();
-      renderTable(safe);
+      renderCurrentList(safe);
     })
     .catch((err) => {
       if (err && err.name === "AbortError") {
@@ -242,7 +351,7 @@ function searchPatient(){
     searchPage = 0;
     searchHasMore = false;
     updateSearchPager();
-    renderTable(allPatients);
+    renderCurrentList(allPatients);
     return;
   }
   loadSearchPage(0);
@@ -265,6 +374,16 @@ searchToggle.addEventListener("click", focusSearch);
 // Inline handler replacements (CSP-safe)
 if (searchBox) {
   searchBox.addEventListener("input", searchPatient);
+}
+if (doctorFilter) {
+  doctorFilter.addEventListener("change", () => {
+    const query = String(searchBox?.value || "").trim();
+    if (query) {
+      loadSearchPage(0);
+      return;
+    }
+    renderCurrentList(allPatients);
+  });
 }
 if (newPatientBtn) {
   newPatientBtn.addEventListener("click", () => {
@@ -502,7 +621,7 @@ function enterSelectMode(){
   document.body.classList.add("select-mode");
   bulkBar.style.display="flex";
   closeMenus();
-  renderTable(allPatients);
+  renderCurrentList(allPatients);
 }
 
 function exitSelectMode(){
@@ -510,7 +629,7 @@ function exitSelectMode(){
   document.body.classList.remove("select-mode");
   bulkBar.style.display="none";
   closeMenus();
-  renderTable(allPatients);
+  renderCurrentList(allPatients);
 }
 
 function updateCount(){

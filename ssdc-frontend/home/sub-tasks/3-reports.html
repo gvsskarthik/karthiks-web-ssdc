@@ -24,25 +24,32 @@
     </div>
   </div>
 
-  <div class="filters">
-    <div class="filter-group">
-      <label for="reportDate">Date</label>
-      <div class="input-wrap">
-        <button class="icon-btn" type="button" id="dateToggle" aria-label="Open date">
-          <i class="bx bx-calendar"></i>
-        </button>
-        <input type="date" id="reportDate" class="neo-input">
+  <div class="neo card filter-card">
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label class="small" for="doctorFilter">Doctor</label>
+        <select id="doctorFilter" class="neo-select neo-pressed">
+          <option value="">All Doctors</option>
+        </select>
       </div>
-    </div>
+      <div class="filter-item">
+        <label class="small" for="reportDate">Date</label>
+        <div class="input-wrap neo-pressed">
+          <button class="icon-btn" type="button" id="dateToggle" aria-label="Open date">
+            <i class="bx bx-calendar"></i>
+          </button>
+          <input type="date" id="reportDate" class="neo-input">
+        </div>
+      </div>
 
-    <div class="filter-group">
-      <label for="searchBox">Search</label>
-      <div class="input-wrap">
-        <button class="icon-btn" type="button" id="searchToggle" aria-label="Open search">
-          <i class="bx bx-search"></i>
-        </button>
-        <input type="text" id="searchBox" class="neo-input"
-               placeholder="Search patient...">
+      <div class="filter-item filter-item-search">
+        <label class="small" for="searchBox">Search</label>
+        <div class="input-wrap neo-pressed">
+          <button class="icon-btn" type="button" id="searchToggle" aria-label="Open search">
+            <i class="bx bx-search"></i>
+          </button>
+          <input type="text" id="searchBox" class="neo-input" placeholder="Search patient...">
+        </div>
       </div>
     </div>
   </div>

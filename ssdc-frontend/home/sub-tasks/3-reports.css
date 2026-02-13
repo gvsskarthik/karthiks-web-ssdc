@@ -34,40 +34,71 @@ body {
   text-transform: uppercase;
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: 220px minmax(0,1fr);
-  gap: 16px;
-  align-items: end;
-  width: 100%;
-  max-width: 560px;
+.neo {
+  background: var(--bg-soft);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.neo-pressed {
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 2px rgba(20, 30, 45, 0.12);
+}
+
+.card {
+  padding: 18px;
+  border-radius: var(--radius-lg);
   animation: fadeUp .5s ease both;
 }
 
-.filter-group {
-  display: flex;
-  flex-direction: column;
+.filter-card {
+  width: 100%;
+  max-width: none;
+  padding: 14px 16px;
+}
+
+.filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr minmax(210px, 240px) minmax(280px, 1.4fr);
+  align-items: end;
+}
+
+.filter-item {
+  display: grid;
   gap: 6px;
 }
 
-.filter-group label {
-  font-size: 12px;
+.small {
+  font-size: 11px;
   color: var(--muted);
+  font-weight: 600;
   letter-spacing: .4px;
   text-transform: uppercase;
 }
 
-.date-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.neo-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  outline: none;
+  border: 1px solid var(--line);
 }
 
-.date-filter label {
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: .4px;
-  text-transform: uppercase;
+.neo-select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
 }
 
 .input-wrap {
@@ -117,9 +148,12 @@ body {
 }
 
 @media (max-width: 720px) {
-  .filters {
+  .filter-grid {
     grid-template-columns: 1fr;
-    max-width: none;
+  }
+
+  .filter-item-search {
+    grid-column: 1;
   }
 }
 
@@ -266,7 +300,6 @@ tbody td.no-data {
 @media (max-width:900px){
   body{padding:16px}
   .head-title{flex-direction:column; align-items:flex-start}
-  .date-filter{width:100%}
 }
 
 @media (max-width:600px){

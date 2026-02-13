@@ -1,10 +1,12 @@
 const reportDate = document.getElementById("reportDate");
 const table = document.getElementById("reportTable");
 const searchBox = document.getElementById("searchBox");
+const doctorFilter = document.getElementById("doctorFilter");
 const dateToggle = document.getElementById("dateToggle");
 const searchToggle = document.getElementById("searchToggle");
 let isAutoDate = true;
 let allPatients = [];
+const DOCTOR_SELF_VALUE = "__SELF__";
 
 const REPORT_DATE_KEY = "SSDC_REPORTS_SELECTED_DATE";
 
@@ -87,6 +89,7 @@ function scheduleMidnightUpdate(){
     safeSessionSet(REPORT_DATE_KEY, reportDate.value);
   }
 }
+loadDoctorFilterOptions();
 loadByDate(reportDate.value);
 
 reportDate.addEventListener("change", () => {
@@ -125,6 +128,93 @@ function loadByDate(date){
       allPatients = [];
       renderEmpty("No data");
     });
+}
+
+function normalizeDoctorName(value){
+  const raw = String(value || "").trim();
+  const normalized = raw.toUpperCase();
+  if (!raw || normalized === "SELF" || normalized === "WALK-IN" || normalized === "WALK IN") {
+    return "SELF";
+  }
+  return normalized;
+}
+
+function sortDoctorNames(names){
+  return names.sort((a, b) =>
+    String(a).localeCompare(String(b), "en", { sensitivity: "base" })
+  );
+}
+
+async function fetchDoctorFilterNames(){
+  const unique = new Map();
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/accounts/doctors`);
+    if (res && res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        data.forEach((doctor) => {
+          const name = String(doctor?.doctorName || "").trim();
+          if (!name) return;
+          const key = normalizeDoctorName(name);
+          if (key === "SELF") return;
+          if (!unique.has(key)) unique.set(key, name);
+        });
+      }
+    }
+  } catch (e) {
+    // ignore and try fallback
+  }
+
+  if (unique.size === 0) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/doctors`);
+      if (res && res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          data.forEach((doctor) => {
+            const name = String(doctor?.name || "").trim();
+            if (!name) return;
+            const key = normalizeDoctorName(name);
+            if (key === "SELF") return;
+            if (!unique.has(key)) unique.set(key, name);
+          });
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  return sortDoctorNames(Array.from(unique.values()));
+}
+
+async function loadDoctorFilterOptions(){
+  if (!doctorFilter) return;
+  const previous = String(doctorFilter.value || "");
+
+  doctorFilter.innerHTML = "";
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "All Doctors";
+  doctorFilter.appendChild(allOption);
+
+  const selfOption = document.createElement("option");
+  selfOption.value = DOCTOR_SELF_VALUE;
+  selfOption.textContent = "Self / Walk-in";
+  doctorFilter.appendChild(selfOption);
+
+  const names = await fetchDoctorFilterNames();
+  names.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    doctorFilter.appendChild(option);
+  });
+
+  if (previous) {
+    doctorFilter.value = previous;
+  }
 }
 
 function renderEmpty(message){
@@ -235,10 +325,20 @@ function matchesPatient(patient, query){
   return name.includes(q) || mobile.includes(q) || doctor.includes(q);
 }
 
+function matchesDoctorFilter(patient){
+  if (!doctorFilter) return true;
+  const selected = String(doctorFilter.value || "").trim();
+  if (!selected) return true;
+  const selectedKey = selected === DOCTOR_SELF_VALUE
+    ? "SELF"
+    : normalizeDoctorName(selected);
+  return normalizeDoctorName(patient?.doctor) === selectedKey;
+}
+
 function refreshTable(){
   const query = searchBox ? searchBox.value : "";
   const filtered =
-    (allPatients || []).filter(p => matchesPatient(p, query));
+    (allPatients || []).filter(p => matchesPatient(p, query) && matchesDoctorFilter(p));
   renderTable(filtered);
 }
 
@@ -373,4 +473,7 @@ if (searchToggle) {
 }
 if (searchBox) {
   searchBox.addEventListener("input", refreshTable);
+}
+if (doctorFilter) {
+  doctorFilter.addEventListener("change", refreshTable);
 }
