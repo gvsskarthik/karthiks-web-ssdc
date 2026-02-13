@@ -49,6 +49,18 @@ textarea {
   border-color: var(--theme-line);
 }
 
+.input-wrap .neo-input,
+.input-wrap .neo-select,
+.input-wrap .search,
+.input-wrap .search-input,
+.input-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.input-wrap select,
+.input-wrap textarea {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .menu-list {
   background: var(--theme-field-bg-2);
   border-color: var(--theme-line);
