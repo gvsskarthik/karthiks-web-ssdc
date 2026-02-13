@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: var(--space-6);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max-scaled);
   margin: 0 auto;
   display: grid;
   gap: 18px;
@@ -33,14 +33,14 @@ body {
 }
 
 .header h1 {
-  font-size: 30px;
+  font-size: var(--fs-30);
   font-weight: 800;
   margin: 0;
   letter-spacing: .2px;
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   margin-top: 4px;
   letter-spacing: .4px;
@@ -79,7 +79,7 @@ body {
 }
 
 .card {
-  padding: 16px;
+  padding: var(--space-4);
   border-radius: var(--radius-lg);
   animation: fadeUp .5s ease both;
 }
@@ -109,11 +109,11 @@ body {
 .neo-select,
 .neo-input {
   width: 100%;
-  height: 36px;
+  height: var(--control-h-sm);
   padding: 0 12px;
   border: none;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
   border: 1px solid var(--line);
 }
@@ -130,7 +130,7 @@ body {
 }
 
 .small {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--muted);
   font-weight: 700;
   text-transform: uppercase;
@@ -146,7 +146,7 @@ body {
 }
 
 .meta {
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .card-head {
@@ -159,7 +159,7 @@ body {
 
 .card-head h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-18);
   letter-spacing: .2px;
 }
 
@@ -180,12 +180,12 @@ table {
 th, td {
   padding: 10px 12px;
   border: 1px solid var(--line);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 thead th {
   text-align: left;
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: .6px;
   color: var(--muted);
@@ -204,7 +204,7 @@ thead th {
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 700;
   border: 1px solid var(--line);
   background: var(--bg-soft);
@@ -224,7 +224,7 @@ thead th {
 }
 
 @media (max-width: 980px) {
-  body { padding: 16px; }
+  body { padding: var(--space-4); }
   .header { flex-direction: column; align-items: flex-start; }
   .filter-grid { grid-template-columns: 1fr 1fr; }
   .filter-actions { justify-content: stretch; }
@@ -237,4 +237,3 @@ thead th {
   .header-actions { width: 100%; }
   .header-actions .btn { width: 100%; }
 }
-

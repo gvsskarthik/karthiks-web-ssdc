@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: var(--space-6);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max-scaled);
   margin: 0 auto;
   display: grid;
   gap: 18px;
@@ -20,14 +20,14 @@ body {
 }
 
 .head-title h1 {
-  font-size: 32px;
+  font-size: var(--fs-32);
   font-weight: 700;
   margin: 0;
   letter-spacing: .3px;
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   margin-top: 4px;
   letter-spacing: .4px;
@@ -51,7 +51,7 @@ body {
 }
 
 .filter-group label {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   letter-spacing: .4px;
   text-transform: uppercase;
@@ -64,7 +64,7 @@ body {
 }
 
 .date-filter label {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   letter-spacing: .4px;
   text-transform: uppercase;
@@ -82,7 +82,7 @@ body {
 }
 
 .input-wrap i {
-  font-size: 18px;
+  font-size: var(--fs-18);
   color: var(--muted);
 }
 
@@ -113,7 +113,7 @@ body {
   flex: 1;
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 
 @media (max-width: 720px) {
@@ -126,7 +126,7 @@ body {
 .table-box {
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
-  padding: 16px;
+  padding: var(--space-4);
   animation: fadeUp .55s ease both;
 }
 
@@ -139,7 +139,7 @@ table {
 
 thead th {
   text-align: left;
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: .6px;
   color: var(--muted);
@@ -243,7 +243,7 @@ tbody td:last-child {
 }
 
 .wa-btn i {
-  font-size: 16px;
+  font-size: calc(16px * var(--ui-scale-bounded));
 }
 
 .no-data {
@@ -264,12 +264,12 @@ tbody td.no-data {
 }
 
 @media (max-width:900px){
-  body{padding:16px}
+  body{padding:var(--space-4)}
   .head-title{flex-direction:column; align-items:flex-start}
   .date-filter{width:100%}
 }
 
 @media (max-width:600px){
-  .head-title h1{font-size:28px}
+  .head-title h1{font-size:var(--fs-30)}
   .input-wrap{padding:10px}
 }

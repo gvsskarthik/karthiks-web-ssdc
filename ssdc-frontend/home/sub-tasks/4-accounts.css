@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: var(--space-6);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max-scaled);
   margin: 0 auto;
   display: grid;
   gap: 20px;
@@ -33,14 +33,14 @@ body {
 }
 
 .header h1 {
-  font-size: 32px;
+  font-size: var(--fs-32);
   font-weight: 700;
   margin: 0;
   letter-spacing: .2px;
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--muted);
   margin-top: 4px;
   letter-spacing: .4px;
@@ -84,7 +84,7 @@ body {
 }
 
 .summary-card {
-  padding: 18px 20px;
+  padding: calc(18px * var(--ui-scale-bounded)) calc(20px * var(--ui-scale-bounded));
   position: relative;
   overflow: hidden;
   animation: fadeUp .5s ease both;
@@ -131,14 +131,14 @@ body {
 }
 
 .summary h4 {
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   color: var(--muted);
   letter-spacing: .6px;
 }
 
 .summary p {
-  font-size: 26px;
+  font-size: calc(26px * var(--ui-scale-bounded));
   font-weight: 800;
   margin: 6px 0 0;
 }
@@ -170,12 +170,12 @@ body {
 .layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: var(--space-6);
   align-items: start;
 }
 
 .card {
-  padding: 18px;
+  padding: calc(18px * var(--ui-scale-bounded));
   border-radius: var(--radius-lg);
   animation: fadeUp .55s ease both;
 }
@@ -195,7 +195,7 @@ body {
 
 .card-head h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-18);
   letter-spacing: .2px;
 }
 
@@ -219,11 +219,11 @@ body {
 
 .neo-select {
   width: 100%;
-  height: 36px;
+  height: var(--control-h-sm);
   padding: 0 12px;
   border: none;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
   border: 1px solid var(--line);
 }
@@ -241,17 +241,17 @@ body {
 
 .neo-input {
   width: 100%;
-  height: 36px;
+  height: var(--control-h-sm);
   padding: 0 12px;
   border: none;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   outline: none;
   border: 1px solid var(--line);
 }
 
 .small {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--muted);
   font-weight: 600;
   text-transform: uppercase;
@@ -283,12 +283,12 @@ table {
 th, td {
   padding: 10px 12px;
   border: 1px solid var(--line);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 thead th {
   text-align: left;
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: .6px;
   color: var(--muted);
@@ -320,7 +320,7 @@ thead th {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: var(--space-4);
   background: rgba(26, 26, 26, 0.4);
   backdrop-filter: blur(4px);
   z-index: 999;
@@ -333,7 +333,7 @@ thead th {
 .modal-card {
   width: 100%;
   max-width: 360px;
-  padding: 18px;
+  padding: calc(18px * var(--ui-scale-bounded));
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
 }
@@ -367,7 +367,7 @@ thead th {
 }
 
 .modal-body label {
-  font-size: 11px;
+  font-size: var(--fs-11);
   color: var(--muted);
   font-weight: 600;
   text-transform: uppercase;
@@ -390,7 +390,7 @@ thead th {
 }
 
 @media (max-width:980px){
-  body{padding:16px;}
+  body{padding:var(--space-4);}
   .header{flex-direction:column; align-items:flex-start;}
   .summary{grid-template-columns:repeat(2, minmax(0, 1fr));}
   .table-wrap{max-height:none;}
@@ -400,9 +400,9 @@ thead th {
 }
 
 @media (max-width:640px){
-  .header h1{font-size:28px;}
+  .header h1{font-size:var(--fs-30);}
   .summary{grid-template-columns:1fr;}
-  .summary p{font-size:24px;}
+  .summary p{font-size:var(--fs-24);}
   .btn{width:100%; justify-content:center;}
   .filter-grid{grid-template-columns:1fr;}
 }
