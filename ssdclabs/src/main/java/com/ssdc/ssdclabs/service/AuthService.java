@@ -3,6 +3,7 @@ package com.ssdc.ssdclabs.service;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -18,6 +19,9 @@ import com.ssdc.ssdclabs.dto.AuthLoginRequest;
 import com.ssdc.ssdclabs.dto.AuthResponse;
 import com.ssdc.ssdclabs.dto.AuthSignupRequest;
 import com.ssdc.ssdclabs.dto.AuthSignupResponse;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorSetupResponse;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorStatusResponse;
+import com.ssdc.ssdclabs.dto.AuthVerifyTwoFactorLoginRequest;
 import com.ssdc.ssdclabs.model.Lab;
 import com.ssdc.ssdclabs.repository.LabRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,18 +36,34 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MailService mailService;
+    private final TotpService totpService;
+    private final TwoFactorSecretCryptoService twoFactorSecretCryptoService;
     private final String frontendBaseUrl;
+    private final long setupTtlSeconds;
+    private final long challengeTtlSeconds;
+    private final int maxAttempts;
 
     public AuthService(
             LabRepository labRepo,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             MailService mailService,
+            TotpService totpService,
+            TwoFactorSecretCryptoService twoFactorSecretCryptoService,
+            @Value("${app.totp.setup-ttl-seconds:600}") long setupTtlSeconds,
+            @Value("${app.totp.challenge-ttl-seconds:300}") long challengeTtlSeconds,
+            @Value("${app.totp.max-attempts:5}") int maxAttempts,
             @Value("${app.frontend.base-url:https://ssdclabs.online}") String frontendBaseUrl) {
         this.labRepo = Objects.requireNonNull(labRepo, "labRepo");
         this.passwordEncoder = Objects.requireNonNull(passwordEncoder, "passwordEncoder");
         this.jwtService = Objects.requireNonNull(jwtService, "jwtService");
         this.mailService = Objects.requireNonNull(mailService, "mailService");
+        this.totpService = Objects.requireNonNull(totpService, "totpService");
+        this.twoFactorSecretCryptoService =
+            Objects.requireNonNull(twoFactorSecretCryptoService, "twoFactorSecretCryptoService");
+        this.setupTtlSeconds = Math.max(60L, setupTtlSeconds);
+        this.challengeTtlSeconds = Math.max(60L, challengeTtlSeconds);
+        this.maxAttempts = Math.max(1, maxAttempts);
         this.frontendBaseUrl = Objects.requireNonNull(frontendBaseUrl, "frontendBaseUrl").replaceAll("/+$", "");
     }
 
@@ -115,28 +135,232 @@ public class AuthService {
         if (lab == null) {
             throw new IllegalArgumentException("Invalid labId or password");
         }
-
-        if (!Boolean.TRUE.equals(lab.getEmailVerified())) {
-            throw new IllegalStateException("Email not verified");
-        }
-        if (!Boolean.TRUE.equals(lab.getActive())) {
-            throw new IllegalStateException("Account locked");
-        }
-
-        LocalDate expiry = lab.getSubscriptionExpiry();
-        if (expiry != null) {
-            LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
-            if (expiry.isBefore(today)) {
-                throw new IllegalStateException("Subscription expired");
-            }
-        }
+        validateLoginGuards(lab);
 
         if (!passwordEncoder.matches(password, lab.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid labId or password");
         }
 
+        if (!Boolean.TRUE.equals(lab.getTwoFactorEnabled())) {
+            String token = jwtService.issueToken(lab.getLabId());
+            return AuthResponse.success(token, lab.getLabId(), lab.getLabName());
+        }
+
+        String encryptedSecret = trimToNull(lab.getTwoFactorSecretEnc());
+        if (encryptedSecret == null) {
+            throw new IllegalArgumentException("Invalid labId or password");
+        }
+        try {
+            twoFactorSecretCryptoService.decrypt(encryptedSecret);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Invalid labId or password");
+        }
+
+        String challenge = issueTwoFactorLoginChallenge(lab);
+        return AuthResponse.challenge(
+            lab.getLabId(),
+            lab.getLabName(),
+            challenge,
+            lab.getTwoFactorLoginExpiresAt()
+        );
+    }
+
+    public AuthResponse verifyTwoFactorLogin(AuthVerifyTwoFactorLoginRequest request) {
+        String labId = normalizeLabId(request == null ? null : request.labId);
+        String challenge = trimToNull(request == null ? null : request.loginChallenge);
+        String code = trimToNull(request == null ? null : request.code);
+        if (labId == null || challenge == null || code == null) {
+            throw new IllegalArgumentException("labId, loginChallenge and code are required");
+        }
+        if (!totpService.isValidCodeFormat(code)) {
+            throw new IllegalArgumentException("Invalid verification code");
+        }
+
+        Lab lab = labRepo.findById(labId).orElse(null);
+        if (lab == null) {
+            throw new IllegalArgumentException("Invalid or expired login challenge");
+        }
+        validateLoginGuards(lab);
+
+        String challengeHash = trimToNull(lab.getTwoFactorLoginChallengeHash());
+        OffsetDateTime challengeExpiry = lab.getTwoFactorLoginExpiresAt();
+        Integer attemptCount = lab.getTwoFactorLoginAttempts();
+        int attempts = attemptCount == null ? 0 : Math.max(0, attemptCount);
+
+        if (challengeHash == null
+                || isExpired(challengeExpiry)
+                || attempts >= maxAttempts
+                || !timingSafeEqualsHex(challengeHash, sha256Hex(challenge))) {
+            throw new IllegalArgumentException("Invalid or expired login challenge");
+        }
+
+        String encryptedSecret = trimToNull(lab.getTwoFactorSecretEnc());
+        if (encryptedSecret == null) {
+            throw new IllegalStateException("2FA not configured");
+        }
+        final String secret;
+        try {
+            secret = twoFactorSecretCryptoService.decrypt(encryptedSecret);
+        } catch (Exception ex) {
+            throw new IllegalStateException("2FA not configured");
+        }
+
+        boolean valid = totpService.verifyCode(secret, code, Instant.now());
+        if (!valid) {
+            int nextAttempts = attempts + 1;
+            if (nextAttempts >= maxAttempts) {
+                clearTwoFactorLoginChallenge(lab);
+            } else {
+                lab.setTwoFactorLoginAttempts(nextAttempts);
+            }
+            labRepo.save(lab);
+            throw new IllegalArgumentException("Invalid verification code");
+        }
+
+        clearTwoFactorLoginChallenge(lab);
+        labRepo.save(lab);
+
         String token = jwtService.issueToken(lab.getLabId());
-        return new AuthResponse(token, lab.getLabId(), lab.getLabName());
+        return AuthResponse.success(token, lab.getLabId(), lab.getLabName());
+    }
+
+    public AuthTwoFactorStatusResponse getTwoFactorStatus(String labId) {
+        String safeLabId = normalizeLabId(labId);
+        if (safeLabId == null) {
+            throw new IllegalArgumentException("labId is required");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElseThrow(() -> new IllegalArgumentException("Lab not found"));
+        return new AuthTwoFactorStatusResponse(
+            Boolean.TRUE.equals(lab.getTwoFactorEnabled()),
+            lab.getTwoFactorEnabledAt()
+        );
+    }
+
+    public AuthTwoFactorSetupResponse setupTwoFactor(String labId, String currentPassword) {
+        String safeLabId = normalizeLabId(labId);
+        String current = trimToNull(currentPassword);
+        if (safeLabId == null) {
+            throw new IllegalArgumentException("labId is required");
+        }
+        if (current == null) {
+            throw new IllegalArgumentException("Current password is required");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElseThrow(() -> new IllegalArgumentException("Lab not found"));
+        if (!Boolean.TRUE.equals(lab.getActive())) {
+            throw new IllegalStateException("Account locked");
+        }
+        if (!passwordEncoder.matches(current, lab.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        if (Boolean.TRUE.equals(lab.getTwoFactorEnabled())) {
+            throw new IllegalStateException("2FA already enabled");
+        }
+
+        String secret = totpService.generateSecret();
+        String encryptedSetupSecret = twoFactorSecretCryptoService.encrypt(secret);
+        OffsetDateTime setupExpiry = OffsetDateTime.now().plusSeconds(setupTtlSeconds);
+
+        lab.setTwoFactorSetupSecretEnc(encryptedSetupSecret);
+        lab.setTwoFactorSetupExpiresAt(setupExpiry);
+        clearTwoFactorLoginChallenge(lab);
+        labRepo.save(lab);
+
+        String otpAuthUri = totpService.buildOtpAuthUri(lab.getLabId(), secret);
+        return new AuthTwoFactorSetupResponse(secret, otpAuthUri, null, setupExpiry);
+    }
+
+    public AuthTwoFactorStatusResponse enableTwoFactor(String labId, String code) {
+        String safeLabId = normalizeLabId(labId);
+        String otpCode = trimToNull(code);
+        if (safeLabId == null) {
+            throw new IllegalArgumentException("labId is required");
+        }
+        if (otpCode == null || !totpService.isValidCodeFormat(otpCode)) {
+            throw new IllegalArgumentException("Invalid verification code");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElseThrow(() -> new IllegalArgumentException("Lab not found"));
+        if (Boolean.TRUE.equals(lab.getTwoFactorEnabled())) {
+            throw new IllegalStateException("2FA already enabled");
+        }
+
+        String setupSecretEnc = trimToNull(lab.getTwoFactorSetupSecretEnc());
+        OffsetDateTime setupExpiry = lab.getTwoFactorSetupExpiresAt();
+        if (setupSecretEnc == null || isExpired(setupExpiry)) {
+            throw new IllegalArgumentException("2FA setup expired. Please setup again");
+        }
+
+        final String secret;
+        try {
+            secret = twoFactorSecretCryptoService.decrypt(setupSecretEnc);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("2FA setup expired. Please setup again");
+        }
+
+        if (!totpService.verifyCode(secret, otpCode, Instant.now())) {
+            throw new IllegalArgumentException("Invalid verification code");
+        }
+
+        lab.setTwoFactorEnabled(Boolean.TRUE);
+        lab.setTwoFactorEnabledAt(OffsetDateTime.now());
+        lab.setTwoFactorSecretEnc(twoFactorSecretCryptoService.encrypt(secret));
+        clearTwoFactorSetup(lab);
+        clearTwoFactorLoginChallenge(lab);
+        labRepo.save(lab);
+
+        return new AuthTwoFactorStatusResponse(Boolean.TRUE, lab.getTwoFactorEnabledAt());
+    }
+
+    public AuthTwoFactorStatusResponse disableTwoFactor(
+            String labId,
+            String currentPassword,
+            String code) {
+        String safeLabId = normalizeLabId(labId);
+        String current = trimToNull(currentPassword);
+        String otpCode = trimToNull(code);
+        if (safeLabId == null) {
+            throw new IllegalArgumentException("labId is required");
+        }
+        if (current == null) {
+            throw new IllegalArgumentException("Current password is required");
+        }
+        if (otpCode == null || !totpService.isValidCodeFormat(otpCode)) {
+            throw new IllegalArgumentException("Invalid verification code");
+        }
+
+        Lab lab = labRepo.findById(safeLabId).orElseThrow(() -> new IllegalArgumentException("Lab not found"));
+        if (!Boolean.TRUE.equals(lab.getTwoFactorEnabled())) {
+            throw new IllegalStateException("2FA already disabled");
+        }
+        if (!passwordEncoder.matches(current, lab.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        String encryptedSecret = trimToNull(lab.getTwoFactorSecretEnc());
+        if (encryptedSecret == null) {
+            throw new IllegalStateException("2FA not configured");
+        }
+        final String secret;
+        try {
+            secret = twoFactorSecretCryptoService.decrypt(encryptedSecret);
+        } catch (Exception ex) {
+            throw new IllegalStateException("2FA not configured");
+        }
+
+        if (!totpService.verifyCode(secret, otpCode, Instant.now())) {
+            throw new IllegalArgumentException("Invalid verification code");
+        }
+
+        lab.setTwoFactorEnabled(Boolean.FALSE);
+        lab.setTwoFactorEnabledAt(null);
+        lab.setTwoFactorSecretEnc(null);
+        clearTwoFactorSetup(lab);
+        clearTwoFactorLoginChallenge(lab);
+        labRepo.save(lab);
+
+        return new AuthTwoFactorStatusResponse(Boolean.FALSE, null);
     }
 
     public void changePassword(String labId, String currentPassword, String newPassword) {
@@ -310,6 +534,60 @@ public class AuthService {
         lab.setPasswordResetExpiresAt(null);
         labRepo.save(lab);
         return true;
+    }
+
+    private void validateLoginGuards(Lab lab) {
+        if (!Boolean.TRUE.equals(lab.getEmailVerified())) {
+            throw new IllegalStateException("Email not verified");
+        }
+        if (!Boolean.TRUE.equals(lab.getActive())) {
+            throw new IllegalStateException("Account locked");
+        }
+
+        LocalDate expiry = lab.getSubscriptionExpiry();
+        if (expiry != null) {
+            LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+            if (expiry.isBefore(today)) {
+                throw new IllegalStateException("Subscription expired");
+            }
+        }
+    }
+
+    private String issueTwoFactorLoginChallenge(Lab lab) {
+        String challenge = UUID.randomUUID().toString().replace("-", "")
+            + UUID.randomUUID().toString().replace("-", "");
+        lab.setTwoFactorLoginChallengeHash(sha256Hex(challenge));
+        lab.setTwoFactorLoginExpiresAt(OffsetDateTime.now().plusSeconds(challengeTtlSeconds));
+        lab.setTwoFactorLoginAttempts(0);
+        labRepo.save(lab);
+        return challenge;
+    }
+
+    private void clearTwoFactorLoginChallenge(Lab lab) {
+        lab.setTwoFactorLoginChallengeHash(null);
+        lab.setTwoFactorLoginExpiresAt(null);
+        lab.setTwoFactorLoginAttempts(0);
+    }
+
+    private void clearTwoFactorSetup(Lab lab) {
+        lab.setTwoFactorSetupSecretEnc(null);
+        lab.setTwoFactorSetupExpiresAt(null);
+    }
+
+    private boolean isExpired(OffsetDateTime expiry) {
+        return expiry == null || expiry.isBefore(OffsetDateTime.now());
+    }
+
+    private boolean timingSafeEqualsHex(String leftHex, String rightHex) {
+        String left = trimToNull(leftHex);
+        String right = trimToNull(rightHex);
+        if (left == null || right == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+            left.getBytes(StandardCharsets.UTF_8),
+            right.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     private String buildVerifyLink(String labId, String token) {

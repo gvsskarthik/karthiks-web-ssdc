@@ -20,6 +20,12 @@ import com.ssdc.ssdclabs.dto.AuthResponse;
 import com.ssdc.ssdclabs.dto.AuthResetPasswordRequest;
 import com.ssdc.ssdclabs.dto.AuthSignupRequest;
 import com.ssdc.ssdclabs.dto.AuthSignupResponse;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorDisableRequest;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorEnableRequest;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorSetupRequest;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorSetupResponse;
+import com.ssdc.ssdclabs.dto.AuthTwoFactorStatusResponse;
+import com.ssdc.ssdclabs.dto.AuthVerifyTwoFactorLoginRequest;
 import com.ssdc.ssdclabs.service.AuthService;
 
 @RestController
@@ -57,6 +63,88 @@ public class AuthController {
             return ResponseEntity.status(403).body(ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body("Login failed");
+        }
+    }
+
+    @PostMapping("/verify-2fa-login")
+    public ResponseEntity<?> verifyTwoFactorLogin(
+            @RequestBody @NonNull AuthVerifyTwoFactorLoginRequest request) {
+        try {
+            AuthResponse response = authService.verifyTwoFactorLogin(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("2FA verification failed");
+        }
+    }
+
+    @GetMapping("/2fa/status")
+    public ResponseEntity<?> twoFactorStatus(Principal principal) {
+        try {
+            String labId = principalLabId(principal);
+            AuthTwoFactorStatusResponse response = authService.getTwoFactorStatus(labId);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("Failed to load 2FA status");
+        }
+    }
+
+    @PostMapping("/2fa/setup")
+    public ResponseEntity<?> twoFactorSetup(
+            @RequestBody @NonNull AuthTwoFactorSetupRequest request,
+            Principal principal) {
+        try {
+            String labId = principalLabId(principal);
+            AuthTwoFactorSetupResponse response = authService.setupTwoFactor(labId, request.currentPassword);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("2FA setup failed");
+        }
+    }
+
+    @PostMapping("/2fa/enable")
+    public ResponseEntity<?> twoFactorEnable(
+            @RequestBody @NonNull AuthTwoFactorEnableRequest request,
+            Principal principal) {
+        try {
+            String labId = principalLabId(principal);
+            AuthTwoFactorStatusResponse response = authService.enableTwoFactor(labId, request.code);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("2FA enable failed");
+        }
+    }
+
+    @PostMapping("/2fa/disable")
+    public ResponseEntity<?> twoFactorDisable(
+            @RequestBody @NonNull AuthTwoFactorDisableRequest request,
+            Principal principal) {
+        try {
+            String labId = principalLabId(principal);
+            AuthTwoFactorStatusResponse response =
+                authService.disableTwoFactor(labId, request.currentPassword, request.code);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(403).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("2FA disable failed");
         }
     }
 
@@ -132,5 +220,12 @@ public class AuthController {
         } catch (Exception ex) {
             return ResponseEntity.internalServerError().body("Change password failed");
         }
+    }
+
+    private String principalLabId(Principal principal) {
+        if (principal == null || principal.getName() == null || principal.getName().trim().isEmpty()) {
+            throw new IllegalStateException("Authentication required");
+        }
+        return principal.getName().trim();
     }
 }
