@@ -184,7 +184,8 @@ body.select-mode {
 }
 
 .page .table-wrap {
-  overflow-x: visible;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -195,7 +196,7 @@ table {
 }
 
 .page .table-wrap table {
-  min-width: 0;
+  min-width: var(--table-min-lg);
 }
 
 table col.col-check {

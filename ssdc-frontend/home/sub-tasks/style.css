@@ -80,10 +80,10 @@ html {
 }
 
  main .box-info li .bx {
-	width: 60px;
-	height: 60px;
+	width: calc(60px * var(--ui-scale-bounded));
+	height: calc(60px * var(--ui-scale-bounded));
 	border-radius: 10px;
-	font-size: 36px;
+	font-size: calc(36px * var(--ui-scale-bounded));
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -309,17 +309,17 @@ html {
 			padding: 16px 0;
 		}
 
- main .table-data .order table tr td img {
-		width: 36px;
-		height: 36px;
+	 main .table-data .order table tr td img {
+		width: calc(36px * var(--ui-scale-bounded));
+		height: calc(36px * var(--ui-scale-bounded));
 		border-radius: 50%;
 		object-fit: cover;
 	}
 
- main .table-data .order table tr td .status {
+	 main .table-data .order table tr td .status {
 		display: inline-block;
-		font-size: 10px;
-		padding: 6px 16px;
+		font-size: var(--fs-11);
+		padding: calc(6px * var(--ui-scale-bounded)) calc(16px * var(--ui-scale-bounded));
 		color: var(--light);
 		border-radius: 20px;
 		font-weight: 700;
@@ -389,9 +389,9 @@ html {
 	}
 
 	 nav form.show .form-input button {
-		width: 36px;
+		width: calc(36px * var(--ui-scale-bounded));
 		height: 100%;
-		border-radius: 0 36px 36px 0;
+		border-radius: 0 calc(36px * var(--ui-scale-bounded)) calc(36px * var(--ui-scale-bounded)) 0;
 		color: var(--light);
 		background: var(--red);
 	}
@@ -406,10 +406,10 @@ html {
 	}
 
 	 main .table-data .head {
-		min-width: 420px;
+		min-width: var(--table-min-xs);
 	}
 
 	 main .table-data .order table {
-		min-width: 420px;
+		min-width: var(--table-min-xs);
 	}
 }

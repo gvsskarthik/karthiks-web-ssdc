@@ -1,4 +1,4 @@
-table{font-size:11px}
-th,td{padding:6px}
+table{font-size:var(--fs-11)}
+th,td{padding:calc(6px * var(--ui-scale-bounded))}
 .download{background:#27ae60;color:#fff}
-.meta-title{margin:0}
+.meta-title{margin:0;font-size:var(--fs-14)}

@@ -1,18 +1,27 @@
-table{
-  font-size:12px;
+table {
+  font-size: var(--fs-12);
 }
-th,td{
-  padding:6px;
+
+th,
+td {
+  padding: 6px;
 }
-td.amount{text-align:right;width:140px}
-.col-price{width:140px}
+
+td.amount {
+  text-align: right;
+  width: calc(140px * var(--ui-scale-bounded));
+}
+
+.col-price {
+  width: calc(140px * var(--ui-scale-bounded));
+}
 
 /* TOTALS */
 .totals{
-  margin-top:16px;
+  margin-top:var(--space-4);
   margin-left:auto;
-  max-width:260px;
-  font-size:13px;
+  max-width: calc(260px * var(--ui-scale-bounded));
+  font-size: var(--fs-13);
 }
 .total-row{
   display:flex;

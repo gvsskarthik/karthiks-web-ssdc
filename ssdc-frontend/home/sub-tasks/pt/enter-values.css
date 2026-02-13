@@ -1,60 +1,49 @@
 body {
   margin: 0;
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .neo-card {
-  max-width: 1100px;
+  max-width: var(--page-max-mid);
   margin: auto;
-  padding: 25px;
-  border-radius: 24px;
+  padding: calc(25px * var(--ui-scale-bounded));
+  border-radius: var(--radius-lg);
 }
 
-.print-settings{
+.print-settings {
   border: 1px solid var(--theme-line);
-  padding: 14px 18px;
-  margin-bottom: 20px;
+  padding: calc(14px * var(--ui-scale-bounded)) calc(18px * var(--ui-scale-bounded));
+  margin-bottom: var(--space-5);
 }
 
-.print-settings-head h3{
+.print-settings-head h3 {
   margin: 0 0 6px 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--ui-scale-bounded));
 }
 
-.print-settings-head p{
+.print-settings-head p {
   margin: 0 0 12px 0;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--theme-muted);
 }
 
-.print-settings-grid{
+.print-settings-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 12px;
 }
 
-@media (max-width: 900px){
-  .print-settings-grid{
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-  }
-}
-
-@media (max-width: 520px){
-  .print-settings-grid{
-    grid-template-columns: 1fr;
-  }
-}
-
-.print-settings-grid label{
+.print-settings-grid label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--theme-muted);
 }
 
-.print-settings-grid input{
+.print-settings-grid input {
   width: 100%;
+  min-height: var(--control-h-sm);
   padding: 8px;
   border: 1px solid var(--theme-line);
   border-radius: 10px;
@@ -63,22 +52,22 @@ body {
   color: inherit;
 }
 
-.print-settings-actions{
+.print-settings-actions {
   display: flex;
   gap: 12px;
   margin-top: 12px;
 }
 
-.neo-btn.neo-btn-secondary{
+.neo-btn.neo-btn-secondary {
   background: var(--theme-field-bg);
   border: 1px solid var(--theme-line);
 }
 
 .patient-box {
   border: 1px solid var(--theme-line);
-  padding: 14px 18px;
-  margin-bottom: 25px;
-  font-size: 14px;
+  padding: calc(14px * var(--ui-scale-bounded)) calc(18px * var(--ui-scale-bounded));
+  margin-bottom: var(--space-6);
+  font-size: var(--fs-14);
 }
 
 .p-row {
@@ -99,36 +88,44 @@ body {
   margin-left: 6px;
 }
 
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
+  min-width: var(--table-min-md);
 }
 
-th, td {
+th,
+td {
   padding: 10px;
   border-bottom: 1px solid var(--theme-line);
 }
 
 th {
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--theme-muted);
 }
 
-.test-name-wrap{
-  display:flex;
-  align-items:center;
-  gap:8px;
+.test-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.order-input{
-  width:44px;
-  padding:4px 6px;
-  border:1px solid var(--theme-line);
-  border-radius:8px;
+.order-input {
+  width: 44px;
+  min-height: calc(30px * var(--ui-scale-bounded));
+  padding: 4px 6px;
+  border: 1px solid var(--theme-line);
+  border-radius: 8px;
   background: var(--theme-field-bg);
-  font-size:12px;
-  text-align:center;
+  font-size: var(--fs-12);
+  text-align: center;
 }
 
 .param-indent {
@@ -137,6 +134,7 @@ th {
 
 .result-input {
   width: 100%;
+  min-height: calc(32px * var(--ui-scale-bounded));
   padding: 8px;
   border: 1px solid var(--theme-line);
   border-radius: 10px;
@@ -149,7 +147,7 @@ th {
   margin-top: 8px;
 }
 
-.small-btn.remove-line-row-btn{
+.small-btn.remove-line-row-btn {
   margin-top: 8px;
   margin-left: 8px;
   background: var(--theme-danger) !important;
@@ -157,19 +155,18 @@ th {
   box-shadow: none;
 }
 
-.small-btn.remove-line-row-btn:hover{
+.small-btn.remove-line-row-btn:hover {
   filter: brightness(0.95);
 }
 
-
 .normal {
-  font-size: 12px;
+  font-size: var(--fs-12);
   white-space: pre-line;
 }
 
 .section-header td {
   padding-top: 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 600;
   color: var(--theme-muted);
 }
@@ -177,11 +174,12 @@ th {
 .actions {
   display: flex;
   gap: 12px;
-  margin-top: 25px;
+  margin-top: var(--space-6);
 }
 
 .neo-btn {
   flex: 1;
+  min-height: var(--control-h-md);
   padding: 14px;
   border: none;
   border-radius: 18px;
@@ -191,5 +189,31 @@ th {
 
 .neo-btn:active {
   box-shadow: inset 6px 6px 12px #c5c9cc,
-             inset -6px -6px 12px #ffffff;
+    inset -6px -6px 12px #ffffff;
+}
+
+@media (max-width: 900px) {
+  .print-settings-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .p-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    padding: var(--space-4);
+  }
+
+  .print-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
 }

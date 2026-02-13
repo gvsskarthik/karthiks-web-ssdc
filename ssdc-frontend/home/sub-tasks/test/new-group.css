@@ -1,17 +1,18 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: var(--space-5);
   min-height: 100vh;
 }
 
 .neo-card {
-  max-width: 1200px;
+  width: 100%;
+  max-width: var(--page-max-scaled);
   margin: 0 auto;
-  padding: 26px;
+  padding: calc(26px * var(--ui-scale-bounded));
   border-radius: var(--radius-lg);
   border: 1px solid var(--theme-line);
   display: grid;
-  gap: 18px;
+  gap: var(--space-4);
 }
 
 .header-row {
@@ -24,14 +25,21 @@ body {
 
 .header-row h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--fs-24);
   letter-spacing: .3px;
 }
 
 .subtitle {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--theme-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 label {
@@ -47,10 +55,11 @@ label {
 input, select {
   width: 100%;
   padding: 10px 12px;
+  min-height: var(--control-h-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--theme-line);
   background: var(--theme-field-bg);
-  font-size: 14px;
+  font-size: var(--fs-14);
   color: var(--theme-ink);
 }
 
@@ -107,7 +116,7 @@ input:focus, select:focus {
 }
 
 .suggestion-meta {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--theme-muted);
 }
 
@@ -150,7 +159,7 @@ input:focus, select:focus {
 
 .section-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--fs-18);
 }
 
 .inline {
@@ -190,7 +199,7 @@ input[type="checkbox"] {
 
 .btn.small {
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .btn.secondary {
@@ -199,7 +208,7 @@ input[type="checkbox"] {
 
 .btn.link {
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--theme-danger);
   background: transparent;
   box-shadow: none;
@@ -207,7 +216,7 @@ input[type="checkbox"] {
 
 .message {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--fs-13);
   color: var(--theme-muted);
 }
 
@@ -217,12 +226,12 @@ input[type="checkbox"] {
 
 .muted {
   color: var(--theme-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .slot-card {
   margin-top: 12px;
-  padding: 16px;
+  padding: calc(16px * var(--ui-scale-bounded));
   border-radius: var(--radius-md);
   background: var(--theme-surface-2);
   border: 1px solid var(--theme-line);
@@ -238,12 +247,12 @@ input[type="checkbox"] {
 
 .slot-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-14);
 }
 
 .detail-card {
   margin-top: 12px;
-  padding: 14px;
+  padding: calc(14px * var(--ui-scale-bounded));
   border-radius: var(--radius-sm);
   background: var(--theme-field-bg);
   border: 1px solid var(--theme-line);
@@ -256,14 +265,14 @@ input[type="checkbox"] {
 }
 
 .detail-label {
-  font-size: 11px;
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: .4px;
   color: var(--theme-muted);
 }
 
 .detail-value {
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: 600;
   margin-top: 4px;
 }
@@ -282,19 +291,19 @@ input[type="checkbox"] {
 }
 
 .param-title {
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: 600;
   margin: 0 0 6px;
 }
 
 .param-meta {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--theme-muted);
 }
 
 .param-normal {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .hidden {
@@ -309,8 +318,17 @@ input[type="checkbox"] {
   .grid-2{
     grid-template-columns:1fr;
   }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width:640px){
-  body{padding:16px;}
+  body{padding:var(--space-4);}
+  .actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

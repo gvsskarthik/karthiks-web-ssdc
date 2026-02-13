@@ -91,6 +91,15 @@ body {
   animation: fadeUp .55s ease both;
 }
 
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+  min-width: var(--table-min-lg);
+}
+
 table {
   width: 100%;
   border-collapse: separate;
@@ -248,16 +257,16 @@ tbody td:last-child {
   background: rgba(26, 26, 26, 0.4);
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: var(--space-4);
   z-index: 20;
   backdrop-filter: blur(4px);
 }
 
 .neo-card {
-  max-width: 520px;
+  max-width: var(--page-max-modal);
   width: 100%;
   margin: auto;
-  padding: 26px;
+  padding: calc(26px * var(--ui-scale-bounded));
   border-radius: 24px;
   border: 1px solid var(--line);
 }

@@ -107,7 +107,8 @@ body {
 }
 
 .page .table-wrap {
-  overflow-x: visible;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
 }
 
@@ -117,7 +118,7 @@ table {
   border-collapse: separate;
   border-spacing: 0 10px;
   table-layout: fixed;
-  min-width: 0;
+  min-width: var(--table-min-lg);
 }
 
 thead th {
@@ -258,16 +259,16 @@ tbody td:last-child {
   background: rgba(26, 26, 26, 0.4);
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: var(--space-4);
   z-index: 20;
   backdrop-filter: blur(4px);
 }
 
 .modal-card {
-  width: 560px;
+  width: min(100%, calc(560px * var(--ui-scale-bounded)));
   max-height: 85vh;
   overflow: auto;
-  padding: 22px;
+  padding: calc(22px * var(--ui-scale-bounded));
   border-radius: 22px;
   border: 1px solid var(--line);
 }
@@ -369,12 +370,8 @@ input:checked + .slider:before {
   body{padding:var(--space-4)}
   .head-title{flex-direction:column; align-items:flex-start}
   .header-actions{width:100%; justify-content:flex-start}
-  table{table-layout:auto}
   thead th{font-size:calc(10px * var(--ui-scale-bounded))}
   tbody td{padding:10px; font-size:var(--fs-12)}
-  .sno,.name,.category,.shortcut,.normal,.cost,.active-col,.options{width:auto}
-  .shortcut,.cost,.active-col{white-space:normal}
-  .cost{text-align:left}
 }
 
 @media (max-width:600px){

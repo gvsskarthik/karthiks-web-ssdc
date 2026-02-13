@@ -113,8 +113,7 @@ table td {
 }
 
 .table-wrap table {
-  min-width: 720px;
-  min-width: calc(720px * var(--ui-scale-bounded));
+  min-width: var(--table-min-sm);
 }
 
 @media (max-width: 900px) {
@@ -125,8 +124,7 @@ table td {
 
 @media (max-width: 600px) {
   .table-wrap table {
-    min-width: 640px;
-    min-width: calc(640px * var(--ui-scale-bounded));
+    min-width: var(--table-min-sm);
   }
 }
 

@@ -572,9 +572,9 @@ html, body {
 		width: 100%;
 	}
 	#content nav form.show .form-input button {
-		width: 36px;
+		width: var(--dash-control-btn);
 		height: 100%;
-		border-radius: 0 36px 36px 0;
+		border-radius: 0 var(--dash-control-btn) var(--dash-control-btn) 0;
 		color: var(--light);
 		background: var(--dash-accent-strong);
 	}
@@ -589,10 +589,10 @@ html, body {
 	}
 
 	#content main .table-data .head {
-		min-width: 420px;
+		min-width: var(--table-min-xs);
 	}
 	#content main .table-data .order table {
-		min-width: 420px;
+		min-width: var(--table-min-xs);
 	}
 
 }

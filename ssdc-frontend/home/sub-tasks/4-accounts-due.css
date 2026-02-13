@@ -164,7 +164,7 @@ body {
 }
 
 .table-wrap {
-  max-height: 620px;
+  max-height: calc(620px * var(--ui-scale-bounded));
   overflow: auto;
   border-radius: 12px;
   background: #fff;
@@ -174,7 +174,7 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 980px;
+  min-width: var(--table-min-lg);
 }
 
 th, td {
