@@ -18,6 +18,14 @@ CREATE TABLE labs (
   password_reset_expires_at DATETIME,
   password_reset_sent_at DATETIME,
   password_reset_send_count INT NOT NULL DEFAULT 0,
+  two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  two_factor_secret_enc VARCHAR(255),
+  two_factor_enabled_at DATETIME,
+  two_factor_setup_secret_enc VARCHAR(255),
+  two_factor_setup_expires_at DATETIME,
+  two_factor_login_challenge_hash VARCHAR(64),
+  two_factor_login_expires_at DATETIME,
+  two_factor_login_attempts INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

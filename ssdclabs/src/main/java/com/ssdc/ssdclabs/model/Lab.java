@@ -74,6 +74,36 @@ public class Lab {
     @Column(name = "password_reset_send_count", nullable = false)
     private Integer passwordResetSendCount = 0;
 
+    @Column(name = "two_factor_enabled", nullable = false)
+    private Boolean twoFactorEnabled = Boolean.FALSE;
+
+    @JsonIgnore
+    @Column(name = "two_factor_secret_enc")
+    private String twoFactorSecretEnc;
+
+    @Column(name = "two_factor_enabled_at")
+    private OffsetDateTime twoFactorEnabledAt;
+
+    @JsonIgnore
+    @Column(name = "two_factor_setup_secret_enc")
+    private String twoFactorSetupSecretEnc;
+
+    @JsonIgnore
+    @Column(name = "two_factor_setup_expires_at")
+    private OffsetDateTime twoFactorSetupExpiresAt;
+
+    @JsonIgnore
+    @Column(name = "two_factor_login_challenge_hash")
+    private String twoFactorLoginChallengeHash;
+
+    @JsonIgnore
+    @Column(name = "two_factor_login_expires_at")
+    private OffsetDateTime twoFactorLoginExpiresAt;
+
+    @JsonIgnore
+    @Column(name = "two_factor_login_attempts", nullable = false)
+    private Integer twoFactorLoginAttempts = 0;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -150,6 +180,46 @@ public class Lab {
     public Integer getPasswordResetSendCount() { return passwordResetSendCount; }
     public void setPasswordResetSendCount(Integer passwordResetSendCount) {
         this.passwordResetSendCount = passwordResetSendCount;
+    }
+
+    public Boolean getTwoFactorEnabled() { return twoFactorEnabled; }
+    public void setTwoFactorEnabled(Boolean twoFactorEnabled) {
+        this.twoFactorEnabled = twoFactorEnabled;
+    }
+
+    public String getTwoFactorSecretEnc() { return twoFactorSecretEnc; }
+    public void setTwoFactorSecretEnc(String twoFactorSecretEnc) {
+        this.twoFactorSecretEnc = twoFactorSecretEnc;
+    }
+
+    public OffsetDateTime getTwoFactorEnabledAt() { return twoFactorEnabledAt; }
+    public void setTwoFactorEnabledAt(OffsetDateTime twoFactorEnabledAt) {
+        this.twoFactorEnabledAt = twoFactorEnabledAt;
+    }
+
+    public String getTwoFactorSetupSecretEnc() { return twoFactorSetupSecretEnc; }
+    public void setTwoFactorSetupSecretEnc(String twoFactorSetupSecretEnc) {
+        this.twoFactorSetupSecretEnc = twoFactorSetupSecretEnc;
+    }
+
+    public OffsetDateTime getTwoFactorSetupExpiresAt() { return twoFactorSetupExpiresAt; }
+    public void setTwoFactorSetupExpiresAt(OffsetDateTime twoFactorSetupExpiresAt) {
+        this.twoFactorSetupExpiresAt = twoFactorSetupExpiresAt;
+    }
+
+    public String getTwoFactorLoginChallengeHash() { return twoFactorLoginChallengeHash; }
+    public void setTwoFactorLoginChallengeHash(String twoFactorLoginChallengeHash) {
+        this.twoFactorLoginChallengeHash = twoFactorLoginChallengeHash;
+    }
+
+    public OffsetDateTime getTwoFactorLoginExpiresAt() { return twoFactorLoginExpiresAt; }
+    public void setTwoFactorLoginExpiresAt(OffsetDateTime twoFactorLoginExpiresAt) {
+        this.twoFactorLoginExpiresAt = twoFactorLoginExpiresAt;
+    }
+
+    public Integer getTwoFactorLoginAttempts() { return twoFactorLoginAttempts; }
+    public void setTwoFactorLoginAttempts(Integer twoFactorLoginAttempts) {
+        this.twoFactorLoginAttempts = twoFactorLoginAttempts;
     }
 
     public Instant getCreatedAt() { return createdAt; }
