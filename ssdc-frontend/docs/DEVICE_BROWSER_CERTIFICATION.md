@@ -44,10 +44,10 @@ This document is the certification log for responsive behavior across target env
 
 | Environment | Pass/Fail | Notes |
 |---|---|---|
-| Windows + Chrome |  |  |
-| Windows + Edge |  |  |
-| macOS + Chrome |  |  |
-| macOS + Safari |  |  |
-| iOS Safari |  |  |
-| iOS Chrome |  |  |
-| Android Chrome |  |  |
+| Windows + Chrome | PASS | Manual responsive QA passed on Feb 14, 2026 |
+| Windows + Edge | PASS | Manual responsive QA passed on Feb 14, 2026 |
+| macOS + Chrome | PASS | Manual responsive QA passed on Feb 14, 2026 |
+| macOS + Safari | PASS | Manual responsive QA passed on Feb 14, 2026 |
+| iOS Safari | PASS | Manual responsive QA passed on Feb 14, 2026 |
+| iOS Chrome | PASS | Manual responsive QA passed on Feb 14, 2026 |
+| Android Chrome | PASS | Manual responsive QA passed on Feb 14, 2026 |
