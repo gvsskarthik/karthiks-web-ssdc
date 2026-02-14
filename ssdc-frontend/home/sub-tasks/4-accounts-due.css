@@ -164,8 +164,14 @@ body {
 }
 
 .table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   max-height: 620px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   border-radius: 12px;
   background: #fff;
   border: 1px solid var(--line);
