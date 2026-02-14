@@ -107,6 +107,7 @@ allSideMenu.forEach(li => {
         }
         if (isMobileViewport() && sidebar) {
             sidebar.classList.add('hide');
+            syncMenuToggleState();
         }
     });
 });
@@ -117,11 +118,27 @@ const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
 let desktopCollapsed = sidebar ? sidebar.classList.contains('hide') : false;
 
+function syncMenuToggleState() {
+    if (!menuBar || !sidebar) {
+        return;
+    }
+    menuBar.setAttribute('aria-expanded', String(!sidebar.classList.contains('hide')));
+}
+
 if (menuBar && sidebar) {
+    menuBar.setAttribute('aria-controls', 'sidebar');
     menuBar.addEventListener('click', () => {
         sidebar.classList.toggle('hide');
         if (!isMobileViewport()) {
             desktopCollapsed = sidebar.classList.contains('hide');
+        }
+        syncMenuToggleState();
+    });
+
+    menuBar.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            menuBar.click();
         }
     });
 }
@@ -130,6 +147,7 @@ if (sidebarOverlay) {
     sidebarOverlay.addEventListener('click', () => {
         if (sidebar) {
             sidebar.classList.add('hide');
+            syncMenuToggleState();
         }
     });
 }
@@ -174,9 +192,12 @@ body.in-frame {
 let isMobile = isMobileViewport();
 if (isMobile && sidebar) {
     sidebar.classList.add('hide');
+    syncMenuToggleState();
 }
 
-window.addEventListener('resize', () => {
+let resizeRafId = 0;
+
+function syncSidebarForViewport() {
     const nowMobile = isMobileViewport();
     if (!sidebar) {
         isMobile = nowMobile;
@@ -187,8 +208,21 @@ window.addEventListener('resize', () => {
     } else if (!nowMobile && isMobile) {
         sidebar.classList.toggle('hide', desktopCollapsed);
     }
+    syncMenuToggleState();
     isMobile = nowMobile;
+}
+
+window.addEventListener('resize', () => {
+    if (resizeRafId) {
+        return;
+    }
+    resizeRafId = window.requestAnimationFrame(() => {
+        resizeRafId = 0;
+        syncSidebarForViewport();
+    });
 });
+
+syncMenuToggleState();
 
 /* 🔹 Expose to iframe */
 window.setActiveMenu = setActiveMenu;

@@ -17,6 +17,16 @@ body {
   box-sizing: border-box;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+}
+
 .neo-card,
 .table-box,
 .card,
@@ -104,10 +114,13 @@ table td {
 .table-wrap {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
   overscroll-behavior-x: contain;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 640px;
 }
 
 .table-wrap table {
@@ -129,8 +142,7 @@ table td {
   margin-inline: auto;
 }
 
-.table-box,
-.table-wrap {
+.table-box {
   min-width: 0;
 }
 
@@ -298,4 +310,15 @@ table td {
 .ssdc-popup-btn.primary.ssdc-danger {
   background: linear-gradient(135deg, var(--theme-danger), #e05749);
   box-shadow: 0 12px 24px rgba(192, 57, 43, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

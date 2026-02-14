@@ -1,0 +1,35 @@
+name: Frontend Quality Guards
+
+on:
+  push:
+    paths:
+      - "ssdc-frontend/**"
+      - ".github/workflows/frontend-quality.yml"
+  pull_request:
+    paths:
+      - "ssdc-frontend/**"
+      - ".github/workflows/frontend-quality.yml"
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Run responsive guard
+        run: bash ssdc-frontend/qa/responsive_guard.sh
+
+      - name: Run accessibility guard
+        run: bash ssdc-frontend/qa/accessibility_guard.sh
+
+      - name: Run performance guard
+        run: bash ssdc-frontend/qa/performance_guard.sh
+
+      - name: Run certification guard
+        run: bash ssdc-frontend/qa/certification_guard.sh

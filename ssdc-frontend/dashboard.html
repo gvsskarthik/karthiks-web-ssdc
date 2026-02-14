@@ -15,7 +15,9 @@
 
 <body>
 
-<section id="sidebar">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<section id="sidebar" role="navigation" aria-label="Primary navigation">
     <a href="#" class="brand">
         <i class="bx bxs-smile"></i>
         <span class="text">SSDC</span>
@@ -86,15 +88,16 @@
 
 <section id="content">
 
-    <nav>
-        <i class="bx bx-menu"></i>
+    <nav aria-label="Dashboard toolbar">
+        <i id="sidebar-toggle" class="bx bx-menu" role="button" tabindex="0" aria-label="Toggle sidebar"></i>
         <h1 spellcheck="false" data-ssdc-lab-name></h1>
     </nav>
 
     <!-- ✅ MAIN CONTENT -->
-    <main id="main-content">
+    <main id="main-content" tabindex="-1">
         <iframe
             id="page-frame"
+            title="SSDC dashboard content"
             src="home/sub-tasks/1-home.html">
         </iframe>
     </main>

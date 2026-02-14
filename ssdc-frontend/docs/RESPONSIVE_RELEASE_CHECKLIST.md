@@ -4,8 +4,14 @@
 
 1. Run responsive guard:
    `bash ssdc-frontend/qa/responsive_guard.sh`
-2. Ensure working tree has only intended responsive changes.
-3. Verify commit message clearly describes responsive scope.
+2. Run accessibility guard:
+   `bash ssdc-frontend/qa/accessibility_guard.sh`
+3. Run performance guard:
+   `bash ssdc-frontend/qa/performance_guard.sh`
+4. Run certification guard:
+   `bash ssdc-frontend/qa/certification_guard.sh`
+5. Ensure working tree has only intended responsive changes.
+6. Verify commit message clearly describes responsive scope.
 
 ## Functional Smoke (Desktop)
 
