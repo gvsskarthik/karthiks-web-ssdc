@@ -1,10 +1,6 @@
-:root {
-  --page-max: 1200px;
-}
-
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
 }
 
 .page {

@@ -1,9 +1,9 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
   min-height: 100vh;
   --patients-check-col-width: 0px;
-  --patients-name-col-width: 4cm;
+  --patients-name-col-width: clamp(11rem, 24vw, 16rem);
 }
 
 body.select-mode {
@@ -11,7 +11,7 @@ body.select-mode {
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
   display: grid;
   gap: 18px;
@@ -234,7 +234,8 @@ body.select-mode {
 }
 
 .page .table-wrap {
-  overflow-x: visible;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -245,7 +246,7 @@ table {
 }
 
 .page .table-wrap table {
-  min-width: 0;
+  min-width: 880px;
 }
 
 table col.col-check {
@@ -467,6 +468,16 @@ body:not(.select-mode) .check-col {
   to{opacity:1; transform:translateY(0)}
 }
 
+@media (max-width:1024px){
+  .filter-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-actions{
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width:900px){
   body{padding:16px}
   .head-title{flex-direction:column; align-items:flex-start}
@@ -479,4 +490,8 @@ body:not(.select-mode) .check-col {
 @media (max-width:600px){
   .head-title h1{font-size:28px}
   .input-wrap{padding:10px}
+
+  .page .table-wrap table {
+    min-width: 760px;
+  }
 }

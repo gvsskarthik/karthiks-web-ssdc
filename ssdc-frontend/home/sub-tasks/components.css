@@ -1,9 +1,16 @@
+:root {
+  --page-max: 1200px;
+}
+
 html,
 body {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
   background: var(--theme-bg-gradient);
   color: var(--theme-ink);
   font-family: var(--font-sans);
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 * {
@@ -95,12 +102,34 @@ table td {
 }
 
 .table-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .table-wrap table {
-  min-width: 720px;
+  width: 100%;
+  min-width: min(100%, 720px);
+}
+
+.page {
+  width: min(100%, var(--page-max, 1200px));
+  margin-inline: auto;
+}
+
+.page > * {
+  min-width: 0;
+}
+
+.neo-card {
+  width: min(100%, var(--page-max, 1200px));
+  margin-inline: auto;
+}
+
+.table-box,
+.table-wrap {
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
@@ -109,9 +138,15 @@ table td {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .table-wrap table {
     min-width: 640px;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --page-max: 1320px;
   }
 }
 

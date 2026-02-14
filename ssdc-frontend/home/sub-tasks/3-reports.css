@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
   display: grid;
   gap: 18px;
@@ -169,6 +169,7 @@ table {
   border-collapse: separate;
   border-spacing: 0 10px;
   table-layout: fixed;
+  min-width: 760px;
 }
 
 thead th {
@@ -297,6 +298,16 @@ tbody td.no-data {
   to{opacity:1; transform:translateY(0)}
 }
 
+@media (max-width:1024px){
+  .filter-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-item-search{
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width:900px){
   body{padding:16px}
   .head-title{flex-direction:column; align-items:flex-start}
@@ -305,4 +316,8 @@ tbody td.no-data {
 @media (max-width:600px){
   .head-title h1{font-size:28px}
   .input-wrap{padding:10px}
+
+  table{
+    min-width: 700px;
+  }
 }

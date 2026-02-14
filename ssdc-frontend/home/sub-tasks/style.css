@@ -8,8 +8,9 @@ html {
 /* MAIN */
  main {
 	width: 100%;
-	padding: 16px;
-	margin: 0;  
+	max-width: var(--page-max, 1200px);
+	padding: clamp(14px, 2.2vw, 20px);
+	margin: 0 auto;
 	font-family: var(--poppins), sans-serif;
 	overflow-y: visible;   /* FIX */
     height: auto;       
@@ -24,7 +25,7 @@ html {
 }
 
  main .head-title .left h1 {
-	font-size: 36px;
+	font-size: clamp(1.9rem, 2.6vw, 2.25rem);
 	font-weight: 600;
 	margin-bottom: 10px;
 	color: var(--dark);
@@ -370,6 +371,22 @@ html {
 
 
 
+@media screen and (min-width: 901px) and (max-width: 1180px) {
+	main .table-data {
+		flex-wrap: nowrap;
+	}
+
+	main .table-data .order {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	main .table-data .daily {
+		flex: 0 0 280px;
+	}
+}
+
+
 /* MOBILE */
 @media screen and (max-width: 576px) {
 	 nav form .form-input input {
@@ -406,10 +423,10 @@ html {
 	}
 
 	 main .table-data .head {
-		min-width: 420px;
+		min-width: 0;
 	}
 
 	 main .table-data .order table {
-		min-width: 420px;
+		min-width: 560px;
 	}
 }

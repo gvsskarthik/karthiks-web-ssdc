@@ -1,6 +1,11 @@
 /* ================= SIDEBAR ACTIVE ================= */
 const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li');
 const pageFrame = document.getElementById('page-frame');
+const MOBILE_BREAKPOINT = 768;
+
+function isMobileViewport() {
+    return window.innerWidth <= MOBILE_BREAKPOINT;
+}
 
 function readAuthToken() {
     return typeof window.getAuthToken === "function" ? window.getAuthToken() : null;
@@ -100,7 +105,7 @@ allSideMenu.forEach(li => {
         if (page) {
             loadPage(page, key || null);
         }
-        if (window.innerWidth < 768) {
+        if (isMobileViewport() && sidebar) {
             sidebar.classList.add('hide');
         }
     });
@@ -110,14 +115,22 @@ allSideMenu.forEach(li => {
 const menuBar = document.querySelector('#content nav .bx-menu');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
+let desktopCollapsed = sidebar ? sidebar.classList.contains('hide') : false;
 
-menuBar.addEventListener('click', () => {
-    sidebar.classList.toggle('hide');
-});
+if (menuBar && sidebar) {
+    menuBar.addEventListener('click', () => {
+        sidebar.classList.toggle('hide');
+        if (!isMobileViewport()) {
+            desktopCollapsed = sidebar.classList.contains('hide');
+        }
+    });
+}
 
 if (sidebarOverlay) {
     sidebarOverlay.addEventListener('click', () => {
-        sidebar.classList.add('hide');
+        if (sidebar) {
+            sidebar.classList.add('hide');
+        }
     });
 }
 
@@ -158,17 +171,21 @@ body.in-frame {
 }
 
 /* ================= AUTO HIDE SIDEBAR ================= */
-let isMobile = window.innerWidth < 768;
-if (isMobile) {
+let isMobile = isMobileViewport();
+if (isMobile && sidebar) {
     sidebar.classList.add('hide');
 }
 
 window.addEventListener('resize', () => {
-    const nowMobile = window.innerWidth < 768;
+    const nowMobile = isMobileViewport();
+    if (!sidebar) {
+        isMobile = nowMobile;
+        return;
+    }
     if (nowMobile && !isMobile) {
         sidebar.classList.add('hide');
     } else if (!nowMobile && isMobile) {
-        sidebar.classList.remove('hide');
+        sidebar.classList.toggle('hide', desktopCollapsed);
     }
     isMobile = nowMobile;
 });

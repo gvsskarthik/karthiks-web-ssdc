@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
   display: grid;
   gap: 18px;
@@ -91,11 +91,20 @@ body {
   animation: fadeUp .55s ease both;
 }
 
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 10px;
   table-layout: fixed;
+  min-width: 980px;
 }
 
 thead th {
@@ -299,6 +308,25 @@ tbody td:last-child {
   to{opacity:1; transform:translateY(0)}
 }
 
+@media (max-width:1366px){
+  table{
+    table-layout: auto;
+    min-width: 900px;
+  }
+
+  .sno,.name,.specialization,.hospital,.phone,.num,.center{
+    width: auto;
+  }
+
+  .phone,.num{
+    white-space: normal;
+  }
+
+  .num{
+    text-align: left;
+  }
+}
+
 @media (max-width:900px){
   body{padding:16px}
   .head-title{flex-direction:column; align-items:flex-start}
@@ -308,4 +336,8 @@ tbody td:last-child {
 @media (max-width:600px){
   .head-title h1{font-size:28px}
   .search-box{padding:10px 12px}
+
+  table{
+    min-width: 760px;
+  }
 }

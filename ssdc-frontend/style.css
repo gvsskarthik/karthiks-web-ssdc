@@ -2,13 +2,20 @@
 @import url("shared.css");
 
 html, body {
+    min-height: 100%;
     height: 100%;
-    overflow: hidden; /* IMPORTANT */
+    overflow-x: hidden;
+    overflow-y: hidden;
     font-family: var(--poppins), sans-serif;
     background: var(--grey);
 }
 
 :root {
+	--dash-nav-h: 56px;
+	--dash-vh: 100vh;
+	--dash-sidebar-expanded: 280px;
+	--dash-sidebar-expanded: clamp(220px, 18vw, 280px);
+	--dash-sidebar-collapsed: 64px;
 	--dash-sidebar-bg: var(--theme-surface, #fffaf2);
 	--dash-frame-bg: var(--theme-bg, #f2eadd);
 	--dash-frame-gradient: var(--theme-bg-gradient,
@@ -24,6 +31,12 @@ html, body {
 	--dash-shadow: var(--theme-shadow, 0 12px 24px rgba(28, 41, 61, 0.12));
 }
 
+@supports (height: 100dvh) {
+	:root {
+		--dash-vh: 100dvh;
+	}
+}
+
 
 
 
@@ -34,8 +47,8 @@ html, body {
 	position: fixed;
 	top: 0;
 	left: 0;
-	width: 280px;
-	height: 100%;
+	width: var(--dash-sidebar-expanded);
+	height: var(--dash-vh);
 	background: var(--dash-sidebar-bg);
 	border-right: none;
 	z-index: 2000;
@@ -59,7 +72,7 @@ html, body {
 }
 
 #sidebar.hide {
-	width: 60px;
+	width: var(--dash-sidebar-collapsed);
 }
 #sidebar .brand {
 	font-size: 24px;
@@ -166,14 +179,13 @@ html, body {
 /* CONTENT */
 #content {
 	position: relative;
-	width: calc(100% - 280px);
-	left: 280px;
-	transition: .3s ease;
+	min-height: var(--dash-vh);
+	margin-left: var(--dash-sidebar-expanded);
+	transition: margin-left .3s ease;
 	overflow-x: hidden;
 }
 #sidebar.hide ~ #content {
-	width: calc(100% - 60px);
-	left: 60px;
+	margin-left: var(--dash-sidebar-collapsed);
 }
 
 
@@ -181,7 +193,7 @@ html, body {
 
 /* NAVBAR */
 #content nav {
-	height: 56px;
+	height: var(--dash-nav-h);
 	background: var(--dash-sidebar-bg);
 	border-bottom: 1px solid var(--dash-line);
 	box-shadow: var(--dash-shadow);
@@ -250,7 +262,7 @@ html, body {
 
 /* ===== MAIN + IFRAME ===== */
 #main-content {
-    height: calc(100vh - 56px);
+    height: calc(var(--dash-vh) - var(--dash-nav-h));
     overflow: hidden; /* iframe handles scroll */
     background: var(--dash-frame-gradient);
 	overflow-x: hidden;
@@ -270,17 +282,9 @@ html, body {
 	padding: 0;
     margin: 0;
 	font-family: var(--poppins), sans-serif;
-	max-height: calc(100vh - 56px);
+	max-height: calc(var(--dash-vh) - var(--dash-nav-h));
 	overflow-y: auto;
-}
-@supports (height: 100dvh) {
-	#main-content {
-		height: calc(100dvh - 56px);
-	}
-
-	#content main {
-		max-height: calc(100dvh - 56px);
-	}
+	min-height: 0;
 }
 #content main .head-title {
 	display: flex;
@@ -459,25 +463,23 @@ html, body {
 
 @media screen and (max-width: 768px) {
 	#sidebar {
-		width: 240px;
+		width: min(82vw, var(--dash-sidebar-expanded));
 		transform: translateX(0);
 		box-shadow: 0 12px 24px rgba(28, 41, 61, 0.12);
 		transition: width .3s ease, transform .3s ease;
 	}
 
 	#sidebar.hide {
-		width: 64px;
+		width: var(--dash-sidebar-collapsed);
 		transform: translateX(0);
 	}
 
 	#content {
-		width: calc(100% - 64px);
-		left: 64px;
+		margin-left: var(--dash-sidebar-collapsed);
 	}
 
 	#sidebar.hide ~ #content {
-		width: calc(100% - 64px);
-		left: 64px;
+		margin-left: var(--dash-sidebar-collapsed);
 	}
 
 	#sidebar:not(.hide) ~ #sidebar-overlay {

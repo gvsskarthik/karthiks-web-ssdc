@@ -28,3 +28,14 @@ td.amount{text-align:right;width:140px}
 
 /* BUTTONS */
 .back{background:#7f8c8d;color:#fff}
+
+@media screen and (max-width: 768px){
+  td.amount,
+  .col-price{
+    width: auto;
+  }
+
+  .totals{
+    max-width: none;
+  }
+}

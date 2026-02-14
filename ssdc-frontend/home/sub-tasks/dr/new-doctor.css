@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  padding: 20px;
+  padding: clamp(14px, 2.2vw, 20px);
 }
 
 .neo-card {
@@ -45,4 +45,10 @@ body {
   border-radius: var(--radius-lg);
   font-weight: 600;
   cursor: pointer;
+}
+
+@media (max-width: 640px){
+  .neo-card {
+    padding: 20px;
+  }
 }

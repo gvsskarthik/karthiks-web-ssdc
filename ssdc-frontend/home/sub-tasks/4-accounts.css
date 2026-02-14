@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
   display: grid;
   gap: 20px;
@@ -387,6 +387,12 @@ thead th {
 @keyframes fadeUp{
   from{opacity:0; transform:translateY(8px);}
   to{opacity:1; transform:translateY(0);}
+}
+
+@media (max-width:1024px){
+  .summary{grid-template-columns:repeat(3, minmax(0, 1fr));}
+  .filter-grid{grid-template-columns:1fr 1fr;}
+  .filter-actions{grid-column:1 / -1;}
 }
 
 @media (max-width:980px){

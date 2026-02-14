@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
   min-height: 100vh;
 }
 
 .neo-card {
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   margin: 0 auto;
   padding: 26px;
   border-radius: var(--radius-lg);
@@ -272,5 +272,9 @@ input[type="checkbox"] {
   .grid-2,
   .grid-3{
     grid-template-columns:1fr;
+  }
+
+  .neo-card{
+    padding: 20px;
   }
 }

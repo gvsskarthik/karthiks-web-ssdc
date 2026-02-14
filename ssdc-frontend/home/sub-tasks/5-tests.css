@@ -1,11 +1,11 @@
 body {
   margin: 0;
-  padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
   min-height: 100vh;
 }
 
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max, 1200px);
   width: 100%;
   margin: 0 auto;
   display: grid;
@@ -107,8 +107,11 @@ body {
 }
 
 .page .table-wrap {
-  overflow-x: visible;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 table {
@@ -117,7 +120,7 @@ table {
   border-collapse: separate;
   border-spacing: 0 10px;
   table-layout: fixed;
-  min-width: 0;
+  min-width: 980px;
 }
 
 thead th {
@@ -264,7 +267,8 @@ tbody td:last-child {
 }
 
 .modal-card {
-  width: 560px;
+  width: min(92vw, 560px);
+  max-width: 560px;
   max-height: 85vh;
   overflow: auto;
   padding: 22px;
@@ -365,6 +369,24 @@ input:checked + .slider:before {
   to{opacity:1; transform:translateY(0)}
 }
 
+@media (max-width:1366px){
+  table{
+    table-layout: auto;
+    min-width: 900px;
+  }
+
+  .sno,.name,.category,.shortcut,.normal,.cost,.active-col,.options{
+    width: auto;
+  }
+}
+
+@media (max-width:1024px){
+  .header-actions{
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width:900px){
   body{padding:16px}
   .head-title{flex-direction:column; align-items:flex-start}
@@ -379,4 +401,8 @@ input:checked + .slider:before {
 
 @media (max-width:600px){
   .head-title h1{font-size:28px}
+
+  table{
+    min-width: 760px;
+  }
 }

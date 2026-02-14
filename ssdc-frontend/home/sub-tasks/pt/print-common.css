@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  padding: 20px;
+  padding: clamp(14px, 2.2vw, 20px);
   font-family: var(--font-sans, Poppins, Arial, sans-serif);
   background: var(--theme-bg, #ecf0f3);
   color: var(--theme-ink, #111);
@@ -61,6 +61,22 @@ th{background: var(--theme-surface-2, #f2f2f2)}
   border-radius:6px;
 }
 .print{background:#2980b9;color:#fff}
+
+@media screen and (max-width: 768px){
+  .neo-card{
+    padding: 18px;
+  }
+
+  .row{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .actions{
+    flex-direction: column;
+  }
+}
 
 @media print{
   body{background:#fff;color:#000}
