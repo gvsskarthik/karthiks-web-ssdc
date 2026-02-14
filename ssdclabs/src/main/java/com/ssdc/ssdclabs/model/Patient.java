@@ -51,6 +51,12 @@ public class Patient {
     private String mobile;
     private String address;
 
+    @JsonIgnore
+    private String password; // hashed
+
+    @Column(name = "app_login_id", unique = true)
+    private String appLoginId; // initially mobile number
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "doctor_id")
     @JsonIgnore
@@ -97,6 +103,13 @@ public class Patient {
     public String getAddress() { return address; }
     @SuppressWarnings("unused")
     public void setAddress(String address) { this.address = address; }
+
+    @JsonIgnore
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
+    public String getAppLoginId() { return appLoginId; }
+    public void setAppLoginId(String appLoginId) { this.appLoginId = appLoginId; }
 
     @JsonIgnore
     public Doctor getDoctor() { return doctor; }
