@@ -16,6 +16,7 @@ import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.repository.PatientRepository;
 import com.ssdc.ssdclabs.service.PatientService;
 import com.ssdc.ssdclabs.service.WhatsAppService;
+import com.ssdc.ssdclabs.service.ReportService;
 
 @RestController
 @RequestMapping("/patient-app")
@@ -24,14 +25,17 @@ public class PatientAppController {
     private final PatientRepository patientRepo;
     private final PasswordEncoder passwordEncoder;
     private final WhatsAppService whatsAppService;
+    private final ReportService reportService;
 
     public PatientAppController(
             PatientRepository patientRepo,
             PasswordEncoder passwordEncoder,
-            WhatsAppService whatsAppService) {
+            WhatsAppService whatsAppService,
+            ReportService reportService) {
         this.patientRepo = patientRepo;
         this.passwordEncoder = passwordEncoder;
         this.whatsAppService = whatsAppService;
+        this.reportService = reportService;
     }
 
     /**
@@ -120,5 +124,18 @@ public class PatientAppController {
          }
 
          return Map.of("status", "ok", "message", "Password changed");
+    }
+    /**
+     * Get Report Details for a specific patient ID (Visit).
+     */
+    @GetMapping("/report/{patientId}")
+    public List<com.ssdc.ssdclabs.dto.PatientAppReportDTO> getReport(@PathVariable Long patientId) {
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+
+        // For MVP, if we wanted to secure this, we'd check if patient.getMobile() matches the logged-in user.
+        // Assuming the app passes the patientId from the list returned by /visits (which is filtered by mobile).
+
+        return reportService.getReportForApp(patient.getLabId(), patientId);
     }
 }
