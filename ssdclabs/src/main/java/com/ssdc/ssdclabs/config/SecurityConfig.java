@@ -46,7 +46,6 @@ public class SecurityConfig {
                     "/auth/2fa/disable"
                 ).authenticated()
                 .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/patient-app/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

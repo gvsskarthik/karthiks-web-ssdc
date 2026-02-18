@@ -19,11 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ssdc.ssdclabs.dto.PatientAppReportDTO;
 import com.ssdc.ssdclabs.dto.PatientTestResultDTO;
 import com.ssdc.ssdclabs.dto.PatientTestSelectionDTO;
-import com.ssdc.ssdclabs.model.Gender;
-import com.ssdc.ssdclabs.model.NormalRange;
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.model.ReportResult;
 import com.ssdc.ssdclabs.model.Test;
@@ -741,88 +738,5 @@ public class ReportService {
         // the same value the lab entered. Any numeric parsing for range checks
         // should normalize separators at the UI layer.
         return value.trim();
-    }
-
-
-    @Transactional(readOnly = true)
-    public List<PatientAppReportDTO> getReportForApp(@NonNull String labId, @NonNull Long patientId) {
-        List<PatientTestResultDTO> rawResults = getResults(labId, patientId);
-        if (rawResults.isEmpty()) {
-            return List.of();
-        }
-
-        Set<Long> testIds = rawResults.stream()
-            .map(r -> r.testId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-
-        if (testIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<Test> tests = testRepo.findAllById(testIds);
-        Map<Long, Test> testMap = tests.stream()
-            .collect(Collectors.toMap(Test::getId, t -> t));
-
-        List<PatientAppReportDTO> enriched = new ArrayList<>();
-        for (PatientTestResultDTO raw : rawResults) {
-            Test test = testMap.get(raw.testId);
-            if (test == null) continue;
-
-            String paramName = extractBaseName(raw.subTest);
-            TestParameter param = null;
-            if (test.getParameters() != null) {
-                for (TestParameter p : test.getParameters()) {
-                     if (p.getName() != null && p.getName().equalsIgnoreCase(paramName)) {
-                         param = p;
-                         break;
-                     }
-                }
-                if (param == null && !test.getParameters().isEmpty() && (paramName == null || paramName.isEmpty())) {
-                     param = test.getParameters().get(0);
-                }
-            }
-
-            String unit = "";
-            String normal = "";
-
-            if (param != null) {
-                if (param.getUnit() != null) unit = param.getUnit();
-                normal = formatNormalRanges(param.getNormalRanges());
-            }
-
-            enriched.add(new PatientAppReportDTO(
-                raw.testId,
-                test.getTestName(),
-                raw.subTest,
-                raw.resultValue,
-                unit,
-                normal
-            ));
-        }
-        return enriched;
-    }
-
-    private String formatNormalRanges(List<NormalRange> ranges) {
-        if (ranges == null || ranges.isEmpty()) return "";
-        StringBuilder sb = new StringBuilder();
-        for (NormalRange range : ranges) {
-            if (sb.length() > 0) sb.append("\n");
-            if (range.getTextValue() != null && !range.getTextValue().trim().isEmpty()) {
-                sb.append(range.getTextValue());
-            } else {
-                if (range.getGender() != Gender.ANY) {
-                    sb.append(range.getGender().name().substring(0, 1)).append(": ");
-                }
-                if (range.getMinValue() != null && range.getMaxValue() != null) {
-                    sb.append(range.getMinValue()).append("-").append(range.getMaxValue());
-                } else if (range.getMinValue() != null) {
-                    sb.append(">").append(range.getMinValue());
-                } else if (range.getMaxValue() != null) {
-                    sb.append("<").append(range.getMaxValue());
-                }
-            }
-        }
-        return sb.toString();
     }
 }

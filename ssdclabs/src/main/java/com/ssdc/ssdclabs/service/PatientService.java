@@ -35,20 +35,13 @@ public class PatientService {
     private final ReportResultRepository resultRepo;
     private final DoctorRepository doctorRepo;
 
-    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-    private final WhatsAppService whatsAppService;
-
     public PatientService(
             PatientRepository patientRepo,
             ReportResultRepository resultRepo,
-            DoctorRepository doctorRepo,
-            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
-            WhatsAppService whatsAppService) {
+            DoctorRepository doctorRepo) {
         this.patientRepo = patientRepo;
         this.resultRepo = resultRepo;
         this.doctorRepo = doctorRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.whatsAppService = whatsAppService;
     }
 
     /* SAVE */
@@ -156,61 +149,6 @@ public class PatientService {
         if (currentlyCompleted && !STATUS_COMPLETED.equals(finalStatus)
                 && !isValidCompletedEditPin(editPin)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PIN required to reopen COMPLETED patient");
-        }
-
-        if (patient.getAppLoginId() == null && patient.getMobile() != null) {
-            patient.setAppLoginId(patient.getMobile());
-        }
-
-        if (STATUS_COMPLETED.equals(finalStatus) && !STATUS_COMPLETED.equals(patient.getStatus())) {
-             // 1. Generate password if missing
-            String clearPassword = null;
-            if (patient.getPassword() == null) {
-                // Generate a simple 4-digit numeric password for ease of use, or alphanumeric.
-                // Let's use 6-digit random number.
-                int randomPin = 100000 + new java.security.SecureRandom().nextInt(900000);
-                clearPassword = String.valueOf(randomPin);
-                patient.setPassword(passwordEncoder.encode(clearPassword));
-            }
-
-            // 2. Prepare message
-            String linkAndroid = "https://play.google.com/store/apps/details?id=com.ssdc.ssdclabs"; // placeholder
-            String linkIos = "https://apps.apple.com/app/id123456789"; // placeholder
-
-            double total = patient.getAmount();
-            double paid = patient.getPaid();
-            double due = Math.max(0, total - paid);
-
-            StringBuilder msg = new StringBuilder();
-            msg.append("Hello ").append(patient.getName()).append(",\n\n");
-            msg.append("Your medical reports from *SSDC Labs* are ready.\n\n");
-            
-            if (due > 0) {
-                msg.append("⚠️ Balance Due: ₹").append(due).append("\n");
-                msg.append("Total: ₹").append(total).append(" | Paid: ₹").append(paid).append("\n\n");
-            } else {
-                 msg.append("✅ Bill Paid. Thank you!\n\n");
-            }
-
-            msg.append("📥 *Download the App to view & share reports:*\n");
-            msg.append("Andriod: ").append(linkAndroid).append("\n");
-            msg.append("iOS: ").append(linkIos).append("\n\n");
-
-            if (clearPassword != null) {
-                msg.append("🔑 *Login Details:*\n");
-                msg.append("User/Mobile: ").append(patient.getMobile()).append("\n");
-                msg.append("Password: ").append(clearPassword).append("\n");
-                msg.append("(You can change this password in the app)\n\n");
-            } else {
-                 msg.append("Login with your existing credentials.\n\n");
-            }
-            
-            msg.append("Thank you,\nSSDC Labs");
-
-            // 3. Send WhatsApp
-            if (patient.getMobile() != null && !patient.getMobile().trim().isEmpty()) {
-                whatsAppService.sendMessage(patient.getMobile(), msg.toString());
-            }
         }
 
         patient.setStatus(finalStatus);
