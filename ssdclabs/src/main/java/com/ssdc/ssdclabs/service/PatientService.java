@@ -158,8 +158,12 @@ public class PatientService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PIN required to reopen COMPLETED patient");
         }
 
-        if (patient.getAppLoginId() == null && patient.getMobile() != null) {
-            patient.setAppLoginId(patient.getMobile());
+        if (patient.getAppLoginId() == null) {
+            final String mobile = patient.getMobile();
+            final String candidate = mobile == null ? null : mobile.trim();
+            if (candidate != null && !candidate.isEmpty() && !patientRepo.existsByAppLoginId(candidate)) {
+                patient.setAppLoginId(candidate);
+            }
         }
 
         if (STATUS_COMPLETED.equals(finalStatus) && !STATUS_COMPLETED.equals(patient.getStatus())) {

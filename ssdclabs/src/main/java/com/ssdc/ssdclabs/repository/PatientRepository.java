@@ -83,6 +83,8 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     // List patients by mobile (exact match) for App Login
     List<Patient> findByMobileOrderByVisitDateDesc(String mobile);
 
+    boolean existsByAppLoginId(String appLoginId);
+
     // Single search query (with optional filters) that fetches doctor to avoid N+1.
     @Query("""
         SELECT p
