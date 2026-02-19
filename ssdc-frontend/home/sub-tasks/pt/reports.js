@@ -67,8 +67,14 @@ function isCompletedStatus(status){
   return String(status || "").trim().toUpperCase() === "COMPLETED";
 }
 
+function hasValidPatientId(value){
+  const id = Number(value);
+  return Number.isFinite(id) && id > 0;
+}
+
 function syncReportLockUi(){
-  const completed = isCompletedStatus(patient?.status);
+  const hasPatient = hasValidPatientId(patient?.id);
+  const completed = hasPatient && isCompletedStatus(patient?.status);
   const btnPrint = document.getElementById("btnPrint");
   const btnDownload = document.getElementById("btnDownload");
   const btnWhatsapp = document.getElementById("btnWhatsapp");
@@ -81,16 +87,46 @@ function syncReportLockUi(){
   });
 
   if (btnComplete) {
-    btnComplete.disabled = completed;
+    // Prevent clicking before the patient is loaded (avoids "Patient ID missing" errors).
+    btnComplete.disabled = !hasPatient || completed;
   }
 }
 
-function markCompleted(){
-  if (!patient || !patient.id) {
-    window.ssdcAlert("Patient ID missing", { title: "Missing Patient" });
+function parseApiMessage(text){
+  const raw = String(text || "").trim();
+  if (!raw) {
+    return "";
+  }
+  try {
+    const data = JSON.parse(raw);
+    if (data && typeof data === "object") {
+      const message = typeof data.message === "string" ? data.message.trim() : "";
+      if (message) return message;
+      const error = typeof data.error === "string" ? data.error.trim() : "";
+      if (error) return error;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return raw;
+}
+
+function safeJsonParse(text){
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function markCompleted(){
+  const safeId = hasValidPatientId(patient?.id) ? Number(patient.id) : null;
+  if (!safeId) {
+    await window.ssdcAlert("Please wait for the report to load, then click COMPLETED.", { title: "Loading" });
+    syncReportLockUi();
     return;
   }
-  if (isCompletedStatus(patient.status)) {
+  if (isCompletedStatus(patient?.status)) {
     syncReportLockUi();
     return;
   }
@@ -100,33 +136,32 @@ function markCompleted(){
     btnComplete.disabled = true;
   }
 
-  fetch(`${API_BASE_URL}/patients/${patient.id}/status`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "COMPLETED" })
-  })
-    .then(async (res) => {
-      const text = await res.text().catch(() => "");
-      if (!res.ok) {
-        throw new Error(text || "Failed to mark completed");
-      }
-      return text ? JSON.parse(text) : null;
-    })
-    .then((updated) => {
-      patient.status = "COMPLETED";
-      if (updated && typeof updated === "object" && updated.status) {
-        patient.status = updated.status;
-      }
-      syncReportLockUi();
-      window.ssdcAlert("Report marked as COMPLETED. Editing is locked.", { title: "Completed" });
-    })
-    .catch((err) => {
-      console.error(err);
-      if (btnComplete) {
-        btnComplete.disabled = false;
-      }
-      window.ssdcAlert(err?.message || "Failed to mark completed", { title: "Error" });
+  try {
+    const res = await fetch(`${API_BASE_URL}/patients/${safeId}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" })
     });
+
+    const text = await res.text().catch(() => "");
+    if (!res.ok) {
+      throw new Error(parseApiMessage(text) || "Failed to mark completed");
+    }
+
+    const updated = text ? safeJsonParse(text) : null;
+    patient.status = "COMPLETED";
+    if (updated && typeof updated === "object" && updated.status) {
+      patient.status = updated.status;
+    }
+    syncReportLockUi();
+    await window.ssdcAlert("Report marked as COMPLETED. Editing is locked.", { title: "Completed" });
+  } catch (err) {
+    console.error(err);
+    if (btnComplete) {
+      btnComplete.disabled = false;
+    }
+    await window.ssdcAlert(err?.message || "Failed to mark completed", { title: "Error" });
+  }
 }
 
 function showPatientInfo(){
@@ -1303,6 +1338,9 @@ async function initPage(){
     navigateToReportsList();
     return;
   }
+
+  // Disable actions until we know the patient's status.
+  syncReportLockUi();
 
   const body = document.getElementById("reportBody");
   if (body) {
