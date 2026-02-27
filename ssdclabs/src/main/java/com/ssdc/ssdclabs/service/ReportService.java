@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -447,19 +448,54 @@ public class ReportService {
         List<ReportResult> results = resultRepo.findByPatient_Id(
             Objects.requireNonNull(labId, "labId"),
             Objects.requireNonNull(patientId, "patientId"));
-        Set<Long> orderedTestIds = new LinkedHashSet<>();
+
+        Map<Long, Test> uniqueTestsById = new LinkedHashMap<>();
         for (ReportResult result : results) {
             if (result == null || result.getTest() == null) {
                 continue;
             }
-            Long id = result.getTest().getId();
-            if (id != null) {
-                orderedTestIds.add(id);
+            Test test = result.getTest();
+            Long id = test.getId();
+            if (id == null) {
+                continue;
             }
+            uniqueTestsById.putIfAbsent(id, test);
         }
 
+        List<Test> orderedTests = new ArrayList<>(uniqueTestsById.values());
+        orderedTests.sort((a, b) -> {
+            int categoryCmp = Integer.compare(
+                categoryPriority(a == null ? null : a.getCategory()),
+                categoryPriority(b == null ? null : b.getCategory())
+            );
+            if (categoryCmp != 0) {
+                return categoryCmp;
+            }
+
+            int orderCmp = Integer.compare(
+                a == null || a.getDisplayOrder() == null
+                    ? Integer.MAX_VALUE
+                    : a.getDisplayOrder(),
+                b == null || b.getDisplayOrder() == null
+                    ? Integer.MAX_VALUE
+                    : b.getDisplayOrder()
+            );
+            if (orderCmp != 0) {
+                return orderCmp;
+            }
+
+            return Long.compare(
+                a == null || a.getId() == null ? Long.MAX_VALUE : a.getId(),
+                b == null || b.getId() == null ? Long.MAX_VALUE : b.getId()
+            );
+        });
+
         List<PatientTestSelectionDTO> list = new ArrayList<>();
-        for (Long testId : orderedTestIds) {
+        for (Test test : orderedTests) {
+            Long testId = test == null ? null : test.getId();
+            if (testId == null) {
+                continue;
+            }
             list.add(new PatientTestSelectionDTO(patientId, testId));
         }
         return list;
@@ -586,6 +622,36 @@ public class ReportService {
             }
         }
         return 2000 + seq;
+    }
+
+    private int categoryPriority(String category) {
+        String key = category == null
+            ? ""
+            : category.trim().toLowerCase(Locale.ROOT);
+        if (key.contains("hematology")) {
+            return 0;
+        }
+        if (key.contains("biochemistry")) {
+            return 1;
+        }
+        if (key.contains("serology")) {
+            return 2;
+        }
+        if (key.contains("microbiology")) {
+            return 3;
+        }
+        if (key.contains("clinical pathology") && key.contains("urine")) {
+            return 4;
+        }
+        if (key.contains("clinical pathology")) {
+            return 4;
+        }
+        if (key.contains("endocrinology")
+                || key.contains("thyroid")
+                || key.contains("hormone")) {
+            return 5;
+        }
+        return 99;
     }
 
     private ReportResult pickBaseResult(List<ReportResult> existing,

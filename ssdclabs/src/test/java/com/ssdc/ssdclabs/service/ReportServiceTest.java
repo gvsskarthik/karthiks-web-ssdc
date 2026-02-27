@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.ssdc.ssdclabs.dto.PatientTestSelectionDTO;
 import com.ssdc.ssdclabs.dto.PatientTestResultDTO;
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.model.ReportResult;
@@ -30,6 +31,50 @@ class ReportServiceTest {
     @Mock private TestRepository testRepo;
     @Mock private TestParameterRepository paramRepo;
     @Mock private PatientRepository patientRepo;
+
+    @Test
+    void getSelectedTests_ordersByCategoryThenDisplayOrder_forLegacyRows() {
+        ReportService service = new ReportService(resultRepo, testRepo, paramRepo, patientRepo);
+
+        com.ssdc.ssdclabs.model.Test microbiology = createTest(41L, "Culture", "Microbiology", 1);
+        com.ssdc.ssdclabs.model.Test biochemistry = createTest(31L, "Sugar", "Biochemistry", 2);
+        com.ssdc.ssdclabs.model.Test hematologyHigh = createTest(22L, "ESR", "Hematology", 5);
+        com.ssdc.ssdclabs.model.Test hematologyLow = createTest(21L, "CBC", "Hematology", 1);
+        com.ssdc.ssdclabs.model.Test unknown = createTest(51L, "Other", "Other", 1);
+
+        when(resultRepo.findByPatient_Id("ssdc", 7L)).thenReturn(List.of(
+            createResultWithTest(microbiology),
+            createResultWithTest(unknown),
+            createResultWithTest(hematologyHigh),
+            createResultWithTest(biochemistry),
+            createResultWithTest(hematologyLow)
+        ));
+
+        List<PatientTestSelectionDTO> out = service.getSelectedTests("ssdc", 7L);
+        List<Long> orderedIds = out.stream().map(dto -> dto.testId).toList();
+
+        assertEquals(List.of(21L, 22L, 31L, 41L, 51L), orderedIds);
+    }
+
+    @Test
+    void getSelectedTests_dedupesMultipleRowsPerTest() {
+        ReportService service = new ReportService(resultRepo, testRepo, paramRepo, patientRepo);
+
+        com.ssdc.ssdclabs.model.Test biochemistry = createTest(31L, "Sugar", "Biochemistry", 1);
+        com.ssdc.ssdclabs.model.Test hematology = createTest(21L, "CBC", "Hematology", 2);
+
+        when(resultRepo.findByPatient_Id("ssdc", 9L)).thenReturn(List.of(
+            createResultWithTest(biochemistry),
+            createResultWithTest(biochemistry),
+            createResultWithTest(hematology)
+        ));
+
+        List<PatientTestSelectionDTO> out = service.getSelectedTests("ssdc", 9L);
+        List<Long> orderedIds = out.stream().map(dto -> dto.testId).toList();
+
+        assertEquals(List.of(21L, 31L), orderedIds);
+        assertEquals(2, out.size());
+    }
 
     @Test
     void getResults_splitsMultilineForSingleParameterTest() {
@@ -231,5 +276,23 @@ class ReportServiceTest {
         List<?> deleted = deleteCaptor.getValue();
         assertEquals(1, deleted.size());
         assertEquals(1001L, ((ReportResult) deleted.get(0)).getId());
+    }
+
+    private com.ssdc.ssdclabs.model.Test createTest(Long id,
+                                                    String name,
+                                                    String category,
+                                                    Integer displayOrder) {
+        com.ssdc.ssdclabs.model.Test test = new com.ssdc.ssdclabs.model.Test();
+        test.setId(id);
+        test.setTestName(name);
+        test.setCategory(category);
+        test.setDisplayOrder(displayOrder);
+        return test;
+    }
+
+    private ReportResult createResultWithTest(com.ssdc.ssdclabs.model.Test test) {
+        ReportResult result = new ReportResult();
+        result.setTest(test);
+        return result;
     }
 }

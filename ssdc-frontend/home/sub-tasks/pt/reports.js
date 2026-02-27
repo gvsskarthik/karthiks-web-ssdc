@@ -1592,10 +1592,15 @@ async function shareWhatsApp(){
       ? (window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(patient.visitDate) : patient.visitDate)
       : "";
 
-  // Fetch fresh credentials from backend
+  // Fetch fresh credentials from backend (window.fetch auto-attaches JWT)
   let credentials = null;
   try {
-    credentials = await window.apiPost(`/patient-app/generate-credentials/${patient.id}`, {});
+    const res = await fetch(window.apiUrl(`/patient-app/generate-credentials/${patient.id}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+    if (res.ok) credentials = await res.json();
   } catch(e) {
     console.warn("Could not fetch credentials", e);
   }
