@@ -29,12 +29,7 @@ function setText(id, value){
   }
 }
 
-function clearNode(node) {
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function appendMessageRow(tbody, message) {
   clearNode(tbody);

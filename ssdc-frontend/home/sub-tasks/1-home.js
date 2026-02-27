@@ -44,12 +44,7 @@ function formatYmdToDdMmYyyy(ymd) {
   return `${dd}-${mm}-${yyyy}`;
 }
 
-function clearNode(node) {
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 let latestRecentTasks = [];
 let homeDateSortDir = null; // null | "asc" | "desc"

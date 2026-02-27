@@ -45,12 +45,7 @@ function loadPatientById(id){
     });
 }
 
-function clearNode(node){
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function appendTextWithLineBreaks(parent, text){
   if (!parent) return;
@@ -465,12 +460,7 @@ function parseNormalRanges(text){
   return ranges;
 }
 
-function normalizeText(value){
-  if (value === null || value === undefined) {
-    return "";
-  }
-  return String(value).trim();
-}
+const normalizeText = window.SSDC.utils.normalizeText;
 
 const categoryPriority =
   window.SSDC?.utils?.categoryPriority || ((_) => 99);

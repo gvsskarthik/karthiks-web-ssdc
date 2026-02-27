@@ -18,12 +18,7 @@ let paramIdCounter = 0;
 let normalIdCounter = 0;
 let defaultIdCounter = 0;
 
-function clearNode(node) {
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 addParamBtn.addEventListener("click", () => addParameter());
 hasParametersInput.addEventListener("change", () => toggleParameters());

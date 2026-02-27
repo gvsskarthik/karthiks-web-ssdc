@@ -33,12 +33,7 @@ if (cancelBtn) {
   });
 }
 
-function clearNode(node) {
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function setStatus(message, type){
   status.textContent = message || "";

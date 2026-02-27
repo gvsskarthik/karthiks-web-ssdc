@@ -1,5 +1,7 @@
 package com.ssdc.ssdclabs.service;
 
+import com.ssdc.ssdclabs.AppConstants;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -29,7 +31,6 @@ public class PatientService {
 
     public static final String STATUS_NOT_COMPLETE = "NOT COMPLETE";
     public static final String STATUS_COMPLETED = "COMPLETED";
-    private static final String COMPLETED_EDIT_PIN = "7702";
 
     private final PatientRepository patientRepo;
     private final ReportResultRepository resultRepo;
@@ -425,9 +426,6 @@ public class PatientService {
     }
 
     private static boolean isValidCompletedEditPin(String editPin) {
-        if (editPin == null) {
-            return false;
-        }
-        return COMPLETED_EDIT_PIN.equals(editPin.trim());
+        return AppConstants.isValidCompletedEditPin(editPin);
     }
 }

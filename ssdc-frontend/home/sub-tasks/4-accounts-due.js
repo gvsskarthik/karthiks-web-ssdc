@@ -85,10 +85,7 @@ function setSubtitle(range, doctorName) {
   rangeSubtitle.textContent = `${fromText} to ${toText}${docText}`;
 }
 
-function clearNode(node) {
-  if (!node) return;
-  while (node.firstChild) node.removeChild(node.firstChild);
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function formatInr(amount) {
   const n = Number(amount) || 0;

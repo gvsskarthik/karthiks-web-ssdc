@@ -16,12 +16,7 @@ const searchInput = document.getElementById("search");
 const suggestions = document.getElementById("suggestions");
 const savePatientBtn = document.getElementById("savePatientBtn");
 
-function clearNode(node){
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function appendNoResult(container, message){
   clearNode(container);

@@ -562,12 +562,7 @@ function makeGroupKey(testId, baseName){
   return `t${testId}-${safe || "value"}`;
 }
 
-function normalizeText(value){
-  if (value === null || value === undefined) {
-    return "";
-  }
-  return String(value).trim();
-}
+const normalizeText = window.SSDC.utils.normalizeText;
 
 function normalizeNormalForDisplay(value){
   const text = normalizeText(value);
@@ -585,14 +580,7 @@ function escapeAttr(value){
     .replace(/>/g, "&gt;");
 }
 
-function escapeHtml(value){
-  return String(value == null ? "" : value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+const escapeHtml = window.SSDC.utils.escapeHtml;
 
 function asArray(value){
   return Array.isArray(value) ? value : [];
@@ -602,12 +590,7 @@ function formatHtmlLines(text){
   return escapeHtml(text).replace(/\r?\n/g, "<br>");
 }
 
-function clearNode(node){
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function appendTextWithLineBreaks(parent, text){
   if (!parent) return;

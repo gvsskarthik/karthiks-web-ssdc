@@ -1,10 +1,7 @@
 let tests=[], groups=[], mode="all";
 const tbody = document.getElementById("tbody");
 
-function clearNode(node){
- if(!node) return;
- while(node.firstChild){ node.removeChild(node.firstChild); }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 // Inline handler replacements (CSP-safe)
 {
@@ -72,12 +69,7 @@ document.addEventListener("click", (event) => {
  }
 });
 
-function normalizeText(value){
-  if (value === null || value === undefined) {
-    return "";
-  }
-  return String(value).trim();
-}
+const normalizeText = window.SSDC.utils.normalizeText;
 
 function normalizeNormalForDisplay(value){
   const text = normalizeText(value);
@@ -87,14 +79,7 @@ function normalizeNormalForDisplay(value){
   return text.replace(/\r\n/g, "\n");
 }
 
-function escapeHtml(value){
-  return String(value == null ? "" : value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+const escapeHtml = window.SSDC.utils.escapeHtml;
 
 function asArray(value){
   return Array.isArray(value) ? value : [];

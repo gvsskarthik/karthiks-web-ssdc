@@ -50,12 +50,7 @@ function monthRangeForYmd(ymd) {
   };
 }
 
-function clearNode(node){
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function setCard(cardEl, title, valueText, valueClass){
   if (!cardEl) return;

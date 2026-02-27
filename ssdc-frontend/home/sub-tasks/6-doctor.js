@@ -14,12 +14,7 @@ let doctors = [];
 let editDoctorId = null;
 let monthlyStats = new Map();
 
-function clearNode(node){
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function parseNumber(value){
   const cleaned = String(value ?? "").replace(/,/g, "");

@@ -10,12 +10,7 @@ const DOCTOR_SELF_VALUE = "__SELF__";
 
 const REPORT_DATE_KEY = "SSDC_REPORTS_SELECTED_DATE";
 
-function clearNode(node){
-  if (!node) return;
-  while (node.firstChild) {
-    node.removeChild(node.firstChild);
-  }
-}
+function clearNode(node) { window.ssdcDom.clear(node); }
 
 function isBackForwardNav(){
   try {
