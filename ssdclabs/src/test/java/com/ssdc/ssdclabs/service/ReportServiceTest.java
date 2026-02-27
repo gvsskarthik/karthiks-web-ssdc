@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.ssdc.ssdclabs.dto.PatientAppReportDTO;
 import com.ssdc.ssdclabs.dto.PatientTestSelectionDTO;
 import com.ssdc.ssdclabs.dto.PatientTestResultDTO;
 import com.ssdc.ssdclabs.model.Patient;
@@ -74,6 +75,42 @@ class ReportServiceTest {
 
         assertEquals(List.of(21L, 31L), orderedIds);
         assertEquals(2, out.size());
+    }
+
+    @Test
+    void getReportForApp_ordersByReportPriority() {
+        ReportService service = new ReportService(resultRepo, testRepo, paramRepo, patientRepo);
+
+        com.ssdc.ssdclabs.model.Test biochemistry = createTest(2L, "FBS", "Biochemistry", 3);
+        com.ssdc.ssdclabs.model.Test hematologyLater = createTest(1L, "ESR", "Hematology", 5);
+        com.ssdc.ssdclabs.model.Test hematologyFirst = createTest(3L, "CBC", "Hematology", 1);
+
+        TestParameter pBio = new TestParameter();
+        pBio.setId(201L);
+        pBio.setName("FBS");
+        TestParameter pHemLater = new TestParameter();
+        pHemLater.setId(101L);
+        pHemLater.setName("ESR");
+        TestParameter pHemFirst = new TestParameter();
+        pHemFirst.setId(301L);
+        pHemFirst.setName("CBC");
+
+        when(resultRepo.findByPatient_Id("ssdc", 29L)).thenReturn(List.of(
+            createResultWithTestAndParam(biochemistry, pBio, "111"),
+            createResultWithTestAndParam(hematologyLater, pHemLater, "15"),
+            createResultWithTestAndParam(hematologyFirst, pHemFirst, "13.5")
+        ));
+        when(paramRepo.countByTestIds(any())).thenReturn(List.of());
+        when(testRepo.findAllById(any())).thenReturn(List.of(
+            biochemistry,
+            hematologyLater,
+            hematologyFirst
+        ));
+
+        List<PatientAppReportDTO> out = service.getReportForApp("ssdc", 29L);
+        List<Long> orderedIds = out.stream().map(dto -> dto.testId).toList();
+
+        assertEquals(List.of(3L, 1L, 2L), orderedIds);
     }
 
     @Test
@@ -293,6 +330,17 @@ class ReportServiceTest {
     private ReportResult createResultWithTest(com.ssdc.ssdclabs.model.Test test) {
         ReportResult result = new ReportResult();
         result.setTest(test);
+        return result;
+    }
+
+    private ReportResult createResultWithTestAndParam(com.ssdc.ssdclabs.model.Test test,
+                                                      TestParameter param,
+                                                      String value) {
+        ReportResult result = new ReportResult();
+        result.setTest(test);
+        result.setParameter(param);
+        result.setSubTest("");
+        result.setResultValue(value);
         return result;
     }
 }

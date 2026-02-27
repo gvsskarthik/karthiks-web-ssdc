@@ -463,32 +463,7 @@ public class ReportService {
         }
 
         List<Test> orderedTests = new ArrayList<>(uniqueTestsById.values());
-        orderedTests.sort((a, b) -> {
-            int categoryCmp = Integer.compare(
-                categoryPriority(a == null ? null : a.getCategory()),
-                categoryPriority(b == null ? null : b.getCategory())
-            );
-            if (categoryCmp != 0) {
-                return categoryCmp;
-            }
-
-            int orderCmp = Integer.compare(
-                a == null || a.getDisplayOrder() == null
-                    ? Integer.MAX_VALUE
-                    : a.getDisplayOrder(),
-                b == null || b.getDisplayOrder() == null
-                    ? Integer.MAX_VALUE
-                    : b.getDisplayOrder()
-            );
-            if (orderCmp != 0) {
-                return orderCmp;
-            }
-
-            return Long.compare(
-                a == null || a.getId() == null ? Long.MAX_VALUE : a.getId(),
-                b == null || b.getId() == null ? Long.MAX_VALUE : b.getId()
-            );
-        });
+        orderedTests.sort(this::compareTestsByPriority);
 
         List<PatientTestSelectionDTO> list = new ArrayList<>();
         for (Test test : orderedTests) {
@@ -654,6 +629,33 @@ public class ReportService {
         return 99;
     }
 
+    private int compareTestsByPriority(Test a, Test b) {
+        int categoryCmp = Integer.compare(
+            categoryPriority(a == null ? null : a.getCategory()),
+            categoryPriority(b == null ? null : b.getCategory())
+        );
+        if (categoryCmp != 0) {
+            return categoryCmp;
+        }
+
+        int orderCmp = Integer.compare(
+            a == null || a.getDisplayOrder() == null
+                ? Integer.MAX_VALUE
+                : a.getDisplayOrder(),
+            b == null || b.getDisplayOrder() == null
+                ? Integer.MAX_VALUE
+                : b.getDisplayOrder()
+        );
+        if (orderCmp != 0) {
+            return orderCmp;
+        }
+
+        return Long.compare(
+            a == null || a.getId() == null ? Long.MAX_VALUE : a.getId(),
+            b == null || b.getId() == null ? Long.MAX_VALUE : b.getId()
+        );
+    }
+
     private ReportResult pickBaseResult(List<ReportResult> existing,
                                         String paramName) {
         if (existing == null || existing.isEmpty()) {
@@ -810,6 +812,8 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public List<PatientAppReportDTO> getReportForApp(@NonNull String labId, @NonNull Long patientId) {
+        record AppRow(int seq, PatientAppReportDTO dto) {}
+
         List<PatientTestResultDTO> rawResults = getResults(labId, patientId);
         if (rawResults.isEmpty()) {
             return List.of();
@@ -828,7 +832,18 @@ public class ReportService {
         Map<Long, Test> testMap = tests.stream()
             .collect(Collectors.toMap(Test::getId, t -> t));
 
-        List<PatientAppReportDTO> enriched = new ArrayList<>();
+        List<Test> orderedTests = new ArrayList<>(testMap.values());
+        orderedTests.sort(this::compareTestsByPriority);
+        Map<Long, Integer> testRankById = new HashMap<>();
+        for (int i = 0; i < orderedTests.size(); i++) {
+            Test test = orderedTests.get(i);
+            if (test != null && test.getId() != null) {
+                testRankById.put(test.getId(), i);
+            }
+        }
+
+        List<AppRow> enrichedRows = new ArrayList<>();
+        int seq = 0;
         for (PatientTestResultDTO raw : rawResults) {
             Test test = testMap.get(raw.testId);
             if (test == null) continue;
@@ -855,14 +870,34 @@ public class ReportService {
                 normal = formatNormalRanges(param.getNormalRanges());
             }
 
-            enriched.add(new PatientAppReportDTO(
-                raw.testId,
-                test.getTestName(),
-                raw.subTest,
-                raw.resultValue,
-                unit,
-                normal
-            ));
+            enrichedRows.add(new AppRow(seq++, new PatientAppReportDTO(
+                    raw.testId,
+                    test.getTestName(),
+                    raw.subTest,
+                    raw.resultValue,
+                    unit,
+                    normal
+            )));
+        }
+
+        enrichedRows.sort((a, b) -> {
+            PatientAppReportDTO left = a.dto();
+            PatientAppReportDTO right = b.dto();
+            int rankCmp = Integer.compare(
+                testRankById.getOrDefault(left == null ? null : left.testId, Integer.MAX_VALUE),
+                testRankById.getOrDefault(right == null ? null : right.testId, Integer.MAX_VALUE)
+            );
+            if (rankCmp != 0) {
+                return rankCmp;
+            }
+            return Integer.compare(a.seq(), b.seq());
+        });
+
+        List<PatientAppReportDTO> enriched = new ArrayList<>();
+        for (AppRow row : enrichedRows) {
+            if (row != null && row.dto() != null) {
+                enriched.add(row.dto());
+            }
         }
         return enriched;
     }
