@@ -1575,7 +1575,7 @@ window.addEventListener("afterprint", () => {
   setReportMode(toRestore);
 });
 
-function shareWhatsApp(){
+async function shareWhatsApp(){
   let mobile = (patient.mobile || "").replace(/\D/g, "");
 
   if(!mobile){
@@ -1592,13 +1592,27 @@ function shareWhatsApp(){
       ? (window.formatYmdToDdMmYyyy ? window.formatYmdToDdMmYyyy(patient.visitDate) : patient.visitDate)
       : "";
 
-  const text =
+  // Fetch fresh credentials from backend
+  let credentials = null;
+  try {
+    credentials = await window.apiPost(`/patient-app/generate-credentials/${patient.id}`, {});
+  } catch(e) {
+    console.warn("Could not fetch credentials", e);
+  }
+
+  let text =
 `Sai Sree Swetha Diagnostics
 
 Patient: ${patient.name}
 Date: ${visitDateText}
 
-Please collect your report from the lab.`;
+Your report is ready. ✅`;
+
+  if (credentials?.mobile && credentials?.password) {
+    text += `\n\n📱 *View report on your phone:*\nDownload: SSDC Labs Patient App\n\n🔑 *Login Details:*\nMobile: ${credentials.mobile}\nPassword: ${credentials.password}`;
+  } else {
+    text += `\n\nPlease collect your report from the lab.`;
+  }
 
   window.open(
     `https://wa.me/${mobile}?text=${encodeURIComponent(text)}`,

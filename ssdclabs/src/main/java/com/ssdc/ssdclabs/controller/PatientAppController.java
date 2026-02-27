@@ -126,6 +126,34 @@ public class PatientAppController {
          return Map.of("status", "ok", "message", "Password changed");
     }
     /**
+     * Called by lab staff when clicking WhatsApp button.
+     * Generates (or regenerates) a 6-digit plaintext password for this patient,
+     * saves the hash, and returns {mobile, password} so the frontend can
+     * include it in the WhatsApp message.
+     * Secured: requires lab JWT (goes through JwtAuthFilter).
+     */
+    @PostMapping("/generate-credentials/{patientId}")
+    public Map<String, String> generateCredentials(@PathVariable Long patientId) {
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));
+
+        if (patient.getMobile() == null || patient.getMobile().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Patient has no mobile number");
+        }
+
+        // Always generate a fresh password so the lab can re-send if needed
+        int randomPin = 100000 + new java.security.SecureRandom().nextInt(900000);
+        String clearPassword = String.valueOf(randomPin);
+        patient.setPassword(passwordEncoder.encode(clearPassword));
+        patientRepo.save(patient);
+
+        return Map.of(
+            "mobile", patient.getMobile(),
+            "password", clearPassword
+        );
+    }
+
+    /**
      * Get Report Details for a specific patient ID (Visit).
      */
     @GetMapping("/report/{patientId}")

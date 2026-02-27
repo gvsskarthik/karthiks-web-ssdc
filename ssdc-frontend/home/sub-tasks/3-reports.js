@@ -253,7 +253,7 @@ function formatAgeSex(patient){
   return age || sex || "";
 }
 
-function buildWhatsAppMessage(patient){
+function buildWhatsAppMessage(patient, credentials){
   const id = Number(patient?.id);
   const reportId = Number.isFinite(id) ? `R${id}` : "";
   const name = String(patient?.name || "").trim();
@@ -282,6 +282,17 @@ function buildWhatsAppMessage(patient){
 
   lines.push("");
   lines.push("Please collect from lab.");
+
+  if (credentials?.mobile && credentials?.password) {
+    lines.push("");
+    lines.push("📱 *View report on your phone:*");
+    lines.push("Download: SSDC Labs Patient App");
+    lines.push("");
+    lines.push("🔑 *Login Details:*");
+    lines.push(`Mobile: ${credentials.mobile}`);
+    lines.push(`Password: ${credentials.password}`);
+  }
+
   return lines.join("\n");
 }
 
@@ -299,7 +310,16 @@ async function informWhatsApp(patient){
     return;
   }
 
-  const text = buildWhatsAppMessage(patient);
+  // Fetch fresh credentials from backend
+  let credentials = null;
+  try {
+    const res = await window.apiPost(`/patient-app/generate-credentials/${patient.id}`, {});
+    credentials = res;
+  } catch(e) {
+    console.warn("Could not fetch credentials", e);
+  }
+
+  const text = buildWhatsAppMessage(patient, credentials);
   window.open(
     `https://wa.me/${mobile}?text=${encodeURIComponent(text)}`,
     "_blank"
