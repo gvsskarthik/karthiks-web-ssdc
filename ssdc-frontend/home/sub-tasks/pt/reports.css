@@ -97,6 +97,10 @@ th,td{
   filter:saturate(0.8);
 }
 
+body[data-print-only="1"] .actions{
+  display:none;
+}
+
 .legend{
   margin-top:10px;
   font-size:11px;

@@ -591,3 +591,28 @@ textarea:focus-visible,
 		scroll-behavior: auto !important;
 	}
 }
+
+@media print {
+	#sidebar,
+	#sidebar-overlay,
+	#content nav {
+		display: none !important;
+	}
+
+	#content {
+		margin-left: 0 !important;
+		min-height: auto !important;
+	}
+
+	#main-content,
+	#content main {
+		height: auto !important;
+		max-height: none !important;
+		overflow: visible !important;
+	}
+
+	#page-frame {
+		height: auto !important;
+		overflow: visible !important;
+	}
+}

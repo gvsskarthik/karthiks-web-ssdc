@@ -3,6 +3,25 @@ let patientId = null;
 let patient = null;
 let results = [];
 let selectedTestIds = [];
+const pageQueryParams = new URLSearchParams(location.search);
+
+function readQueryFlag(name){
+  const raw = String(pageQueryParams.get(name) || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function normalizePrintMode(value){
+  return String(value || "").trim().toLowerCase() === "pdf" ? "pdf" : "letterhead";
+}
+
+const printOnlyRequest = readQueryFlag("printOnly");
+const printOnlyMode = normalizePrintMode(pageQueryParams.get("printMode"));
+const closeAfterPrintRequest = readQueryFlag("closeAfterPrint");
+let autoPrintTriggered = false;
+
+if (printOnlyRequest && document.body) {
+  document.body.dataset.printOnly = "1";
+}
 
 function getPatientIdFromUrl(){
   const params = new URLSearchParams(location.search);
@@ -1357,6 +1376,9 @@ async function initPage(){
       await Promise.all([loadResults(), loadSelectedTests(), loadTestsActive(), loadGroupsAll()]);
 
     renderReport(freshTests, freshResults, freshSelectedIds, freshGroups);
+    if (printOnlyRequest) {
+      await triggerAutoPrintIfRequested();
+    }
   } catch (err) {
     console.error(err);
     await window.ssdcAlert(err?.message || "Failed to load report", { title: "Error" });
@@ -1492,6 +1514,54 @@ function setReportMode(mode){
   return Promise.resolve();
 }
 
+function isEmbeddedInFrame(){
+  try {
+    return window.top !== window.self;
+  } catch (err) {
+    return true;
+  }
+}
+
+function buildStandalonePrintUrl(mode){
+  const url = new URL(location.href);
+  const currentPatientId = hasValidPatientId(patient?.id)
+    ? Number(patient.id)
+    : getPatientIdFromUrl();
+  if (hasValidPatientId(currentPatientId)) {
+    url.searchParams.set("patientId", String(currentPatientId));
+  }
+  url.searchParams.set("printOnly", "1");
+  url.searchParams.set("printMode", normalizePrintMode(mode));
+  url.searchParams.set("closeAfterPrint", "1");
+  return url.toString();
+}
+
+function openStandalonePrintTab(mode){
+  // Mobile browsers can print iframe container chrome; use top-level report tab.
+  const useStandalone = isEmbeddedInFrame() && window.matchMedia("(max-width: 1024px)").matches;
+  if (!useStandalone) {
+    return false;
+  }
+  const popup = window.open(
+    buildStandalonePrintUrl(mode),
+    "_blank",
+    "noopener,noreferrer"
+  );
+  return Boolean(popup);
+}
+
+function triggerAutoPrintIfRequested(){
+  if (!printOnlyRequest || autoPrintTriggered) {
+    return Promise.resolve();
+  }
+  autoPrintTriggered = true;
+  return setReportMode(printOnlyMode)
+    .then(() => nextPaint())
+    .then(() => {
+      window.print();
+    });
+}
+
 function printLetterhead(){
   const before = getReportMode();
   restoreModeAfterPrint = before || "pdf";
@@ -1501,6 +1571,12 @@ function printLetterhead(){
 }
 
 window.addEventListener("afterprint", () => {
+  if (printOnlyRequest && closeAfterPrintRequest) {
+    window.setTimeout(() => {
+      window.close();
+    }, 120);
+  }
+
   if (!restoreModeAfterPrint) {
     return;
   }
