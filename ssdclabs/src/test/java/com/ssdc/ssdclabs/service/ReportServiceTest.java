@@ -7,10 +7,12 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,6 +34,7 @@ class ReportServiceTest {
     @Mock private TestRepository testRepo;
     @Mock private TestParameterRepository paramRepo;
     @Mock private PatientRepository patientRepo;
+    @Captor private ArgumentCaptor<Iterable<ReportResult>> reportResultIterableCaptor;
 
     @Test
     void getSelectedTests_ordersByCategoryThenDisplayOrder_forLegacyRows() {
@@ -243,18 +246,14 @@ class ReportServiceTest {
 
         service.saveResults("ssdc", incoming, null);
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ReportResult>> saveCaptor = ArgumentCaptor.forClass(List.class);
-        verify(resultRepo).saveAll(saveCaptor.capture());
-        List<ReportResult> saved = saveCaptor.getValue();
+        verify(resultRepo).saveAll(reportResultIterableCaptor.capture());
+        List<ReportResult> saved = toResultList(reportResultIterableCaptor.getValue());
         assertEquals(1, saved.size());
         ReportResult savedRow = saved.get(0);
         assertEquals("13\n14\n15", savedRow.getResultValue());
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ReportResult>> deleteCaptor = ArgumentCaptor.forClass(List.class);
-        verify(resultRepo).deleteAll(deleteCaptor.capture());
-        List<ReportResult> deleted = deleteCaptor.getValue();
+        verify(resultRepo).deleteAll(reportResultIterableCaptor.capture());
+        List<ReportResult> deleted = toResultList(reportResultIterableCaptor.getValue());
         assertEquals(1, deleted.size());
         assertEquals(1001L, deleted.get(0).getId());
     }
@@ -302,21 +301,25 @@ class ReportServiceTest {
 
         service.saveResults("ssdc", List.of(clear), null);
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ReportResult>> saveCaptor = ArgumentCaptor.forClass(List.class);
-        verify(resultRepo).saveAll(saveCaptor.capture());
-        List<ReportResult> saved = saveCaptor.getValue();
+        verify(resultRepo).saveAll(reportResultIterableCaptor.capture());
+        List<ReportResult> saved = toResultList(reportResultIterableCaptor.getValue());
         assertEquals(1, saved.size());
         ReportResult savedRow = saved.get(0);
         assertEquals(1000L, savedRow.getId());
         assertEquals(null, savedRow.getResultValue());
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ReportResult>> deleteCaptor = ArgumentCaptor.forClass(List.class);
-        verify(resultRepo).deleteAll(deleteCaptor.capture());
-        List<ReportResult> deleted = deleteCaptor.getValue();
+        verify(resultRepo).deleteAll(reportResultIterableCaptor.capture());
+        List<ReportResult> deleted = toResultList(reportResultIterableCaptor.getValue());
         assertEquals(1, deleted.size());
         assertEquals(1001L, deleted.get(0).getId());
+    }
+
+    private static List<ReportResult> toResultList(Iterable<ReportResult> rows) {
+        List<ReportResult> out = new ArrayList<>();
+        for (ReportResult row : rows) {
+            out.add(row);
+        }
+        return out;
     }
 
     private com.ssdc.ssdclabs.model.Test createTest(Long id,
