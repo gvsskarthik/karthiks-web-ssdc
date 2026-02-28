@@ -295,6 +295,7 @@
       clearAuthToken();
       return;
     }
+    clearCache();
     if (canUseSessionStorage()) {
       writeStorageValue(window.sessionStorage, AUTH_TOKEN_KEY, value);
     }
@@ -1118,7 +1119,8 @@
   }
 
   function storageKey(url) {
-    return CACHE_PREFIX + url;
+    const lab = window.getLabName ? (window.getLabName() || "anon") : "anon";
+    return CACHE_PREFIX + lab + ":" + url;
   }
 
   function readIndex() {
@@ -1221,10 +1223,7 @@
     if (!request) {
       return true;
     }
-    // Never serve cached API responses across different logged-in labs/users.
-    if (getAuthToken()) {
-      return true;
-    }
+    // Cache is now lab-scoped via storageKey(), so authenticated users can use cache.
     const cacheMode = init && init.cache;
     if (cacheMode === "no-store" || cacheMode === "reload") {
       return true;

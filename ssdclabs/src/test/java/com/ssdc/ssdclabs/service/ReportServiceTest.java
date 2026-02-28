@@ -243,18 +243,20 @@ class ReportServiceTest {
 
         service.saveResults("ssdc", incoming, null);
 
-        ArgumentCaptor<List> saveCaptor = ArgumentCaptor.forClass(List.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ReportResult>> saveCaptor = ArgumentCaptor.forClass(List.class);
         verify(resultRepo).saveAll(saveCaptor.capture());
-        List<?> saved = saveCaptor.getValue();
+        List<ReportResult> saved = saveCaptor.getValue();
         assertEquals(1, saved.size());
-        ReportResult savedRow = (ReportResult) saved.get(0);
+        ReportResult savedRow = saved.get(0);
         assertEquals("13\n14\n15", savedRow.getResultValue());
 
-        ArgumentCaptor<List> deleteCaptor = ArgumentCaptor.forClass(List.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ReportResult>> deleteCaptor = ArgumentCaptor.forClass(List.class);
         verify(resultRepo).deleteAll(deleteCaptor.capture());
-        List<?> deleted = deleteCaptor.getValue();
+        List<ReportResult> deleted = deleteCaptor.getValue();
         assertEquals(1, deleted.size());
-        assertEquals(1001L, ((ReportResult) deleted.get(0)).getId());
+        assertEquals(1001L, deleted.get(0).getId());
     }
 
     @Test
@@ -300,19 +302,21 @@ class ReportServiceTest {
 
         service.saveResults("ssdc", List.of(clear), null);
 
-        ArgumentCaptor<List> saveCaptor = ArgumentCaptor.forClass(List.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ReportResult>> saveCaptor = ArgumentCaptor.forClass(List.class);
         verify(resultRepo).saveAll(saveCaptor.capture());
-        List<?> saved = saveCaptor.getValue();
+        List<ReportResult> saved = saveCaptor.getValue();
         assertEquals(1, saved.size());
-        ReportResult savedRow = (ReportResult) saved.get(0);
+        ReportResult savedRow = saved.get(0);
         assertEquals(1000L, savedRow.getId());
         assertEquals(null, savedRow.getResultValue());
 
-        ArgumentCaptor<List> deleteCaptor = ArgumentCaptor.forClass(List.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ReportResult>> deleteCaptor = ArgumentCaptor.forClass(List.class);
         verify(resultRepo).deleteAll(deleteCaptor.capture());
-        List<?> deleted = deleteCaptor.getValue();
+        List<ReportResult> deleted = deleteCaptor.getValue();
         assertEquals(1, deleted.size());
-        assertEquals(1001L, ((ReportResult) deleted.get(0)).getId());
+        assertEquals(1001L, deleted.get(0).getId());
     }
 
     private com.ssdc.ssdclabs.model.Test createTest(Long id,

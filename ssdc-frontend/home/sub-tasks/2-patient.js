@@ -23,6 +23,13 @@ let isSearchMode = false;
 let searchPage = 0;
 let searchHasMore = false;
 let searchController = null;
+
+const PAGE_SIZE = 25;
+let listPage = 0;
+const listPager = document.getElementById("listPager");
+const listPrevBtn = document.getElementById("listPrevBtn");
+const listNextBtn = document.getElementById("listNextBtn");
+const listPageInfo = document.getElementById("listPageInfo");
 let searchRequestId = 0;
 
 const SEARCH_PAGE_LIMIT = 50;
@@ -125,18 +132,22 @@ function setDateToToday(){
   }
 }
 
+let midnightTimerId = null;
 function scheduleMidnightUpdate(){
   const now = new Date();
   const nextMidnight = new Date(now);
   nextMidnight.setHours(24, 0, 0, 0);
   const delay = Math.max(0, nextMidnight.getTime() - now.getTime() + 1000);
-  setTimeout(() => {
+  midnightTimerId = setTimeout(() => {
     if (isAutoDate) {
       setDateToToday();
     }
     scheduleMidnightUpdate();
   }, delay);
 }
+window.addEventListener("beforeunload", () => {
+  if (midnightTimerId) clearTimeout(midnightTimerId);
+});
 
 datePicker.onchange = () => {
   isAutoDate = datePicker.value === getLocalDateInputValue();
@@ -198,8 +209,27 @@ function applyDoctorFilter(list){
   return items.filter((patient) => normalizeDoctorName(patient?.doctor) === selectedDoctorKey);
 }
 
-function renderCurrentList(list){
-  renderTable(applyDoctorFilter(list));
+function renderCurrentList(list, resetPage){
+  if (resetPage !== false) listPage = 0;
+  const filtered = applyDoctorFilter(list);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if (listPage >= totalPages) listPage = totalPages - 1;
+  const start = listPage * PAGE_SIZE;
+  const page = filtered.slice(start, start + PAGE_SIZE);
+  renderTable(page, start);
+  updateListPager(filtered.length, totalPages);
+}
+
+function updateListPager(total, totalPages){
+  if (!listPager) return;
+  if (isSearchMode || total <= PAGE_SIZE) {
+    listPager.classList.add("hidden");
+    return;
+  }
+  listPager.classList.remove("hidden");
+  if (listPageInfo) listPageInfo.textContent = `Page ${listPage + 1} of ${totalPages}`;
+  if (listPrevBtn) listPrevBtn.disabled = listPage <= 0;
+  if (listNextBtn) listNextBtn.disabled = listPage >= totalPages - 1;
 }
 
 function sortDoctorNames(names){
@@ -397,7 +427,8 @@ if (bulkCancelBtn) {
   bulkCancelBtn.addEventListener("click", exitSelectMode);
 }
 
-function renderTable(data){
+function renderTable(data, startOffset){
+  const snoBase = startOffset || 0;
   const D = window.ssdcDom;
   if (!D) {
     // Fallback (shouldn't happen if common/dom.js is loaded)
@@ -446,7 +477,7 @@ function renderTable(data){
     {
       const td = document.createElement("td");
       td.className = snoClass;
-      td.textContent = String(i + 1);
+      td.textContent = String(snoBase + i + 1);
       tr.appendChild(td);
     }
 
@@ -583,6 +614,21 @@ if (searchNextBtn) {
     if (!isSearchMode) return;
     if (!searchHasMore) return;
     loadSearchPage(searchPage + 1);
+  });
+}
+
+if (listPrevBtn) {
+  listPrevBtn.addEventListener("click", () => {
+    if (isSearchMode || listPage <= 0) return;
+    listPage--;
+    renderCurrentList(allPatients, false);
+  });
+}
+if (listNextBtn) {
+  listNextBtn.addEventListener("click", () => {
+    if (isSearchMode) return;
+    listPage++;
+    renderCurrentList(allPatients, false);
   });
 }
 

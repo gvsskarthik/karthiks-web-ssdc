@@ -278,8 +278,8 @@ function updateUrlState(range, doctorId) {
   window.history.replaceState({}, "", url.toString());
 }
 
-async function loadDue(range) {
-  const doctorId = doctorSelect.value || "";
+async function loadDue(range, overrideDoctorId) {
+  const doctorId = overrideDoctorId !== undefined ? overrideDoctorId : (doctorSelect.value || "");
   const qs = new URLSearchParams();
   qs.set("from", range.from);
   qs.set("to", range.to);
@@ -312,12 +312,14 @@ function init() {
   dateToInput.value = initial.range.to;
   setupDueDateHeaderSort();
 
-  loadDoctors(initial.doctorId).then(() => {
-    const range = { from: dateFromInput.value, to: dateToInput.value };
-    setSubtitle(range, getSelectedDoctorName());
-    updateUrlState(range, doctorSelect.value);
-    loadDue(range);
-  });
+  const range = { from: dateFromInput.value, to: dateToInput.value };
+  Promise.all([
+    loadDoctors(initial.doctorId).then(() => {
+      setSubtitle(range, getSelectedDoctorName());
+      updateUrlState(range, doctorSelect.value);
+    }),
+    loadDue(range, initial.doctorId)
+  ]);
 
   applyFilters.addEventListener("click", async () => {
     const from = String(dateFromInput.value || "").trim();

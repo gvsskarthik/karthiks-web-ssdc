@@ -787,18 +787,6 @@ public class ReportService {
         return null;
     }
 
-    private String resolveFinalResult(String incomingValue, String defaultValue) {
-        String cleanedIncoming = normalizeResultValue(incomingValue);
-        if (!isBlank(cleanedIncoming)) {
-            return cleanedIncoming;
-        }
-        String cleanedDefault = normalizeResultValue(defaultValue);
-        if (!isBlank(cleanedDefault)) {
-            return cleanedDefault;
-        }
-        return null;
-    }
-
     private String normalizeResultValue(String value) {
         if (isBlank(value)) {
             return null;

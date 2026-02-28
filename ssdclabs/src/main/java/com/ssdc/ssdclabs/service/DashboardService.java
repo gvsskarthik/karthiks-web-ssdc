@@ -1,5 +1,6 @@
 package com.ssdc.ssdclabs.service;
 
+import java.sql.Date;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -36,11 +37,19 @@ public class DashboardService {
         final LocalDate monthStart = today.withDayOfMonth(1);
         final LocalDate yearStart = today.withDayOfYear(1);
 
-        final long todayCount = patientRepo.countByLabIdAndVisitDate(safeLabId, today);
-        final long todayPendingCount = patientRepo.countPendingByLabIdAndVisitDate(safeLabId, today);
-        final long weekCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, weekStart, today);
-        final long monthCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, monthStart, today);
-        final long yearCount = patientRepo.countByLabIdAndVisitDateBetween(safeLabId, yearStart, today);
+        final Object[] counts = patientRepo.findHomeSummaryCounts(
+            safeLabId,
+            Date.valueOf(today),
+            Date.valueOf(weekStart),
+            Date.valueOf(monthStart),
+            Date.valueOf(yearStart)
+        );
+
+        final long todayCount = toLong(counts, 0);
+        final long todayPendingCount = toLong(counts, 1);
+        final long weekCount = toLong(counts, 2);
+        final long monthCount = toLong(counts, 3);
+        final long yearCount = toLong(counts, 4);
 
         final List<RecentTaskDTO> recent = patientService.getRecentTasks(safeLabId, safeLimit);
 
@@ -52,5 +61,12 @@ public class DashboardService {
             yearCount,
             recent
         );
+    }
+
+    private static long toLong(Object[] row, int index) {
+        if (row == null || row.length == 0) return 0;
+        Object val = (row[0] instanceof Object[]) ? ((Object[]) row[0])[index] : row[index];
+        if (val instanceof Number) return ((Number) val).longValue();
+        return 0;
     }
 }

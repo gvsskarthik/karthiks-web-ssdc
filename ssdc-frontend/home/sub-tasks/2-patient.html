@@ -93,6 +93,11 @@
         <tbody id="patientTable"></tbody>
       </table>
     </div>
+    <div id="listPager" class="search-pager hidden" aria-label="List pagination">
+      <button type="button" class="neo-btn secondary" id="listPrevBtn">Prev</button>
+      <div class="search-page-info" id="listPageInfo">Page 1</div>
+      <button type="button" class="neo-btn secondary" id="listNextBtn">Next</button>
+    </div>
     <div id="searchPager" class="search-pager hidden" aria-label="Search pagination">
       <button type="button" class="neo-btn secondary" id="searchPrevBtn">Prev</button>
       <div class="search-page-info" id="searchPageInfo">Page 1</div>
@@ -101,9 +106,9 @@
   </div>
 </div>
 
-<script src="../../api.js"></script>
-<script src="common/dom.js"></script>
-<script src="2-patient.js"></script>
+<script defer src="../../api.js"></script>
+<script defer src="common/dom.js"></script>
+<script defer src="2-patient.js"></script>
 
 </body>
 </html>

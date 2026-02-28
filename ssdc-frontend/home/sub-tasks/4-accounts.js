@@ -382,7 +382,7 @@ async function loadDetails() {
 
 function init(){
   setFilterInputsToThisMonth();
-  loadDoctors().finally(() => loadDetails());
+  Promise.all([loadDoctors(), loadDetails()]);
   setupDateHeaderSort();
 
   if (sumDue) {

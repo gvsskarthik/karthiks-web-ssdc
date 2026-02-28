@@ -1,20 +1,15 @@
 package com.ssdc.ssdclabs.controller;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.repository.PatientRepository;
-import com.ssdc.ssdclabs.service.PatientService;
 import com.ssdc.ssdclabs.service.WhatsAppService;
 import com.ssdc.ssdclabs.service.ReportService;
 

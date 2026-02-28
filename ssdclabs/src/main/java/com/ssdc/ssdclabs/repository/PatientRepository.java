@@ -187,6 +187,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
         value = """
             SELECT
                 COALESCE(SUM(CASE WHEN p.visit_date = :today THEN 1 ELSE 0 END), 0) AS todayCount,
+                COALESCE(SUM(CASE WHEN p.visit_date = :today AND (p.status IS NULL OR UPPER(TRIM(p.status)) <> 'COMPLETED') THEN 1 ELSE 0 END), 0) AS todayPendingCount,
                 COALESCE(SUM(CASE WHEN p.visit_date BETWEEN :weekStart AND :today THEN 1 ELSE 0 END), 0) AS weekCount,
                 COALESCE(SUM(CASE WHEN p.visit_date BETWEEN :monthStart AND :today THEN 1 ELSE 0 END), 0) AS monthCount,
                 COALESCE(SUM(CASE WHEN p.visit_date BETWEEN :yearStart AND :today THEN 1 ELSE 0 END), 0) AS yearCount
@@ -203,34 +204,6 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             @Param("yearStart") Date yearStart
     );
 
-    long countByLabIdAndVisitDate(String labId, LocalDate visitDate);
-
-    @Query("""
-        SELECT COUNT(p)
-        FROM Patient p
-        WHERE p.labId = :labId
-          AND p.visitDate BETWEEN :start AND :end
-    """)
-    long countByLabIdAndVisitDateBetween(
-            @Param("labId") String labId,
-            @Param("start") LocalDate start,
-            @Param("end") LocalDate end
-    );
-
-    @Query("""
-        SELECT COUNT(p)
-        FROM Patient p
-        WHERE p.labId = :labId
-          AND p.visitDate = :visitDate
-          AND (
-            p.status IS NULL
-            OR UPPER(TRIM(p.status)) <> 'COMPLETED'
-          )
-    """)
-    long countPendingByLabIdAndVisitDate(
-            @Param("labId") String labId,
-            @Param("visitDate") LocalDate visitDate
-    );
 
     @Query("""
         SELECT new com.ssdc.ssdclabs.dto.AccountsDuePatientDTO(
