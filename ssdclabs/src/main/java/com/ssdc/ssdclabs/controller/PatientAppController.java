@@ -10,7 +10,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ssdc.ssdclabs.model.Patient;
 import com.ssdc.ssdclabs.repository.PatientRepository;
-import com.ssdc.ssdclabs.service.WhatsAppService;
 import com.ssdc.ssdclabs.service.ReportService;
 
 @RestController
@@ -19,17 +18,14 @@ public class PatientAppController {
 
     private final PatientRepository patientRepo;
     private final PasswordEncoder passwordEncoder;
-    private final WhatsAppService whatsAppService;
     private final ReportService reportService;
 
     public PatientAppController(
             PatientRepository patientRepo,
             PasswordEncoder passwordEncoder,
-            WhatsAppService whatsAppService,
             ReportService reportService) {
         this.patientRepo = patientRepo;
         this.passwordEncoder = passwordEncoder;
-        this.whatsAppService = whatsAppService;
         this.reportService = reportService;
     }
 

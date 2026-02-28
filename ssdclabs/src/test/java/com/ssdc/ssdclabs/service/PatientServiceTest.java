@@ -27,11 +27,10 @@ class PatientServiceTest {
     @Mock private ReportResultRepository resultRepo;
     @Mock private DoctorRepository doctorRepo;
     @Mock private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-    @Mock private WhatsAppService whatsAppService;
 
     @Test
     void getRecentTasks_ordersPresentToPast() {
-        PatientService service = new PatientService(patientRepo, resultRepo, doctorRepo, passwordEncoder, whatsAppService);
+        PatientService service = new PatientService(patientRepo, resultRepo, doctorRepo, passwordEncoder);
 
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
         LocalDate yesterday = today.minusDays(1);

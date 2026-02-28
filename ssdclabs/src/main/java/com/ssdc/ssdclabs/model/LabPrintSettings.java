@@ -9,7 +9,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
-@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "lab_print_settings")
 public class LabPrintSettings {

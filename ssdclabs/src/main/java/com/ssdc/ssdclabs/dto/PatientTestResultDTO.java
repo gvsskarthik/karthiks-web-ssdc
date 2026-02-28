@@ -9,7 +9,6 @@ public class PatientTestResultDTO {
     public String resultValue;
     public Boolean clear;
 
-    @SuppressWarnings("unused")
     public PatientTestResultDTO() {}
 
     public PatientTestResultDTO(Long id,

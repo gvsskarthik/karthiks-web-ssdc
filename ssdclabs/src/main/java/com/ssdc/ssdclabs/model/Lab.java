@@ -11,7 +11,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(name = "labs")
 public class Lab {

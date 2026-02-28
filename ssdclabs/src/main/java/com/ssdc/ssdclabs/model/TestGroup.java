@@ -11,7 +11,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(
     name = "test_groups",
@@ -77,27 +76,19 @@ public class TestGroup {
     public String getShortcut() { return shortcut; }
     public void setShortcut(String shortcut) { this.shortcut = shortcut; }
 
-    @SuppressWarnings("unused")
     public Integer getDisplayOrder() { return displayOrder; }
-    @SuppressWarnings("unused")
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
 
-    @SuppressWarnings("unused")
     public Boolean getActive() { return active; }
-    @SuppressWarnings("unused")
     public void setActive(Boolean active) { this.active = active; }
 
-    @SuppressWarnings("unused")
     public Boolean getShowGroupName() { return showGroupName; }
-    @SuppressWarnings("unused")
     public void setShowGroupName(Boolean showGroupName) {
         this.showGroupName = showGroupName;
     }
 
-    @SuppressWarnings("unused")
     public String getReportLayout() { return reportLayout; }
-    @SuppressWarnings("unused")
     public void setReportLayout(String reportLayout) { this.reportLayout = reportLayout; }
 }

@@ -1,0 +1,7 @@
+{
+  "java.compile.nullAnalysis.mode": "disabled",
+  "java.compile.nullAnalysis.nonnull": [],
+  "java.compile.nullAnalysis.nullable": [],
+  "java.settings.url": "",
+  "java.errors.incompleteClasspath.severity": "ignore"
+}

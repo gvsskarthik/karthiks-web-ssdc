@@ -11,7 +11,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-@SuppressWarnings("JpaDataSourceORMInspection")
 @Entity
 @Table(
     name = "report_results",
@@ -46,7 +45,6 @@ public class ReportResult {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    @SuppressWarnings("unused")
     public Patient getPatient() { return patient; }
     public void setPatient(Patient patient) { this.patient = patient; }
 

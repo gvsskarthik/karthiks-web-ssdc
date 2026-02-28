@@ -37,19 +37,16 @@ public class PatientService {
     private final DoctorRepository doctorRepo;
 
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-    private final WhatsAppService whatsAppService;
 
     public PatientService(
             PatientRepository patientRepo,
             ReportResultRepository resultRepo,
             DoctorRepository doctorRepo,
-            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
-            WhatsAppService whatsAppService) {
+            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.patientRepo = patientRepo;
         this.resultRepo = resultRepo;
         this.doctorRepo = doctorRepo;
         this.passwordEncoder = passwordEncoder;
-        this.whatsAppService = whatsAppService;
     }
 
     /* SAVE */
