@@ -18,8 +18,6 @@ const _pageGap = 14.0;
 const _tableFontSize = 8.5;
 const _metaFontSize = 9.5;
 
-typedef _LetterheadLines = ({int top, int bottom, int left, int right});
-
 enum _PrintAction { normal, letterhead, editLetterhead }
 
 class ReportScreen extends StatefulWidget {
@@ -61,9 +59,11 @@ class _ReportScreenState extends State<ReportScreen> {
     final scale = (viewportWidth / canvasWidth).clamp(0.25, 1.0).toDouble();
     final dx = (viewportWidth - (canvasWidth * scale)) / 2;
 
-    _zoomController.value = Matrix4.identity()
-      ..translateByDouble(dx, 0.0, 0.0, 1.0)
-      ..scaleByDouble(scale, scale, 1.0, 1.0);
+    final matrix = Matrix4.identity();
+    matrix.setTranslationRaw(dx, 0.0, 0.0);
+    matrix.setEntry(0, 0, scale);
+    matrix.setEntry(1, 1, scale);
+    _zoomController.value = matrix;
   }
 
   Future<void> _loadReport() async {
@@ -121,7 +121,7 @@ class _ReportScreenState extends State<ReportScreen> {
     try {
       final lines = mode == ReportPdfMode.letterhead
           ? await StorageService.getLetterheadLines()
-          : (top: 0, bottom: 0, left: 0, right: 0);
+          : const LetterheadLines(top: 0, bottom: 0, left: 0, right: 0);
 
       await PdfGenerator.printReport(
         widget.patient,
@@ -149,7 +149,6 @@ class _ReportScreenState extends State<ReportScreen> {
 
     final action = await showModalBottomSheet<_PrintAction>(
       context: context,
-      showDragHandle: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -200,19 +199,18 @@ class _ReportScreenState extends State<ReportScreen> {
     final left = TextEditingController(text: current.left.toString());
     final right = TextEditingController(text: current.right.toString());
 
-    _LetterheadLines? parse() {
+    LetterheadLines parse() {
       int parseInt(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
 
-      final lines = (
-        top: parseInt(top).clamp(0, 50),
-        bottom: parseInt(bottom).clamp(0, 50),
-        left: parseInt(left).clamp(0, 50),
-        right: parseInt(right).clamp(0, 50),
+      return LetterheadLines(
+        top: parseInt(top).clamp(0, 50).toInt(),
+        bottom: parseInt(bottom).clamp(0, 50).toInt(),
+        left: parseInt(left).clamp(0, 50).toInt(),
+        right: parseInt(right).clamp(0, 50).toInt(),
       );
-      return lines;
     }
 
-    final saved = await showDialog<_LetterheadLines>(
+    final saved = await showDialog<LetterheadLines>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Letterhead spacing'),
@@ -361,59 +359,59 @@ class _ReportScreenState extends State<ReportScreen> {
       );
     }
 
-	    Widget buildFooter() {
-	      return Column(
-	        crossAxisAlignment: CrossAxisAlignment.stretch,
-	        children: [
-	          RichText(
-	            text: const TextSpan(
-	              children: [
-	                TextSpan(
-	                  text: 'Red',
-	                  style: TextStyle(
-	                    color: AppTheme.abnormal,
-	                    fontWeight: FontWeight.bold,
-	                    fontSize: _metaFontSize,
-	                  ),
-	                ),
-	                TextSpan(
-	                  text: ' = Abnormal value',
-	                  style: TextStyle(
-	                    color: Color(0xFF555555),
-	                    fontSize: _metaFontSize,
-	                  ),
-	                ),
-	              ],
-	            ),
-	          ),
-	          const SizedBox(height: 8),
-	          const Align(
-	            alignment: Alignment.centerRight,
-	            child: Padding(
-	              padding: EdgeInsets.only(right: 100),
-	              child: Text(
-	                'SIGNATURE',
-	                style: TextStyle(
-	                  fontSize: _metaFontSize,
-	                  fontWeight: FontWeight.bold,
-	                  letterSpacing: 0.3,
-	                  color: Color(0xFF444444),
-	                ),
-	              ),
-	            ),
-	          ),
-	          const Text(
-	            'SUGGESTED CLINICAL CORRELATION',
-	            style: TextStyle(
-	              fontSize: _metaFontSize,
-	              fontWeight: FontWeight.bold,
-	              letterSpacing: 0.3,
-	              color: Color(0xFF444444),
-	            ),
-	          ),
-	        ],
-	      );
-	    }
+    Widget buildFooter() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          RichText(
+            text: const TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Red',
+                  style: TextStyle(
+                    color: AppTheme.abnormal,
+                    fontWeight: FontWeight.bold,
+                    fontSize: _metaFontSize,
+                  ),
+                ),
+                TextSpan(
+                  text: ' = Abnormal value',
+                  style: TextStyle(
+                    color: Color(0xFF555555),
+                    fontSize: _metaFontSize,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: EdgeInsets.only(right: 100),
+              child: Text(
+                'SIGNATURE',
+                style: TextStyle(
+                  fontSize: _metaFontSize,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                  color: Color(0xFF444444),
+                ),
+              ),
+            ),
+          ),
+          const Text(
+            'SUGGESTED CLINICAL CORRELATION',
+            style: TextStyle(
+              fontSize: _metaFontSize,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.3,
+              color: Color(0xFF444444),
+            ),
+          ),
+        ],
+      );
+    }
 
     Widget buildTable(ReportPage page) {
       final headerIsLast = page.rows.isEmpty;
@@ -569,11 +567,14 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Widget _buildBoxRow(ReportBoxRow row, {required bool isLast}) {
-    return switch (row.kind) {
-      ReportBoxRowKind.testHeader => _buildTestHeaderRow(row.testName, isLast: isLast),
-      ReportBoxRowKind.data => _buildDataBoxRow(row, isLast: isLast),
-      ReportBoxRowKind.normalOnly => _buildNormalOnlyRow(row, isLast: isLast),
-    };
+    switch (row.kind) {
+      case ReportBoxRowKind.testHeader:
+        return _buildTestHeaderRow(row.testName, isLast: isLast);
+      case ReportBoxRowKind.data:
+        return _buildDataBoxRow(row, isLast: isLast);
+      case ReportBoxRowKind.normalOnly:
+        return _buildNormalOnlyRow(row, isLast: isLast);
+    }
   }
 
   Widget _buildTestHeaderRow(String name, {required bool isLast}) {

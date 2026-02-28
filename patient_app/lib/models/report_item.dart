@@ -19,12 +19,18 @@ class ReportItem {
 
   factory ReportItem.fromJson(Map<String, dynamic> json) {
     final testIdRaw = json['testId'];
-    final testId = switch (testIdRaw) {
-      int v => v,
-      num v => v.toInt(),
-      String v => int.tryParse(v) ?? double.tryParse(v)?.toInt() ?? -1,
-      _ => -1,
-    };
+    int parseTestId(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) {
+        final asInt = int.tryParse(value);
+        if (asInt != null) return asInt;
+        final asDouble = double.tryParse(value);
+        if (asDouble != null) return asDouble.toInt();
+      }
+      return -1;
+    }
+    final testId = parseTestId(testIdRaw);
 
     int? intOrNull(dynamic v) {
       if (v == null) return null;

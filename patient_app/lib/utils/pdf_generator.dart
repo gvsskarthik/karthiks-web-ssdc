@@ -108,7 +108,7 @@ class PdfGenerator {
         ? (letterheadTopLines + letterheadBottomLines)
         : 0;
     final boxesPerPage =
-        (kReportBoxesPerPage - reduceBoxes).clamp(10, kReportBoxesPerPage);
+        (kReportBoxesPerPage - reduceBoxes).clamp(10, kReportBoxesPerPage).toInt();
 
     final pages = ReportPagination.paginate(items, boxesPerPage: boxesPerPage);
     final pagesOrEmpty =
@@ -377,11 +377,14 @@ class PdfGenerator {
   }
 
   static pw.Widget _pdfBoxRow(ReportBoxRow row) {
-    return switch (row.kind) {
-      ReportBoxRowKind.testHeader => _pdfSectionHeaderRow(row.testName),
-      ReportBoxRowKind.data => _pdfDataBoxRow(row),
-      ReportBoxRowKind.normalOnly => _pdfNormalOnlyRow(row),
-    };
+    switch (row.kind) {
+      case ReportBoxRowKind.testHeader:
+        return _pdfSectionHeaderRow(row.testName);
+      case ReportBoxRowKind.data:
+        return _pdfDataBoxRow(row);
+      case ReportBoxRowKind.normalOnly:
+        return _pdfNormalOnlyRow(row);
+    }
   }
 
   static pw.Widget _pdfSectionHeaderRow(String name) {

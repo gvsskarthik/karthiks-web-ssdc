@@ -184,8 +184,8 @@ class _PatientCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: patient.isCompleted
-                          ? AppTheme.completed.withValues(alpha: 0.12)
-                          : AppTheme.pending.withValues(alpha: 0.12),
+                          ? AppTheme.completed.withAlpha(31)
+                          : AppTheme.pending.withAlpha(31),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(

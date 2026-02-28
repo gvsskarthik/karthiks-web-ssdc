@@ -1,5 +1,19 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+class LetterheadLines {
+  final int top;
+  final int bottom;
+  final int left;
+  final int right;
+
+  const LetterheadLines({
+    required this.top,
+    required this.bottom,
+    required this.left,
+    required this.right,
+  });
+}
+
 class StorageService {
   static const _storage = FlutterSecureStorage();
   static const _keyMobile = 'patient_mobile';
@@ -31,14 +45,13 @@ class StorageService {
         key: _keyLetterheadRightLines, value: right.toString());
   }
 
-  static Future<({int top, int bottom, int left, int right})>
-      getLetterheadLines() async {
+  static Future<LetterheadLines> getLetterheadLines() async {
     Future<int> readInt(String key) async {
       final raw = await _storage.read(key: key);
       return int.tryParse(raw ?? '') ?? 0;
     }
 
-    return (
+    return LetterheadLines(
       top: await readInt(_keyLetterheadTopLines),
       bottom: await readInt(_keyLetterheadBottomLines),
       left: await readInt(_keyLetterheadLeftLines),

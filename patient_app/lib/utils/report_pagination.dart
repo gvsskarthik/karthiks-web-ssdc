@@ -184,7 +184,7 @@ class ReportPagination {
             remaining -= 1;
           }
 
-          final take = (b.rows.length - idx).clamp(0, remaining);
+          final take = (b.rows.length - idx).clamp(0, remaining).toInt();
           if (take == 0) {
             pushPage();
             continue;
