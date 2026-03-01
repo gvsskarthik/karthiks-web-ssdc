@@ -270,7 +270,7 @@ Save → database → returns to Doctors page
 | Patient App visit list and report view | ✅ Done (backend) |
 | WhatsApp report sharing (service layer) | ⚠️ Partial |
 | Doctor App login/portal | ❌ Not started |
-| Patient App frontend (separate UI) | ❌ Not started |
+| Patient App frontend (Flutter — login, visits, report, PDF share) | ✅ Done |
 | Doctor App frontend (separate UI) | ❌ Not started |
 | Unlock completed patient with PIN | ❌ Not started |
 | Report ID format (DD-MM-LABID-SNO) | ⚠️ Check needed |

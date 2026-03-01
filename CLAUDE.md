@@ -8,7 +8,7 @@ After completing any task, update PROJECT_CONTEXT.md to reflect the new state.
 
 ## Two Codebases — Two Locations
 - **Web App (Spring Boot + JS)** → VPS at `/srv/ssdc/` — edit here via SSH Claude Code
-- **Flutter Patient App** → Local Mac at `~/Desktop/patient_app_base/` — edit there via Local Claude Code
+- **Flutter Patient App** → Local Mac at `~/LOCAL_DISK/karthiks-web-ssdc/patient_app/` — edit there via Local Claude Code
 - Both connect to the same backend API at `https://ssdclabs.online/api`
 
 ---

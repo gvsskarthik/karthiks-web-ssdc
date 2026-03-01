@@ -4,7 +4,7 @@
 
 ---
 
-## Project Status (Last updated: 2026-02-27)
+## Project Status (Last updated: 2026-03-01)
 
 ### Web App — VPS at /srv/ssdc/
 | Module | Status | Key Files |
@@ -20,7 +20,7 @@
 | Patient App API | ✅ Done | `PatientAppController.java` |
 | WhatsApp notify | ✅ Done | `WhatsAppService.java` |
 
-### Flutter Patient App — Local Mac at ~/Desktop/patient_app_base/
+### Flutter Patient App — Local Mac at ~/LOCAL_DISK/karthiks-web-ssdc/patient_app/
 | Screen | Status | File |
 |---|---|---|
 | Login screen | ✅ Done | `lib/screens/login_screen.dart` |
