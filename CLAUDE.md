@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SSDC Labs is a multi-tenant laboratory management system. Labs register accounts, onboard with test definitions, then manage patients, record test results, and generate reports. Billing tracks doctor referrals and due amounts.
 
-- **Backend**: Spring Boot 3.5.9 (Java 17, Maven) — REST API at port 8080
+- **Backend**: Spring Boot 3.5.11 (Java 17, Maven) — REST API at port 8080
 - **Frontend**: Vanilla JS/HTML/CSS — no build tool, served statically
 - **Database**: MySQL (`ssdclabs` DB, `ssdcuser` user)
 - **Auth**: JWT (7-day TTL) + optional TOTP 2FA

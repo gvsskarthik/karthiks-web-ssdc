@@ -40,16 +40,17 @@ class ApiService {
     }
   }
 
-  static Future<List<ReportItem>> getReport(int patientId) async {
+  static Future<List<ReportItem>> getReport(int patientId, String mobile) async {
     try {
       final res = await http.get(
-        Uri.parse('$_base/patient-app/report/$patientId'),
+        Uri.parse('$_base/patient-app/report/$patientId?mobile=${Uri.encodeComponent(mobile)}'),
       ).timeout(const Duration(seconds: 15));
 
       if (res.statusCode == 200) {
         final List list = jsonDecode(res.body) as List;
         return list.map((e) => ReportItem.fromJson(e as Map<String, dynamic>)).toList();
       }
+      if (res.statusCode == 401) throw 'Access denied. Please log in again.';
       if (res.statusCode == 404) throw 'Report not found.';
       throw 'Failed to load report.';
     } catch (e) {

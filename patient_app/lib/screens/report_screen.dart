@@ -72,7 +72,7 @@ class _ReportScreenState extends State<ReportScreen> {
       _error = null;
     });
     try {
-      final items = await ApiService.getReport(widget.patient.id);
+      final items = await ApiService.getReport(widget.patient.id, widget.patient.mobile ?? '');
       if (kDebugMode) {
         final count = items.length;
         debugPrint('Report items loaded: $count');
