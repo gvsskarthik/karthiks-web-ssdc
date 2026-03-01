@@ -4,7 +4,7 @@
 
 ---
 
-## Project Status (Last updated: 2026-03-01)
+## Project Status (Last updated: 2026-03-01, session 2)
 
 ### Web App — VPS at /srv/ssdc/
 | Module | Status | Key Files |
@@ -28,6 +28,7 @@
 | PDF share | Done | lib/utils/pdf_generator.dart |
 | API service | Done | lib/services/api_service.dart |
 | Secure storage | Done | lib/services/storage_service.dart |
+| LetterheadLines model | Done | lib/models/letterhead_lines.dart |
 
 ### Flutter Doctor App — NOT STARTED YET
 
@@ -43,8 +44,9 @@
 
 ### Flutter Patient App
 - Packages: http, flutter_secure_storage, pdf, printing, intl
-- Auth: POST /patient-app/login stores mobile+name in secure storage (no JWT yet)
-- Auto-login: checks secure storage on startup, skips login if session exists
+- Auth: POST /patient-app/login stores mobile+name+password in secure storage (no JWT yet)
+- Auto-login: checks secure storage on startup; requires mobile+name+password all present
+- getVisits now sends password as query param; backend verifies it via bcrypt match
 - Abnormal values: parsed from normalRange string (formats: "12-17", "< 200", "> 4.5")
 - PDF: generated in-memory, shared via native share sheet (no file saved to disk)
 - Lab name "SAI SREE SWETHA DIAGNOSTICS" is hardcoded in report_screen.dart and pdf_generator.dart

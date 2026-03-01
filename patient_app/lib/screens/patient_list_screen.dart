@@ -31,7 +31,8 @@ class _PatientListScreenState extends State<PatientListScreen> {
   Future<void> _loadVisits() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final list = await ApiService.getVisits(widget.mobile);
+      final password = await StorageService.getPassword() ?? '';
+      final list = await ApiService.getVisits(widget.mobile, password);
       setState(() { _patients = list; _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
@@ -110,10 +111,12 @@ class _PatientListScreenState extends State<PatientListScreen> {
           return _PatientCard(
             patient: p,
             dateStr: _formatDate(p.visitDate),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ReportScreen(patient: p)),
-            ),
+            onTap: p.isCompleted
+                ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ReportScreen(patient: p)),
+                  )
+                : null,
           );
         },
       ),
@@ -157,7 +160,7 @@ class _PatientListScreenState extends State<PatientListScreen> {
 class _PatientCard extends StatelessWidget {
   final Patient patient;
   final String dateStr;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _PatientCard({required this.patient, required this.dateStr, required this.onTap});
 

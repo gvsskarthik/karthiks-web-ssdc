@@ -64,13 +64,14 @@ public class PatientAppController {
     }
 
     @GetMapping("/visits")
-    public List<Patient> getVisits(@RequestParam String mobile) {
-        if (mobile == null || mobile.trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobile required");
+    public List<Patient> getVisits(@RequestParam String mobile, @RequestParam String password) {
+        if (mobile == null || mobile.trim().isEmpty() || password == null || password.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobile and password required");
         }
         List<Patient> patients = patientRepo.findByMobileOrderByVisitDateDesc(mobile.trim());
-        boolean hasCredentials = patients.stream().anyMatch(p -> p.getPassword() != null);
-        if (!hasCredentials) {
+        boolean authenticated = patients.stream().anyMatch(
+                p -> p.getPassword() != null && passwordEncoder.matches(password, p.getPassword()));
+        if (!authenticated) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
         return patients;

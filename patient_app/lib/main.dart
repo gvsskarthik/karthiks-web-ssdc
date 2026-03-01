@@ -40,8 +40,9 @@ class _StartupRouterState extends State<_StartupRouter> {
   Future<void> _checkSession() async {
     final mobile = await StorageService.getMobile();
     final name = await StorageService.getName();
+    final password = await StorageService.getPassword();
     if (!mounted) return;
-    if (mobile != null && name != null) {
+    if (mobile != null && name != null && password != null) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

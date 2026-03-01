@@ -19,6 +19,7 @@ class PdfGenerator {
 
   static const double _pagePadding = 10 * PdfPageFormat.mm;
   static const double _letterheadLine = 4 * PdfPageFormat.mm;
+  static const _colFlex = [5, 2, 2, 4];
 
   static Future<void> shareReport(
     Patient patient,
@@ -80,7 +81,7 @@ class PdfGenerator {
   }) async {
     final pdf = pw.Document();
 
-    final date = _formatDate(patient.visitDate);
+    final date = formatDate(patient.visitDate);
     final doctor =
         (patient.doctor?.isNotEmpty ?? false) ? patient.doctor! : 'SELF';
     final address =
@@ -136,12 +137,12 @@ class PdfGenerator {
   }
 
   static String _filename(Patient patient) {
-    final date = _formatDate(patient.visitDate);
+    final date = formatDate(patient.visitDate);
     final safeName = patient.name.replaceAll(' ', '_');
     return 'report_${safeName}_$date.pdf';
   }
 
-  static String _formatDate(String? dateStr) {
+  static String formatDate(String? dateStr) {
     if (dateStr == null || dateStr.trim().isEmpty) return '';
     try {
       return DateFormat('dd-MM-yyyy').format(DateTime.parse(dateStr));
@@ -346,11 +347,7 @@ class PdfGenerator {
         children: [
           for (int i = 0; i < 4; i++)
             pw.Expanded(
-              flex: i == 0
-                  ? 5
-                  : i == 3
-                      ? 4
-                      : 2,
+              flex: _colFlex[i],
               child: pw.Container(
                 decoration: i > 0
                     ? const pw.BoxDecoration(
@@ -420,7 +417,6 @@ class PdfGenerator {
       row.unit,
       row.normal,
     ];
-    final flexes = [5, 2, 2, 4];
 
     return pw.Container(
       decoration: const pw.BoxDecoration(
@@ -436,7 +432,7 @@ class PdfGenerator {
         children: [
           for (int i = 0; i < 4; i++)
             pw.Expanded(
-              flex: flexes[i],
+              flex: _colFlex[i],
               child: pw.Container(
                 decoration: i > 0
                     ? const pw.BoxDecoration(
@@ -472,7 +468,6 @@ class PdfGenerator {
   }
 
   static pw.Widget _pdfNormalOnlyRow(ReportBoxRow row) {
-    final flexes = [5, 2, 2, 4];
     final cells = ['', '', '', row.normal];
 
     return pw.Container(
@@ -489,7 +484,7 @@ class PdfGenerator {
         children: [
           for (int i = 0; i < 4; i++)
             pw.Expanded(
-              flex: flexes[i],
+              flex: _colFlex[i],
               child: pw.Container(
                 decoration: i > 0
                     ? const pw.BoxDecoration(

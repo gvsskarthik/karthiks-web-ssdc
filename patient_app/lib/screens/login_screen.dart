@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       final mobile = result['mobile'] as String? ?? _mobileCtrl.text.trim();
       final name = result['name'] as String? ?? 'Patient';
-      await StorageService.saveSession(mobile: mobile, name: name);
+      await StorageService.saveSession(mobile: mobile, name: name, password: _passwordCtrl.text);
       if (!mounted) return;
       Navigator.pushReplacement(
         context,

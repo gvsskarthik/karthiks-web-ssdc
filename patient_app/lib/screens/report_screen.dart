@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import '../models/patient.dart';
 import '../models/report_item.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
+import '../models/letterhead_lines.dart';
 import '../utils/theme.dart';
 import '../utils/pdf_generator.dart';
 import '../utils/report_pagination.dart';
@@ -266,21 +266,12 @@ class _ReportScreenState extends State<ReportScreen> {
     );
   }
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return '';
-    try {
-      return DateFormat('dd-MM-yyyy').format(DateTime.parse(dateStr));
-    } catch (_) {
-      return dateStr;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: null,
+        title: Text(widget.patient.name, style: const TextStyle(fontSize: 16)),
         actions: [
           if (_items != null && _items!.isNotEmpty)
             _busy
@@ -321,7 +312,7 @@ class _ReportScreenState extends State<ReportScreen> {
     final pages = ReportPagination.paginate(_items ?? const <ReportItem>[]);
     if (pages.isEmpty) return _buildEmpty();
     final patient = widget.patient;
-    final date = _formatDate(patient.visitDate);
+    final date = PdfGenerator.formatDate(patient.visitDate);
     final doctor =
         (patient.doctor?.isNotEmpty ?? false) ? patient.doctor! : 'SELF';
     final address =

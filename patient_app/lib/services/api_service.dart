@@ -23,16 +23,19 @@ class ApiService {
     }
   }
 
-  static Future<List<Patient>> getVisits(String mobile) async {
+  static Future<List<Patient>> getVisits(String mobile, String password) async {
     try {
       final res = await http.get(
-        Uri.parse('$_base/patient-app/visits?mobile=${Uri.encodeComponent(mobile)}'),
+        Uri.parse('$_base/patient-app/visits'
+            '?mobile=${Uri.encodeComponent(mobile)}'
+            '&password=${Uri.encodeComponent(password)}'),
       ).timeout(const Duration(seconds: 15));
 
       if (res.statusCode == 200) {
         final List list = jsonDecode(res.body) as List;
         return list.map((e) => Patient.fromJson(e as Map<String, dynamic>)).toList();
       }
+      if (res.statusCode == 401) throw 'Session expired. Please log in again.';
       throw 'Failed to load patient list.';
     } catch (e) {
       if (e is String) rethrow;
@@ -53,6 +56,28 @@ class ApiService {
       if (res.statusCode == 401) throw 'Access denied. Please log in again.';
       if (res.statusCode == 404) throw 'Report not found.';
       throw 'Failed to load report.';
+    } catch (e) {
+      if (e is String) rethrow;
+      throw 'Cannot connect to server. Check your internet.';
+    }
+  }
+
+  static Future<void> changePassword(
+      String mobile, String oldPassword, String newPassword) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$_base/patient-app/change-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'mobile': mobile,
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (res.statusCode == 200) return;
+      if (res.statusCode == 401) throw 'Incorrect current password.';
+      throw 'Server error (${res.statusCode}).';
     } catch (e) {
       if (e is String) rethrow;
       throw 'Cannot connect to server. Check your internet.';
