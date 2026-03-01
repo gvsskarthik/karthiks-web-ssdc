@@ -1,16 +1,6 @@
 package com.ssdc.ssdclabs.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-@Service
+// WhatsApp sharing is handled manually by lab staff via the Reports page UI.
+// Not a Spring component — nothing injects this class.
 public class WhatsAppService {
-
-    private static final Logger logger = LoggerFactory.getLogger(WhatsAppService.class);
-
-    public void sendMessage(String mobile, String message) {
-        // Manual sending only — lab staff share credentials via WhatsApp button in Reports page.
-        logger.info("WhatsApp (manual): To={} | {}", mobile, message);
-    }
 }

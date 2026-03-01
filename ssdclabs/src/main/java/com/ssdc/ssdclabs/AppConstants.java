@@ -1,16 +1,22 @@
 package com.ssdc.ssdclabs;
 
-public final class AppConstants {
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-    private AppConstants() {}
+@Component
+public class AppConstants {
 
-    /** PIN required to edit a COMPLETED patient record or report. */
-    public static final String COMPLETED_EDIT_PIN = "7702";
+    private static String completedEditPin = "7702";
+
+    @Value("${app.edit-pin:7702}")
+    public void setCompletedEditPin(String pin) {
+        completedEditPin = (pin == null || pin.trim().isEmpty()) ? "7702" : pin.trim();
+    }
 
     public static boolean isValidCompletedEditPin(String editPin) {
         if (editPin == null) {
             return false;
         }
-        return COMPLETED_EDIT_PIN.equals(editPin.trim());
+        return completedEditPin.equals(editPin.trim());
     }
 }

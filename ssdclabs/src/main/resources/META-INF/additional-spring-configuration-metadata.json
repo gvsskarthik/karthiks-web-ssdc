@@ -1,0 +1,74 @@
+{
+  "properties": [
+    {
+      "name": "app.cors.allowed-origins",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of allowed CORS origins."
+    },
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "description": "HMAC-SHA256 signing secret for JWT tokens. Must be at least 32 characters."
+    },
+    {
+      "name": "app.jwt.ttl-seconds",
+      "type": "java.lang.Long",
+      "description": "JWT token time-to-live in seconds. Default: 604800 (7 days)."
+    },
+    {
+      "name": "app.totp.issuer",
+      "type": "java.lang.String",
+      "description": "Issuer name shown in TOTP authenticator apps."
+    },
+    {
+      "name": "app.totp.challenge-ttl-seconds",
+      "type": "java.lang.Long",
+      "description": "2FA login challenge expiry in seconds. Default: 300."
+    },
+    {
+      "name": "app.totp.setup-ttl-seconds",
+      "type": "java.lang.Long",
+      "description": "2FA setup session expiry in seconds. Default: 600."
+    },
+    {
+      "name": "app.totp.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum 2FA code verification attempts before lockout. Default: 5."
+    },
+    {
+      "name": "app.totp.clock-skew-steps",
+      "type": "java.lang.Integer",
+      "description": "Number of 30-second TOTP windows to allow for clock skew. Default: 1."
+    },
+    {
+      "name": "app.totp.encryption-key",
+      "type": "java.lang.String",
+      "description": "AES encryption key for storing TOTP secrets. Defaults to app.jwt.secret."
+    },
+    {
+      "name": "app.template.lab-id",
+      "type": "java.lang.String",
+      "description": "Lab ID used as the onboarding template source. Default: admin1."
+    },
+    {
+      "name": "app.edit-pin",
+      "type": "java.lang.String",
+      "description": "PIN required to edit or reopen a COMPLETED patient record."
+    },
+    {
+      "name": "app.frontend.base-url",
+      "type": "java.lang.String",
+      "description": "Base URL of the frontend, used in email verification and reset links."
+    },
+    {
+      "name": "app.mail.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether email sending is enabled. Default: true."
+    },
+    {
+      "name": "app.mail.from",
+      "type": "java.lang.String",
+      "description": "From address used in outgoing emails."
+    }
+  ]
+}
